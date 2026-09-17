@@ -51,7 +51,7 @@ K5-P 已在 Codex 0.154.0 的隔离配置中测试兼容包和根 Portable fixtu
 
 本机 SDK minimal patch 显式使用 `danger-full-access`，不得复用为安全默认。Windows ACL / 老 Landlock 可能只有 partial 是随包文档声明，本轮没有运行 confinement probe。K6 的新 Session 必须 create 新身份且不继承 seed，不能用 resume 旧历史替代。旧 Audit / 修复 / QA 与旧 Run 仍由旧实现处理，见 [迁移边界](../DSH_MIGRATION.md)。
 
-K6-P 已从统一源码生成十文件 tgz，并在隔离 DSH `0.1.5-rc.1` headless profile 中安装、组合和卸载；从实际安装包调用启动器所解析 rc.2 的 `CommandRuntime.execute`，只读 `/dhr-status` 返回 success，dispose 后命令消失。profile pnpm 报 peer warning，已记录，不等于 K6 Agent / Session 权限已通过。证据见 [K6-P 验证记录](../verification/K6-P.md)。
+K6-P 已从统一源码生成十文件 tgz，并在隔离 DSH `0.1.5-rc.1` headless profile 中安装、组合和卸载；从实际安装包调用启动器所解析 rc.2 的 `CommandRuntime.execute`，只读 `/dhr-status` 返回 success，dispose 后命令消失。profile pnpm 报 peer warning，已记录。K6 随后在同版本启动器上完成两次无工具合成 headless Agent 调用，观察到不同真实 Session；这仍不等于逐 Task 授权或 Executor 通过。证据见 [K6-P](../verification/K6-P.md) 与 [K6](../verification/K6.md)。
 
 ### Cursor 与 OpenCode
 
