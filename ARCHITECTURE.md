@@ -1,19 +1,24 @@
 # 项目架构分析
 
 ## 模块依赖关系图
-Core 与五个 Adapter → contracts；build → core 与 Adapter 包；CLI 当前无 workspace 运行依赖，独立 tarball 提供 help/version。
+
+CLI 开发依赖 Core / contracts，esbuild 将运行依赖合入独立 bundle；Core 与五个 Adapter 引用 contracts；build 通过 workspace 包引用 Core / Adapter；Core 经 RuntimeAdapter 接口接入显式注册执行服务，未导入宿主 SDK。
 
 ## 核心业务流程
-CLI 输出帮助/版本；未实现命令退出 2，Worker 环境的 run / resume / reconcile 提前以授权拒绝退出 5。Registry 显式 register/get/list；discoverProject 读取 Git/worktree 与项目契约，readPlan 校验看板和归档，selectTask 按权威顺序选出一个合格任务。captureSnapshot 捕获原始内容和 Git 边界，verifyOwnedTransition 核验可信操作的变更与授权提交。state / lock 提供持锁读写和 revision CAS；recovery 根据精确证据和真实边界恢复或显式对齐，result 冻结原始验收输入、验证单任务收口并签发一次性提交 capability；authorization 提供 Linux 验证进程隔离与受控 Git 提交，worker 从唯一共享 Skill 构造单任务请求并投影紧凑状态，state 提供受控私有日志追加与引用；尚未接入 Executor 调度。
+
+CLI 解析 doctor / status / run / resume / reconcile；doctor 只读诊断，status 从 run.json 及证据投影紧凑结果。可信 RuntimeServices 注入后，startRuntimeRun 经能力 probe、锁与旧 Run 门禁初始化状态；runLoop 重读 Planning、选择一个任务、冻结请求和验收输入、派发独立 Worker、验证结束证据、独立验收并按 Run 授权收尾。all-ready 每次接受后重读计划；恢复复用持久证据或以新 attempt / request / Session 继续。分发 CLI 未配置宿主服务时明确 CAPABILITY_MISSING。partial 保存 Worker-ended 后停止为 INTERRUPTED；noncompleted ending 不能通过 resume 自动继续，只有可信 worker-checkpoint 支持继续剩余工作，未改变的取消边界可新建 attempt 重试。
 
 ## 架构模式
-公共 Core / Adapter / Build 分层；contracts 提供版本化 Schema 与声明校验，Core 提供 Registry、项目发现、Planning 读取、内容快照 / 漂移门禁、私有状态 / 互斥锁、恢复 / 对齐、独立验收与受控提交接口。Adapter 仍为元数据，没有 Executor 或 Packager 实例。
+
+公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；RuntimeAdapter 由可信调用者显式注册，分发平台描述符尚无真实 Executor 或 Packager 实例。
 
 ## 模块接口与通信方式
-- Adapter 通过 workspace:* 引用 contracts；build 通过 workspace 包引用 core。
-- Registry 使用 register/get/list；CLI 通过 CliOutput 注入输出。
-- Core 的 discoverProject / readPlan / selectTask 通过只读 ProjectContext / PlanningDocument 通信，PlanningReference 记录本次读取内容的 SHA-256。Markdown 使用结构 token。
+
+- RuntimeServices 注入明确的 Registry、prepareTask、验收 provider 与可选 Git / reconciliation 服务；RuntimeAdapter 绑定 Executor、环境、日志回调、结束证据及可信静止 / 检查点验证。
+- TaskExecutionRequest / Result / EvidenceRef 承接执行身份、scope、授权与原始内容摘要；state 持锁写入，inspectRun / inspectParentContext 无锁只读状态，按原字节复核一致读取。
+- CLI 通过 CliOutput 输出，通过 CliOptions 显式注入可信 RuntimeServices；参数、项目文件和环境变量没有动态装载执行服务的入口。
 
 ## 关键模块标记
-- docs/design/runtime-design.md 是唯一设计正文，ARCHITECTURE 描述当前实现。
-- protocol-lock.json 与校验脚本固定来源，不自动 clone 或升级。
+
+- docs/design/runtime-design.md 保留原始设计；当前公共行为以 docs/CONTRACTS.md 为准，ARCHITECTURE 描述已有实现。
+- protocol-lock.json 与 scripts/check-protocol.mjs 固定来源；CLI bundle 在构建时生成，不是平台插件打包产物。

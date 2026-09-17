@@ -20,3 +20,8 @@ export * from './authorization/sandbox.js';
 export * from './authorization/git.js';
 export * from './worker/prompt.js';
 export * from './worker/summary.js';
+export * from './state/inspect.js';
+export * from './worker/status.js';
+export * from './orchestrator/types.js';
+export * from './orchestrator/runtime.js';
+export * from './orchestrator/recovery.js';

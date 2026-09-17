@@ -26,11 +26,11 @@
 
 ## 1. 项目上下文速查
 
-- **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM。
-- **架构模式**: 公共 Core / Adapter / Build 分层；Core 已有项目发现、Planning 读取与快照 / 漂移校验及 state / lock / recovery，Adapter 仍为元数据，没有 Executor 或 Packager 实例。
-- **核心入口**: packages/cli/bin/dhr.mjs → packages/cli/src/index.ts；注册入口为 packages/core/src/index.ts 与 build/targets/index.ts。
-- **核心调用链**: CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list；discoverProject → readPlan → selectTask 提供只读选择，captureSnapshot / verifyOwnedTransition 提供边界校验；state / lock 提供持锁存储；recovery 提供恢复 / 显式对齐，尚无 Executor 调度。
-- **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交与二十个文件摘要。
+- **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM，esbuild 0.28.0 将 Core / Contracts 及依赖打入独立 CLI bundle。
+- **架构模式**: 公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；RuntimeAdapter 由可信调用者显式注册，分发平台描述符尚无真实 Executor 或 Packager 实例。
+- **核心入口**: packages/cli/bin/dhr.mjs → 编译生成的 dist/bundle.js → packages/cli/src/index.ts；公共 API 入口为 packages/core/src/index.ts，构建目标注册入口为 build/targets/index.ts。
+- **核心调用链**: CLI 解析 doctor / status / run / resume / reconcile；doctor 只读诊断，status 从 run.json 及证据投影紧凑结果。可信 RuntimeServices 注入后，startRuntimeRun 经能力 probe、锁与旧 Run 门禁初始化状态；runLoop 重读 Planning、选择一个任务、冻结请求和验收输入、派发独立 Worker、验证结束证据、独立验收并按 Run 授权收尾。all-ready 每次接受后重读计划；恢复复用持久证据或以新 attempt / request / Session 继续。分发 CLI 未配置宿主服务时明确 CAPABILITY_MISSING。partial 保存 Worker-ended 后停止为 INTERRUPTED；noncompleted ending 不能通过 resume 自动继续，只有可信 worker-checkpoint 支持继续剩余工作，未改变的取消边界可新建 attempt 重试。
+- **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交和文件摘要。
 
 ## 1b. 文件信任等级
 
@@ -50,7 +50,7 @@ ESM、TypeScript strict / noUncheckedIndexedAccess / exactOptionalPropertyTypes�
 
 ## 3. 架构边界规则
 
-Core 注册机制不导入宿主 SDK；implemented=false 表示平台骨架，不能作为执行能力证据。完整协议见 docs/CONTRACTS.md。
+Core 使用显式 Registry / RuntimeAdapter，不导入宿主 SDK；implemented=false 平台描述符不能作为执行能力证据。自动派发要求通过能力 probe 和受控验证；Worker 始终 commit=deny，提交经 Core 的独立验收 capability 与 Git policy 处理。完整协议见 docs/CONTRACTS.md。
 
 ## 4. 禁止操作清单
 
@@ -60,45 +60,45 @@ Core 注册机制不导入宿主 SDK；implemented=false 表示平台骨架，�
 
 ## 5. 高风险文件标注
 
-scripts/clean.mjs 清理已知编译目录；check-cli-package.mjs 在临时目录安装测试包；check-protocol.mjs 验证外部 checkout；锁文件约束依赖及来源。
+scripts/clean.mjs 清理已知编译目录；scripts/check-cli-package.mjs 在临时目录离线安装 tarball；scripts/check-protocol.mjs 校验外部 checkout；scripts/bundle-cli.mjs 写入编译目录。Core 的 state/files.ts 处理原子文件发布，lock/index.ts 处理 owner 与 guard，authorization/sandbox.ts 启动隔离子进程，authorization/git.ts 执行受控 Git。CLI 启动绑定取消信号并从明确参数进入 Core；数据输入经 contracts / 路径 / 摘要校验。当前没有数据库迁移、认证服务、网络客户端或宿主服务安装实现；fixture / 安装型测试不证明真实宿主能力。
 
 ## 6. 新增功能的一般流程
 
-从 Dashboard 当前任务进入；contracts 定义公共数据，core 管注册，adapter-* 管宿主接入，build/targets 管分发目标。
+从 Dashboard 当前执行包进入；contracts 定义公共数据；Core 按 discovery / planning / snapshot / state / lock / recovery / result / authorization / worker / orchestrator 职责扩展；adapter-* 管宿主接入，build/targets 管分发目标，共享 Skill 源码位于 skills/run、skills/status、skills/worker。
 
 ## 7. 代码安全规范
 
-子进程验证同时检查 error 与退出码；fixture 不证明真实宿主能力；Registry 固定注册项顶层身份。
+子进程验证同时检查 error 与退出码；fixture 不证明真实宿主能力；Registry 固定注册项顶层身份。Worker 环境拒绝 run / resume / reconcile，status 通过安全只读 API 读取同一 revision 的原始权威状态和证据；不从 Worker 原文或 summary.json 生成可信完成状态。
 
 ## 8. 多版本/多定制注意事项
 
-DSH rc.1 launcher + rc.2 组件；Codex 0.154.0。当前只取得 WSL2 验证，原生 OS 与各宿主能力分开报告。
+DSH rc.1 launcher + rc.2 组件；Codex 0.154.0。当前记录为 WSL2 验证，原生 OS 与各宿主能力分开报告；协议来源与 Adapter 配置绑定 Run，恢复不扩张原授权。
 
 ## 9. 日志规范
 
-CLI 当前向 stdout/stderr 输出帮助、版本或诊断；未来 Run 日志布局见公共契约。
+Core / 受控 Adapter 将 stdout、stderr、events 写入 worktree 私有 dev-harness-runtime Run 目录，run.json 为权威状态，summary.json 为派生投影。父上下文投影包含 runId、taskId、status、summary、verificationSummary、commitSha、nextTask、logRef；status --verbose 保持日志引用，不展开原始 transcript、构建日志、源码或 JSONL。
 
 ## 10. 提问与探索建议
 
-先读 Dashboard 当前执行包，再读 HARNESS、CONTRACTS 与相关源码；安装型测试先核对专门授权和环境。
+先读 Dashboard 当前执行包，再读 HARNESS、CONTRACTS 与相关源码；安装型测试先核对专门授权和环境。CLI 接入问题从 index.ts 与 orchestrator 开始；宿主能力问题分开检查元数据、probe 证据与真实 Executor，避免把 fixture 通过当作宿主证据。
 
 ## 11. 自动识别候选
 
-- Windows / Ubuntu CI 已配置，尚无远端运行结果。
+- Windows / Ubuntu CI 已配置，当前仓库验证记录仍区分 WSL2、原生 OS 与真实宿主。
 
 ## 12. 需人工确认
 
-- 当前无数据库、业务授权执行器或网络客户端；恢复有确定证据重试，宿主执行能力由后续任务验证。
-- 分发许可材料尚需落实，本轮仅本地私有产物。
-- 原生 Windows / Linux、真实插件安装和模型 Session 本轮未运行。
+- 当前分发包没有真实宿主 Executor；已有 Core 编排与受控验收 / Git API，真实 Agent 会话与权限证明由 Adapter 任务验证。
+- 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
+- 原生 Windows / Linux、真实插件安装和模型 Session 尚未取得本轮运行证据。
 
 ## 13. 代码风格示例（仓库抽样）
 
-V0 已复核以下源码样例；Python fixture 检查器不作为 TypeScript 模块的风格依据。
+以下样例来自实际 TypeScript / ESM 模块；Python fixture 检查器不作为 TypeScript 风格依据。
 
 - `packages/core/src/registry.ts`：ESM 导出、私有字段与只读元数据。
-- `packages/core/tests/registry.test.mjs`：node:test 和严格断言。
-- `packages/cli/src/index.ts`：无宿主依赖的入口与显式输出接口。
+- `packages/core/src/orchestrator/runtime.ts`：异步 Core 编排、显式服务与状态门禁。
+- `packages/cli/src/index.ts`：参数校验、依赖注入与显式输出接口。
 
 ## 14. 复盘结论正式写入说明
 

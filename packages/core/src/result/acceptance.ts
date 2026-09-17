@@ -139,6 +139,7 @@ export async function verifyTaskAcceptance(handle: LockHandle, input: VerifyTask
     const record = await put(`command-${digest(command.id).slice(0, 12)}`, { schemaVersion: 1, kind: 'controlled-verification', operationId,
       beforeSnapshotRef: priorRef, afterSnapshotRef: currentRef, evidence, namespaceEvidence: executed.namespaceEvidence });
     commandRecordRefs.push(record); verification.push(evidence);
+    if (executed.termination === 'aborted') throw new DOMException('Controlled verification was cancelled after confirmed quiescence', 'AbortError');
     requireAcceptance(passed, 'VERIFICATION_FAILED', 'A required controlled command did not pass with confirmed process-tree quiescence');
   }
   for (const check of request.verificationPlan.manual) {

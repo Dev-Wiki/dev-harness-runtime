@@ -57,20 +57,20 @@ test('Worker marker propagates through a real descendant to the dhr bin', () => 
   }
 });
 
-test('ordinary callers still receive unsupported input rather than fabricated execution', () => {
+test('ordinary callers receive parameter errors rather than fabricated execution', () => {
   for (const marker of [undefined, '0']) {
     for (const args of deniedArguments) {
       const result = run(args, marker);
       assert.equal(result.status, 2, result.stderr);
       assert.equal(result.stdout, '');
       assert.doesNotMatch(result.stderr, /AUTHORIZATION_VIOLATION/u);
-      assert.match(result.stderr, /不支持的命令/u);
+      assert.match(result.stderr, /INVALID_ARGUMENT|CAPABILITY_MISSING/u);
     }
   }
 });
 
 test('Worker help, version, status and other nonmutating input retain existing behavior', () => {
-  for (const args of [[], ['help'], ['--help'], ['-h'], ['--version'], ['-v'], ['status'], ['status', 'run-a'], ['--help', 'run'], ['unknown']]) {
+  for (const args of [[], ['help'], ['--help'], ['-h'], ['--version'], ['-v'], ['status'], ['--help', 'run'], ['unknown']]) {
     const result = run(args, '1');
     const supported = args.length === 0 || (args.length === 1 && ['help', '--help', '-h', '--version', '-v'].includes(args[0]));
     assert.equal(result.status, supported ? 0 : 2, result.stderr);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { access, chmod, copyFile, link, mkdir, open, readFile, readdir, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { assertSupportedCommitProject, commitAcceptedTask } from '../../dist/authorization/git.js';
+import { assertSupportedCommitProject, commitAcceptedTask, resumeAcceptedTaskCommit } from '../../dist/authorization/git.js';
 import { git, setupRecovery } from '../recovery/helpers.mjs';
 import { setupAcceptance } from '../result/helpers-acceptance.mjs';
 import { createLinuxSandbox } from '../../dist/authorization/sandbox.js';
@@ -91,6 +91,7 @@ async function acceptForCommit(t, options = {}) {
   const context = await setupAcceptance(t, { commit: 'task', ...options });
   const originalWorkflow = context.planningFixture.beforeFiles.get('docs/GIT_WORKFLOW.md');
   if (options.changeWorkflow) context.planningFixture.afterFiles.set('docs/GIT_WORKFLOW.md', Buffer.from('# Changed Worker workflow\n'));
+  for (const path of options.writableArtifacts ?? []) await mkdir(join(context.root, path), { recursive: true });
   const finished = await context.finishWorker({ mutateResult(result) {
     result.commitIntent = { schemaVersion: 1, message: commitMessage, paths: result.changedFiles,
       workflow: { path: context.before.snapshot.gitWorkflowRef.path, sha256: context.before.snapshot.gitWorkflowRef.sha256 } };
@@ -242,4 +243,107 @@ test('published Git acceptance survives a pre-CAS crash and recovery adopts the 
   assert.deepEqual(repeated.state.completedTasks, ['A']);
   assert.equal(await git(context.root, 'rev-list', '--count', `${parent}..HEAD`), '1');
   assert.deepEqual(await readFile(acceptedPath), publishedBytes);
+});
+
+async function interruptPreparedCommit(context, stage) {
+  let injected = false;
+  await assert.rejects(withStateFaultForTest(async (point, path) => {
+    if (injected || point !== 'directory-synced' || !path.endsWith('/run.json')) return;
+    const state = JSON.parse(await readFile(path, 'utf8'));
+    if (state.pendingOperation?.kind === 'commit' && Boolean(state.pendingOperation.indexCheckpointRef) === (stage === 'index-staged')) {
+      injected = true; throw new Error(`Simulated ${stage} crash`);
+    }
+  }, () => context.commit()), new RegExp(`Simulated ${stage} crash`, 'u'));
+  assert.equal(injected, true);
+  const state = await context.readRun();
+  const verifier = createAcceptanceRecoveryVerifier(context.handle, { workerControl: context.finished.workerControl,
+    async verifyQuiescence() {}, async verifyWorkerCheckpoint() { assert.fail('Prepared commits require the original Core acceptance chain'); } });
+  const resumed = await resumeRun(context.handle, state.runId, { expectedRevision: state.revision, verifier,
+    environment: { adapter: state.adapter, authorization: state.authorization, protocolSource: state.protocolSource, adapterConfigHash: state.adapterConfigHash } });
+  assert.equal(resumed.decision.action, 'resume-commit', resumed.decision.message);
+  return resumed.state;
+}
+
+test('persisted verification-passed resumes commit with artifacts without rerunning verification', actualProvider, async t => {
+  const context = await acceptForCommit(t, { writableArtifacts: ['out'], command: [process.execPath, '-e',
+    'const fs=require("fs");const p="out/count";fs.writeFileSync(p,String(fs.existsSync(p)?Number(fs.readFileSync(p))+1:1))'] });
+  const state = await context.readRun();
+  const verifier = createAcceptanceRecoveryVerifier(context.handle, { workerControl: context.finished.workerControl,
+    async verifyQuiescence() {}, async verifyWorkerCheckpoint() { assert.fail('Must recover persisted Core verification'); } });
+  const resumed = await resumeRun(context.handle, state.runId, { expectedRevision: state.revision, verifier,
+    environment: { adapter: state.adapter, authorization: state.authorization, protocolSource: state.protocolSource, adapterConfigHash: state.adapterConfigHash } });
+  assert.equal(resumed.decision.action, 'revalidate', resumed.decision.message);
+  const outcome = await resumeAcceptedTaskCommit(context.handle, state.runId, { expectedRevision: resumed.state.revision, gitBinary,
+    policy: context.policy, workerControl: context.finished.workerControl });
+  assert.equal(outcome.state.status, 'COMPLETED');
+  assert.equal(await readFile(join(context.root, 'out/count'), 'utf8'), '1');
+  assert.equal(await git(context.root, 'ls-files', 'out/count'), '');
+  assert.equal(context.policyCalls(), 1);
+});
+
+for (const stage of ['commit-ready', 'index-staged']) {
+  test(`trusted commit continuation finishes the exact ${stage} reservation once`, actualProvider, async t => {
+    const context = await acceptForCommit(t); const parent = await git(context.root, 'rev-parse', 'HEAD');
+    const state = await interruptPreparedCommit(context, stage);
+    const intent = structuredClone(state.pendingOperation);
+    const outcome = await resumeAcceptedTaskCommit(context.handle, state.runId, { expectedRevision: state.revision, gitBinary,
+      policy: context.policy, workerControl: context.finished.workerControl });
+    assert.equal(context.policyCalls(), 2);
+    assert.equal(outcome.state.status, 'COMPLETED'); assert.deepEqual(outcome.state.completedTasks, ['A']);
+    assert.equal(await git(context.root, 'rev-list', '--count', `${parent}..HEAD`), '1');
+    assert.equal(await git(context.root, 'rev-parse', 'HEAD^{tree}'), intent.expectedTree);
+    assert.equal(await git(context.root, 'show', '-s', '--format=%B', 'HEAD'), commitMessage.trim());
+    assert.deepEqual((await git(context.root, 'diff-tree', '--no-commit-id', '--name-only', '--no-renames', '-r', parent, 'HEAD')).split('\n').sort(), [...intent.paths].sort());
+    await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { expectedRevision: outcome.state.revision, gitBinary,
+      policy: context.policy, workerControl: context.finished.workerControl }), 'ACCEPTANCE_REQUIRED');
+    assert.equal(await git(context.root, 'rev-list', '--count', `${parent}..HEAD`), '1');
+  });
+}
+
+test('commit continuation rejects stale revisions, missing provenance and changed policy without staging', actualProvider, async t => {
+  const context = await acceptForCommit(t); const state = await interruptPreparedCommit(context, 'commit-ready');
+  const options = { expectedRevision: state.revision, gitBinary, policy: context.policy, workerControl: context.finished.workerControl };
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { ...options, expectedRevision: state.revision - 1 }), 'REVISION_CONFLICT');
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { ...options, workerControl: {} }), 'CAPABILITY_MISSING');
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { ...options, policy: { async evaluate() {
+    return { message: 'changed message\n', paths: [...state.pendingOperation.paths] };
+  } } }), 'GIT_WORKFLOW_MISMATCH');
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { ...options, policy: { async evaluate() {
+    return { message: commitMessage, paths: state.pendingOperation.paths.slice(1) };
+  } } }), 'AUTHORIZATION_VIOLATION');
+  assert.equal(await git(context.root, 'diff', '--cached', '--name-only'), '');
+  assert.deepEqual(await context.readRun(), state);
+});
+
+test('staged commit continuation refuses actual drift and Worker entry without rewriting Git', actualProvider, async t => {
+  const context = await acceptForCommit(t); const state = await interruptPreparedCommit(context, 'index-staged');
+  const options = { expectedRevision: state.revision, gitBinary, policy: context.policy, workerControl: context.finished.workerControl };
+  const previous = process.env.DEV_HARNESS_WORKER;
+  try {
+    process.env.DEV_HARNESS_WORKER = '1';
+    await fails(resumeAcceptedTaskCommit(context.handle, state.runId, options), 'AUTHORIZATION_VIOLATION');
+  } finally {
+    if (previous === undefined) delete process.env.DEV_HARNESS_WORKER; else process.env.DEV_HARNESS_WORKER = previous;
+  }
+  await writeFile(join(context.root, 'unrelated.txt'), 'unowned drift');
+  const parent = await git(context.root, 'rev-parse', 'HEAD'); const index = await git(context.root, 'write-tree');
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, options), 'DRIFT_DETECTED');
+  assert.equal(await git(context.root, 'rev-parse', 'HEAD'), parent); assert.equal(await git(context.root, 'write-tree'), index);
+  assert.deepEqual(await context.readRun(), state);
+});
+
+test('commit continuation requires adoption when the reserved commit already happened', actualProvider, async t => {
+  const context = await acceptForCommit(t); const state = await interruptPreparedCommit(context, 'index-staged');
+  // Model a crash after the exact Git command but before Core finalized its record.
+  await git(context.root, 'commit', '--quiet', '--no-gpg-sign', '--cleanup=verbatim', '-m', commitMessage.trim());
+  const head = await git(context.root, 'rev-parse', 'HEAD');
+  await fails(resumeAcceptedTaskCommit(context.handle, state.runId, { expectedRevision: state.revision, gitBinary,
+    policy: context.policy, workerControl: context.finished.workerControl }), 'COMMIT_ADOPTION_REQUIRED');
+  assert.equal(await git(context.root, 'rev-parse', 'HEAD'), head);
+  const verifier = createAcceptanceRecoveryVerifier(context.handle, { workerControl: context.finished.workerControl,
+    async verifyQuiescence() {}, async verifyWorkerCheckpoint() { assert.fail('Must recover Core acceptance'); } });
+  const adopted = await resumeRun(context.handle, state.runId, { expectedRevision: state.revision, verifier,
+    environment: { adapter: state.adapter, authorization: state.authorization, protocolSource: state.protocolSource, adapterConfigHash: state.adapterConfigHash } });
+  assert.equal(adopted.decision.action, 'adopt-commit', adopted.decision.message);
+  assert.equal(adopted.state.status, 'COMPLETED'); assert.equal(await git(context.root, 'rev-parse', 'HEAD'), head);
 });

@@ -229,37 +229,44 @@ export async function captureAttemptLogRefs(handle: LockHandle, runId: string, e
       throw new StateError('STATE_IDENTITY_MISMATCH', 'Attempt logs are not bound to the current attempt or a recorded result');
     }
     const directory = await root(context, runId);
-    const result = {} as Record<AttemptLogStream, EvidenceRef>;
-    const observed: { path: string; stamp: string }[] = [];
-    for (const stream of ['stdout', 'stderr', 'events'] as const) {
-      const path = `attempts/${name}/${attemptLogNames[stream]}`; const absolute = join(directory, path);
-      await checkedFile(absolute);
-      const initial = await lstat(absolute, { bigint: true });
-      const file = await open(absolute, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
-      try {
-        const first = await file.stat({ bigint: true });
-        if (!sameLogFile(initial, first) || logStamp(initial) !== logStamp(first)) throw new StateError('STATE_PATH_INVALID', 'Attempt log changed before hashing', absolute);
-        const digest = createHash('sha256'); const buffer = Buffer.allocUnsafe(64 * 1024); let count = 0n;
-        while (true) {
-          const { bytesRead } = await file.read(buffer, 0, buffer.length, null);
-          if (bytesRead === 0) break;
-          count += BigInt(bytesRead); digest.update(buffer.subarray(0, bytesRead));
-        }
-        await checkedFile(absolute);
-        const last = await file.stat({ bigint: true }); const actual = await lstat(absolute, { bigint: true });
-        if (count !== first.size || logStamp(first) !== logStamp(last) || logStamp(first) !== logStamp(actual)) {
-          throw new StateError('STATE_CORRUPT', 'Attempt log changed while hashing', absolute);
-        }
-        result[stream] = { schemaVersion: 1, path, sha256: digest.digest('hex') };
-        observed.push({ path: absolute, stamp: logStamp(last) });
-      } finally { await file.close(); }
-    }
-    for (const entry of observed) {
-      await checkedFile(entry.path);
-      if (logStamp(await lstat(entry.path, { bigint: true })) !== entry.stamp) throw new StateError('STATE_CORRUPT', 'Attempt logs changed during reference capture', entry.path);
-    }
-    return result;
+    return captureAttemptLogRefsAt(directory, name);
   });
+}
+
+/** Shared safe streaming read; callers must bind the attempt to an authoritative Run first. */
+export async function captureAttemptLogRefsAt(directory: string, name: string): Promise<Record<AttemptLogStream, EvidenceRef>> {
+  coreLogsOnly();
+  if (!/^[A-Za-z][A-Za-z0-9._-]{0,63}-[1-9][0-9]*$/u.test(name)) throw new StateError('STATE_PATH_INVALID', 'Invalid attempt log directory');
+  const result = {} as Record<AttemptLogStream, EvidenceRef>;
+  const observed: { path: string; stamp: string }[] = [];
+  for (const stream of ['stdout', 'stderr', 'events'] as const) {
+    const path = `attempts/${name}/${attemptLogNames[stream]}`; const absolute = join(directory, path);
+    await checkedFile(absolute);
+    const initial = await lstat(absolute, { bigint: true });
+    const file = await open(absolute, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
+    try {
+      const first = await file.stat({ bigint: true });
+      if (!sameLogFile(initial, first) || logStamp(initial) !== logStamp(first)) throw new StateError('STATE_PATH_INVALID', 'Attempt log changed before hashing', absolute);
+      const digest = createHash('sha256'); const buffer = Buffer.allocUnsafe(64 * 1024); let count = 0n;
+      while (true) {
+        const { bytesRead } = await file.read(buffer, 0, buffer.length, null);
+        if (bytesRead === 0) break;
+        count += BigInt(bytesRead); digest.update(buffer.subarray(0, bytesRead));
+      }
+      await checkedFile(absolute);
+      const last = await file.stat({ bigint: true }); const actual = await lstat(absolute, { bigint: true });
+      if (count !== first.size || logStamp(first) !== logStamp(last) || logStamp(first) !== logStamp(actual)) {
+        throw new StateError('STATE_CORRUPT', 'Attempt log changed while hashing', absolute);
+      }
+      result[stream] = { schemaVersion: 1, path, sha256: digest.digest('hex') };
+      observed.push({ path: absolute, stamp: logStamp(last) });
+    } finally { await file.close(); }
+  }
+  for (const entry of observed) {
+    await checkedFile(entry.path);
+    if (logStamp(await lstat(entry.path, { bigint: true })) !== entry.stamp) throw new StateError('STATE_CORRUPT', 'Attempt logs changed during reference capture', entry.path);
+  }
+  return result;
 }
 
 function reference(path: string, content: Buffer): EvidenceRef { return { schemaVersion: 1, path, sha256: hash(content) }; }
@@ -294,7 +301,7 @@ export async function writeSnapshot(handle: LockHandle, runId: string, expectedR
   });
 }
 
-function evidencePath(path: string): void {
+export function evidencePath(path: string): void {
   const attempt = '[A-Za-z][A-Za-z0-9._-]{0,63}-[1-9][0-9]*';
   if (!isRepoPath(path) || !(new RegExp(`^(?:results/${attempt}\\.json|results/run-evidence/[A-Za-z0-9][A-Za-z0-9_-]{0,63}\\.json|attempts/${attempt}/(?:stdout\\.log|stderr\\.log|events\\.jsonl|snapshots/[A-Za-z0-9][A-Za-z0-9_-]{0,63}\\.json)|summary\\.json)$`, 'u')).test(path)) {
     throw new StateError('STATE_PATH_INVALID', 'Evidence reference is outside the declared Run layout', path);

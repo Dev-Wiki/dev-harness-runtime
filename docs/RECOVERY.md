@@ -1,10 +1,10 @@
 # Run 恢复与人工对齐
 
-权威恢复语义见 [CONTRACTS §6](CONTRACTS.md#6-崩溃恢复协议)。本页说明 Core 接口及证据边界；`dhr resume` / `dhr reconcile` 的命令接入由 K4 完成。
+权威恢复语义见 [CONTRACTS §6](CONTRACTS.md#6-崩溃恢复协议)。本页说明 Core 接口及证据边界。K4 已接通 `dhr resume` / `dhr reconcile` 的可信服务入口；当前分发包缺少宿主 Executor 时明确拒绝执行。
 
 ## 读取与初始化
 
-唯一状态来自 Git 私有目录中的 `<run-id>/run.json`。持锁诊断读取可以取得当前 revision，后续恢复和写入必须显式提供该 revision；不能读取“最新 result”并把它当作完成状态。
+唯一状态来自 Git 私有目录中的 `<run-id>/run.json`。`inspectRun` 可以无锁取得一致的当前 revision，Core 恢复和写入显式绑定该 revision；CLI resume 省略 `--expected-revision` 时先读取再 CAS；不能读取“最新 result”并把它当作完成状态。
 
 初始快照和初始化意图摘要保存在 `results/run-evidence/`，不假造 Task 或 attempt，空队列也有真实初始边界。初始化意图只保存 seedHash 与引用，用来确认重试是否仍是同一意图；它不能独立推进状态。Run 状态根仍为 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
 
@@ -41,3 +41,14 @@ checkpoint 是 Core 的受控操作记录，绑定 operationId、执行身份、
 K4-V 的 `createAcceptanceRecoveryVerifier` 从 pending 的唯一 acceptance 引用遍历原始冻结输入、Worker 控制记录、Planning delta、命令输出与快照链。Adapter 仍提供实际 Worker 控制与旧执行树静止证明，接口 fixture 不代替宿主证据。
 
 verification 只允许冻结计划明确声明的未跟踪产物变化，恢复时采用与正常验收相同的窄写入策略。commit-ready / index-staged 分别区分尚未暂存和已完成暂存；无法匹配阶段边界时停止。提交桥接与恢复共用 committed / accepted 的确定名称和稳定接受时间，证据发布后 CAS 前中断可复用原字节，且不重复提交。实际故障测试见 [K4-V](verification/K4-V.md)。
+
+
+## K4 命令接入
+
+`dhr status --run <run-id>` 在 Orchestrator 持锁时也可读取紧凑状态；读取期间 revision 或日志变化时报告重试，不回传混合版本。
+
+`dhr resume --run <run-id> [--expected-revision N]` 经可信服务接续原 Run。首次执行在 dispatch manifest 中固定请求和验收输入；取消且未改动边界时以新 attempt / requestId 和新 Session 重试。Worker 已完成并保存 ended checkpoint 后，恢复只重做独立验收，不重复开发。
+
+`dhr reconcile --run <run-id> --expected-revision N --resolution <ref.json>` 读取一个 EvidenceRef，目标必须是原 Run 私有目录内已经持久化的 resolution。实际证明由可信 Core 服务验证；不能直接提交一份 claimed approval 越过检查。需要承接对齐基线时调用 `createReconciledSuccessor`，普通新 Run 不会自动消费或覆盖该记录。
+
+提交恢复通过 `resumeAcceptedTaskCommit` 接续原验收和 Git 意图。verification-passed 后已经产生的合法验证产物保留，不再重复执行验证；commit-ready / index-staged 的原始路径、message hash 和 tree 固定。Worker 或验收进程无法证明静止时保留锁，等待明确处置。K4 覆盖 Fake Executor 与本地受控验证；真实宿主能力仍由平台任务证明。

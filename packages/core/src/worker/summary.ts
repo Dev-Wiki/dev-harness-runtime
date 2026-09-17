@@ -28,25 +28,39 @@ function identity(state: RunState): AttemptIdentity | undefined {
 /** Read-only projection from run.json and its exact references, never from summary.json or raw Worker text. */
 export async function readParentContext(handle: LockHandle, runId: string, expectedRevision: number): Promise<ParentContextSummary> {
   const state = await readRunAtRevision(handle, runId, expectedRevision);
+  const result = await projectParentContext(state, {
+    readEvidence: (ref) => readEvidence(handle, runId, expectedRevision, ref),
+    captureLogs: (current) => captureAttemptLogRefs(handle, runId, expectedRevision, current),
+  });
+  // Another Core state transition invalidates this projection instead of mixing revisions.
+  await readRunAtRevision(handle, runId, expectedRevision);
+  return result;
+}
+
+export interface ParentContextReader {
+  readEvidence(ref: EvidenceRef): Promise<Buffer>;
+  captureLogs(current: AttemptIdentity): Promise<NonNullable<ParentContextSummary['logRef']>>;
+}
+
+/** Shared projection; callers verify a consistent authoritative revision around all reads. */
+export async function projectParentContext(state: RunState, reader: ParentContextReader): Promise<ParentContextSummary> {
   const current = identity(state);
   let accepted: AcceptedTaskExecutionResult | undefined;
   if (current && state.completedTasks.includes(current.taskId)) {
     const item = state.resultRefs.find((entry) => sameRecord(entry.identity, current));
     if (!item) throw new StateError('STATE_CORRUPT', 'Accepted result is missing');
-    accepted = parseContractJson('acceptedTaskExecutionResult', new TextDecoder('utf-8', { fatal: true }).decode(await readEvidence(handle, runId, expectedRevision, item.ref)));
+    accepted = parseContractJson('acceptedTaskExecutionResult', new TextDecoder('utf-8', { fatal: true }).decode(await reader.readEvidence(item.ref)));
     if (!sameRecord({ runId: accepted.runId, taskId: accepted.taskId, attempt: accepted.attempt, requestId: accepted.requestId }, current)
       || accepted.acceptedSnapshotHash !== state.acceptedSnapshotHash || (state.authorization.commit === 'deny' && accepted.commitSha !== undefined)) {
       throw new StateError('STATE_IDENTITY_MISMATCH', 'Accepted result does not bind the authoritative Run boundary');
     }
   }
-  const logRef = current ? await captureAttemptLogRefs(handle, runId, expectedRevision, current) : null;
+  const logRef = current ? await reader.captureLogs(current) : null;
   const verificationSummary = { passed: 0, failed: 0, blocked: 0 };
   for (const evidence of accepted?.verification ?? []) verificationSummary[evidence.result]++;
   const summary = state.stopReason ? `Run 已停止（${state.stopReason.code}）。`
     : state.status === 'COMPLETED' ? (accepted ? `Task ${current!.taskId} 已接受；本次 Run 已结束。` : `当前队列已结束，接受 ${state.completedTasks.length} 个任务。`)
       : current ? `Task ${current.taskId}：${accepted ? '已接受，等待后续选择' : '尚未完成 Core 验收'}。` : `Run ${state.status}，已接受 ${state.completedTasks.length} 个任务。`;
-  // Another Core state transition invalidates this projection instead of mixing revisions.
-  await readRunAtRevision(handle, runId, expectedRevision);
-  return { runId, taskId: current?.taskId ?? null, status: state.status, summary, verificationSummary,
+  return { runId: state.runId, taskId: current?.taskId ?? null, status: state.status, summary, verificationSummary,
     commitSha: accepted?.commitSha ?? null, nextTask: null, logRef };
 }

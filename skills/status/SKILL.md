@@ -5,7 +5,7 @@ description: 查询 dev-harness-runtime Run 的紧凑状态、验证摘要和私
 
 # Status
 
-通过已安装 `dhr --help` 确认受支持的只读状态入口，再按用户指定的 Run 查询。当前 K4 状态 CLI 尚未接入；入口缺失时说明不可用并停止，不自行从结果目录推断执行状态。
+通过已安装 `dhr --help` 确认受支持的只读状态入口，再按用户指定的 Run 查询。使用 `dhr status --run <run-id>`（也支持位置 Run ID）；入口缺失时说明不可用并停止，不自行从结果目录推断执行状态。
 
 只展示 Core 返回的 runId、taskId、status、summary、verification summary、commitSha、nextTask、logRef。缺失字段省略；错误或能力限制写入简短 summary，不捏造完成记录。nextTask 只是 Core 提供的信息，不授予执行权限；commitSha 只采用 Core 接受记录。
 

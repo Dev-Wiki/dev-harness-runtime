@@ -1,12 +1,12 @@
 import { isRepoPath, parseContract, validateResultForRequest, type EvidenceRef, type TaskExecutionRequest, type TaskExecutionResult, type VerificationEvidence } from '@dev-harness-runtime/contracts';
 import { SANDBOX_CONTROL } from '../authorization/sandbox-control.js';
 import type { LockHandle } from '../lock/index.js';
-import { loadRecoverySnapshot, sameRecord } from '../recovery/evidence.js';
+import { loadRecoveryCheckpoint, loadRecoverySnapshot, sameRecord } from '../recovery/evidence.js';
 import type { RecoveryEvidenceContext, RecoveryVerifier } from '../recovery/types.js';
 import { compareSnapshots, verifyOwnedTransition } from '../snapshot/guard.js';
 import { assertVerificationTransition } from '../snapshot/verification.js';
-import { readEvidence } from '../state/index.js';
-import type { WorkerControlVerifier } from './acceptance.js';
+import { readEvidence, readRunAtRevision } from '../state/index.js';
+import type { AcceptedTaskData, WorkerControlVerifier } from './acceptance.js';
 import { bindAcceptanceRequest, digest, identity, loadFrozenInputs, readSnapshotFiles, requireAcceptance } from './frozen.js';
 import { validatePlanningDelta } from './planning.js';
 
@@ -39,7 +39,7 @@ function bound(record: Record<string, unknown>, kind: string): void {
  * Worker's completed claim. Private Core storage and the Adapter's persisted
  * control verifier are required trust boundaries; hashes alone grant no authority.
  */
-export async function verifyPersistedAcceptance(handle: LockHandle, context: RecoveryEvidenceContext & { request: TaskExecutionRequest; result: TaskExecutionResult }, workerControl: WorkerControlVerifier): Promise<void> {
+async function verifyAndReadPersistedAcceptance(handle: LockHandle, context: RecoveryEvidenceContext & { request: TaskExecutionRequest; result: TaskExecutionResult }, workerControl: WorkerControlVerifier): Promise<AcceptedTaskData> {
   requireAcceptance(process.env.DEV_HARNESS_WORKER !== '1', 'AUTHORIZATION_VIOLATION', 'Workers cannot recover Core acceptance');
   const { state, request, checkpoint } = context;
   bindAcceptanceRequest(state, request);
@@ -118,9 +118,36 @@ export async function verifyPersistedAcceptance(handle: LockHandle, context: Rec
     }
   }
   equal(ref(acceptance.afterSnapshotRef).sha256, current.hash, 'acceptance ending boundary');
-  equal(acceptance.verificationArtifactPaths, assertVerificationTransition(initial, ending, current, request), 'verification artifacts');
+  const verificationArtifactPaths = assertVerificationTransition(initial, ending, current, request);
+  equal(acceptance.verificationArtifactPaths, verificationArtifactPaths, 'verification artifacts');
   equal(current.hash, checkpoint.kind === 'verify' ? context.after.hash : context.before.hash, 'recovery boundary');
   if (checkpoint.kind === 'verify') equal(context.before.hash, ending.hash, 'verification pending boundary');
+  const workflow = before.snapshot.gitWorkflowRef; const workflowBytes = frozen.files.get(workflow.path);
+  requireAcceptance(workflowBytes && digest(workflowBytes) === workflow.sha256, 'ACCEPTANCE_REQUIRED', 'Original workflow bytes are missing');
+  return { state: structuredClone(state), request: structuredClone(request), result: verified, initial, before: current,
+    beforeRef: ref(acceptance.afterSnapshotRef), taskChangedPaths: changed, verificationArtifactPaths,
+    verifiedEvidenceRefs: [checkpoint.evidenceRefs[0]!], workflow: { path: workflow.path, sha256: workflow.sha256, bytes: Buffer.from(workflowBytes) } };
+}
+
+export async function verifyPersistedAcceptance(handle: LockHandle, context: RecoveryEvidenceContext & { request: TaskExecutionRequest; result: TaskExecutionResult }, workerControl: WorkerControlVerifier): Promise<void> {
+  await verifyAndReadPersistedAcceptance(handle, context, workerControl);
+}
+
+/** Internal bridge input, rederived from current private authority; it is not an accepted capability. */
+export async function loadVerifiedCommitRecovery(handle: LockHandle, runId: string, expectedRevision: number, workerControl: WorkerControlVerifier): Promise<{ data: AcceptedTaskData; context: RecoveryEvidenceContext }> {
+  requireAcceptance(process.env.DEV_HARNESS_WORKER !== '1', 'AUTHORIZATION_VIOLATION', 'Workers cannot recover Core commit authority');
+  const state = await readRunAtRevision(handle, runId, expectedRevision);
+  requireAcceptance(state.status === 'RUNNING' && state.authorization.commit === 'task'
+    && ((state.phase === 'FINALIZE' && state.pendingOperation?.kind === 'commit')
+      || (state.phase === 'REVALIDATE' && state.pendingOperation?.kind === 'verify')), 'ACCEPTANCE_REQUIRED', 'Commit continuation requires a resumed verification or commit reservation');
+  const pending = state.pendingOperation;
+  const reference = pending.kind === 'commit' ? pending.indexCheckpointRef ?? pending.checkpointRef : pending.checkpointRef;
+  requireAcceptance(reference, 'ACCEPTANCE_REQUIRED', 'Commit reservation has no persisted acceptance checkpoint');
+  const context = await loadRecoveryCheckpoint(handle, state, reference);
+  requireAcceptance(context.request && context.result && (pending.kind === 'commit'
+    ? ['commit-ready', 'index-staged'].includes(context.checkpoint.stage) : context.checkpoint.stage === 'verification-passed'), 'ACCEPTANCE_REQUIRED', 'Commit continuation has no exact independently verified boundary');
+  const data = await verifyAndReadPersistedAcceptance(handle, { ...context, request: context.request, result: context.result }, workerControl);
+  return { data, context };
 }
 
 /** Adapter callbacks cover only host quiescence and pre-acceptance Worker checkpoints. */

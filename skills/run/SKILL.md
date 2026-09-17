@@ -17,7 +17,7 @@ description: 通过 dev-harness-runtime 的 dhr 入口启动或恢复用户指�
 
 ## 执行与停止
 
-只调用已实现且受控的 `dhr` 入口。当前 K4 编排 CLI 尚未接入；若帮助仅列出 help/version，或入口、执行器、fresh Session、结构化结果或权限隔离能力缺失，报告不可执行并停止。不能从 Skill、构建产物或 fixture 推定宿主能力，也不能改用当前父对话手工模拟 Runtime。
+只调用已实现且受控的 `dhr` 入口。K4 已接通统一编排入口；若入口、执行器、fresh Session、结构化结果或权限隔离能力缺失，报告不可执行并停止。不能从 Skill、构建产物或 fixture 推定宿主能力，也不能改用当前父对话手工模拟 Runtime。
 
 不要自行解析 Dashboard 选择任务、展开整个 backlog、启动 Worker 或实现第二套调度循环。Core 返回 blocked、failed、partial、漂移、授权拒绝或取消时，保留其停止原因；不自动换任务、重试副作用或绕过门禁。
 

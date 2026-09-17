@@ -302,7 +302,7 @@ Snapshot 增加必填 indexFingerprint、indexFlags、dirtyPaths、stagedPaths�
 
 `assertUnchanged` 比较完整边界；`assertTaskStart` 阻止任何预存暂存内容、scope 与初始用户修改重叠及初始修改漂移。`verifyOwnedTransition` 限制代码 scope 和当前 Task 的四个 Planning 收口路径，保护初始用户内容，禁止未授权 HEAD / index / branch 变化。新 symlink 逐段解析，不能指向仓库外或 Git 私有目录。允许的路径仍必须通过 Core 提供的 `verifyOwnership`，该回调核验可信操作记录绑定的 runId / taskId / beforeHash / afterHash / 实际路径集合；Worker 的 changedFiles 或自行生成的摘要不构成证据。K4-V 接通持久操作证据和独立验证，K3 的回调测试只验证此接口的门禁。
 
-`verifyAuthorizedCommit` 只读校验已经发生的提交：授权、完整快照摘要、当前实际 HEAD / branch / index、唯一父提交、预期 tree、原始 messageHash、精确文件集合及提交后内容均须一致，忽略 Git replace refs；不执行 commit、hook 或发布。no-commit 不接受 HEAD 前进。上述 API 尚未接入 CLI 编排，锁、状态落盘与恢复另由 K3-L / K3-R 实现。
+`verifyAuthorizedCommit` 只读校验已经发生的提交：授权、完整快照摘要、当前实际 HEAD / branch / index、唯一父提交、预期 tree、原始 messageHash、精确文件集合及提交后内容均须一致，忽略 Git replace refs；不执行 commit、hook 或发布。no-commit 不接受 HEAD 前进。上述 API 与 K3-L / K3-R 的锁、状态和恢复共同由 K4 接入统一编排。
 
 ## 12. K3-L 私有存储与互斥实现
 
@@ -328,7 +328,7 @@ Linux 使用 boot ID 与 `/proc/<pid>/stat` 的启动 ticks 区分进程身份�
 
 `reconcileRun` 验证显式 resolution 和当前 Planning / 内容；保留归档须重新独立验收。它只记录对齐，保留原失败状态、pending 历史和 completedTasks，不修改 Planning。`assertNewRunAllowed` 阻止未决操作、未接受归档、未知初始化窗口和未消费的对齐记录。`createReconciledSuccessor` 先 CAS 预留唯一 successor，再补建该 ID；验证双向绑定及无环，并使已完成历史不永久约束后续正常提交。
 
-这些接口尚未接入 CLI 或实际宿主；K4-V 已实现独立验收证据链的恢复验证，Adapter 仍须证明 Worker 来源与静止。fixture 回调不能作为宿主能力证据。操作说明见 [RECOVERY](RECOVERY.md)。
+K4 已将这些接口接入 CLI 的可信服务入口；生产 Adapter 尚未实现。K4-V 已实现独立验收证据链的恢复验证，Adapter 仍须证明 Worker 来源与静止。fixture 回调不能作为宿主能力证据。操作说明见 [RECOVERY](RECOVERY.md)。
 
 ## 14. K4-V 独立验收与受控提交实现
 
@@ -350,11 +350,11 @@ Core 记录实际命令的 stdout / stderr、退出码、身份、时间、前�
 
 ## 15. K4-W 共享 Worker 与父上下文实现
 
-共享 Skill 仅维护 [run](../skills/run/SKILL.md)、[status](../skills/status/SKILL.md)、[worker](../skills/worker/SKILL.md) 三份源码。平台包只转换路径、调用语法和 manifest 元数据，不复制任务选择、授权或收口规则。Skill 描述目标行为，当前 CLI 调度未接入时明确停止，不以手工父对话执行替代 Runtime。
+共享 Skill 仅维护 [run](../skills/run/SKILL.md)、[status](../skills/status/SKILL.md)、[worker](../skills/worker/SKILL.md) 三份源码。平台包只转换路径、调用语法和 manifest 元数据，不复制任务选择、授权或收口规则。Skill 通过统一 CLI 调度；入口或宿主能力缺失时明确停止，不以手工父对话执行替代 Runtime。
 
 `prepareWorkerInvocation` 接收已校验的 TaskExecutionRequest 与从可信 Bundle 取得的 Worker Skill 字节 / 摘要，生成固定请求和四个环境标记。prompt 定向引用 AGENTS、HARNESS、Dashboard、当前 Task，携带结构化 scope / verificationPlan；不接收旧 Conversation 或任意额外环境。JSON 中的反引号和标记字符转义，避免数据关闭请求块。Skill 上限 64 KiB，请求数据上限 128 KiB；超限拒绝，不能截掉授权或验收字段后继续。
 
-CLI 在解析 run 模式之前检查 Worker 标记；`DEV_HARNESS_WORKER=1` 下任何 run、resume、reconcile 都以 AUTHORIZATION_VIOLATION / 退出码 5 拒绝，包含显式 Task、缺参数或未知模式。help / version 保持可读；其他尚未接入入口仍返回不支持。Core 也拒绝 Worker 再次创建 Worker invocation。环境标记是递归门禁，不替代 Adapter 的 OS / 宿主权限证据。
+CLI 在解析 run 模式之前检查 Worker 标记；`DEV_HARNESS_WORKER=1` 下任何 run、resume、reconcile 都以 AUTHORIZATION_VIOLATION / 退出码 5 拒绝，包含显式 Task、缺参数或未知模式。help / version 保持可读；K4 接通 doctor / status 与运行命令的可信服务入口。Core 也拒绝 Worker 再次创建 Worker invocation。环境标记是递归门禁，不替代 Adapter 的 OS / 宿主权限证据。
 
 `appendAttemptLog` 只允许 Core 在持锁、同一 revision、当前 RUNNING / EXECUTE 身份下向已有 stdout.log / stderr.log / events.jsonl 追加原始字节。每块至多 1 MiB，总日志不截断；输入立即复制，追加串行，检查目录、文件身份、唯一硬链接与 owner，写后 fsync。中断留下的部分输出保留供检查，不作为 Task 完成证明。Worker 没有写这些路径的权限。
 
@@ -363,3 +363,17 @@ CLI 在解析 run 模式之前检查 Worker 标记；`DEV_HARNESS_WORKER=1` 下�
 `readParentContext` 只读指定 revision 的 run.json 及其精确引用，输出八个字段：runId、taskId、status、summary、verificationSummary、commitSha、nextTask、logRef。verificationSummary 只计 Core 已接受记录，summary 使用 Core 状态文本，不回显 Worker summary / reason、源码、命令、日志或 JSONL。logRef 是 stdout / stderr / events 三个已核验私有 EvidenceRef 的集合；没有 Task 时为 null。nextTask 当前为 null，后续 Orchestrator 重读 Planning 并完成选择后才可报告下一任务。summary.json 或 Worker completed 声明不能改变父上下文状态。
 
 本任务提供接口和共享源码，没有启动真实宿主。可复现结果见 [K4-W 验证记录](verification/K4-W.md)。
+
+## 16. K4 串行编排与 CLI
+
+`startRuntimeRun` 只接受显式注册的可信 `RuntimeServices`，先 probe 执行能力、校验项目和新 Run 门禁，再持锁初始化真实快照。每次循环都在已接受边界内重读 Dashboard；准备器显式给出单 Task scope、原始验收及完整验证源。Core 校验请求并冻结输入，保存 dispatch 证据和 pending execute 后调用 Executor。最初的 pending operation 就是执行意图；`execute-intent` checkpoint 专用于恢复时关联前一 attempt，不把冻结输入伪装成前序执行检查点。
+
+Worker 结束后先证明静止，再保存结果、实际结束快照和控制证据；completed 仍需 K4-V 独立验收。blocked / failed / partial 分别停止为 BLOCKED / FAILED / INTERRUPTED；只有已接受完成才继续重读。no-commit 在同一 Run 继承 accepted boundary，并一直保护最初用户修改。未解决的 pending 操作及未接受归档阻止另起 Run 绕过。
+
+`resumeRuntimeRun` 复核原授权和环境，通过既有恢复判定后执行新 Session、重新验收已结束结果或继续冻结提交。已通过验收的 verification-passed，以及 commit-ready / index-staged，使用 `resumeAcceptedTaskCommit` 重验原链并继续原 message / paths / tree；真实已发生提交由 adoption 采纳。取消在执行和提交入口检查；已开始的 Git 操作保留可恢复边界。无法证明 Worker 或独立验收 namespace 静止时保留锁与现场，不能用一类进程的静止证据代替另一类。
+
+`inspectRun` / `inspectParentContext` 从唯一 run.json 进行无锁一致读取，核验引用摘要、worktree 身份及读取前后的权威字节；日志在同 revision 内增长也返回明确重试错误。状态查询不创建目录、不要求取得运行锁、不写 summary.json；输出仍为八字段紧凑投影。
+
+CLI 提供 doctor、status、run（--task / --next / --all-ready）、resume 与 reconcile。参数冲突或未知 Adapter 退出 2，blocked 退出 3，执行或验收失败及 partial 退出 4，漂移 / 授权 / 互斥拒绝退出 5，取消退出 130。默认不提交；--commit-each / --no-commit 与 --commit task|deny 互斥。resume 未提供 expected revision 时只读取得当前值，再交给 Core CAS；不能借此修改 Run 授权。reconcile 只接收已由可信 Core 持久化的显式 resolution 引用，不能把用户 JSON 当作已验证的同意或证据。
+
+生产 CLI 当前可以运行只读 doctor / status；宿主 Executor 尚未安装时运行命令返回 CAPABILITY_MISSING。测试以显式注入的 Fake Executor 调用同一 Core，真实 Git、Planning 收口和 bubblewrap 验收证明公共流程，不证明 Codex / DSH 能力。CLI 使用固定 esbuild 将 Core 与依赖打入 ESM bundle；独立 tarball 在空 store 离线安装后实际验证项目发现和 Markdown 读取。验证记录见 [K4](verification/K4.md)。

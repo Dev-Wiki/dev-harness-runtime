@@ -13,13 +13,17 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/bundle.js"
     }
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b && node ../../scripts/bundle-cli.mjs"
   },
   "bin": {
     "dhr": "./bin/dhr.mjs"
+  },
+  "devDependencies": {
+    "@dev-harness-runtime/contracts": "workspace:*",
+    "@dev-harness-runtime/core": "workspace:*"
   }
 }
