@@ -4,7 +4,7 @@
 
 ## 1. 进度快照
 
-- **核心阶段**：M0 / M1 已收口；M3 的共享 K10-B、Codex K5-P 与 DSH K6-P 本地包已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，宿主调用验收仍缺。
+- **核心阶段**：M0 / M1 已收口；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，宿主调用验收仍缺。
 - **当前瓶颈**：Codex / DSH 包均通过隔离宿主安装；Codex 非交互只读会话已见真实 thread 事件，但逐 Task 权限隔离、两种 Executor、Cursor 宿主 smoke、其余平台包和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0 和 M1 全部任务已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。Codex / DSH 的实际包可安装，但自动执行 Adapter 尚未通过授权门禁，不继承旧 DSH 的完成状态。
@@ -23,11 +23,11 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5 宿主会话取证中；K6 待执行，自动编排未启用 |
-| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | K10-B、Codex K5-P、DSH K6-P 已归档；Cursor K7、OpenCode K8、Antigravity K9 离线实现待宿主调用验收 |
+| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | K10-B、Codex K5-P、DSH K6-P、Portable K10-G 已归档；Cursor K7、OpenCode K8、Antigravity K9 离线实现待宿主调用验收 |
 
 ## 3. 当前工作顺序
 
-1. [K10-G — Portable Agent Plugin 打包](tasks/K10-G.md)：以共享 Skill 源码生成平台中立包，验证官方 schema、离线解包和无 Executor 能力门禁。K5 / K6 的自动 Executor 仍受逐 Task 授权门禁限制；K7 / K8 / K9 等待完整宿主验收。
+当前没有可直接收口的 ready 任务。K5 / K6 的自动 Executor 仍受逐 Task 授权门禁限制；K7 / K8 / K9 等待完整宿主验收。K10 可先实施不依赖宿主的统一 CLI 与本地 dry-run，再将宿主能力验收留在原任务门禁。
 
 ## 4. 活跃任务
 
@@ -40,8 +40,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；宿主 smoke 被自动审批拒绝，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证及 npm 临时安装通过；缺 OpenCode 宿主，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
-| **K10-G — Portable Agent Plugin 打包** | 🟡 P1 | 🟢 待执行 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | G6 / G7：生成平台中立 Skill 包 | [执行包](tasks/K10-G.md) |
-| **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 📋 规划中 | [K5](tasks/K5.md)、[K6](tasks/K6.md)、[K7](tasks/K7.md)、[K8](tasks/K8.md)、[K9](tasks/K9.md)、[K10-G](tasks/K10-G.md) | G7、G8 | [执行包](tasks/K10.md) |
+| **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 📋 规划中 | [K5](tasks/K5.md)、[K6](tasks/K6.md)、[K7](tasks/K7.md)、[K8](tasks/K8.md)、[K9](tasks/K9.md)、[K10-G](archive/M3/K10-G.md) | G7、G8；可先做独立的本地构建入口 | [执行包](tasks/K10.md) |
 | **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](tasks/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
 
 ## 5. 共享验证基线
@@ -73,11 +72,11 @@ dhr release --dry-run
 
 | 任务 | 完成日期 | 验收摘要 | 归档 |
 |---|---|---|---|
+| K10-G — Portable Agent Plugin 打包 | 2026-09-17 | 六文件平台中立 ZIP、50 项打包专项与无 Executor 门禁通过 | [M3 / K10-G](archive/M3/K10-G.md) |
 | K6-P — DSH Bundle 打包 | 2026-09-17 | 真实 tgz、37 项打包专项与 DSH 安装 / CommandRuntime 调用 / 卸载通过 | [M3 / K6-P](archive/M3/K6-P.md) |
 | K5-P — Codex Plugin 与 Marketplace 打包 | 2026-09-17 | 真实 11 文件包、34 项打包专项与 Codex 隔离安装链通过；会话调用另验 | [M3 / K5-P](archive/M3/K5-P.md) |
 | K10-B — 共享生成、校验与打包流水线 | 2026-09-17 | 统一 Registry、来源锁、31 项打包专项与 19 项 CLI 专项通过 | [M3 / K10-B](archive/M3/K10-B.md) |
 | K4 — 统一 Orchestrator 与运行 CLI | 2026-09-17 | 三任务、取消、只读状态、恢复与 CLI 通过；M1 全量 496 项 Node 测试零跳过 | [M1 / K4](archive/M1/K4.md) |
-| K4-W — 共享 Worker 与父上下文输出 | 2026-09-17 | 单一 Skill 源码、递归门禁、完整私有日志和紧凑摘要通过；69 项相关测试通过 | [M1 / K4-W](archive/M1/K4-W.md) |
 
 [M0 归档索引](archive/M0/README.md)、[M1 归档索引](archive/M1/README.md)、[M3 归档索引](archive/M3/README.md)；本节最多保留五项摘要。
 
@@ -133,4 +132,4 @@ dhr release --dry-run
 
 ---
 
-*最后更新：2026-09-17（K9 原生安装链通过、会话调用未验；K10-G 准备实施）*
+*最后更新：2026-09-17（K10-G 归档；其余宿主验收与统一收口继续）*

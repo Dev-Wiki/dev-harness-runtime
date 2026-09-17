@@ -8,3 +8,4 @@ export { DshPackager, dshStaticSpec, dshHostDependencies, createDshBuildPipeline
 export { CursorPackager, cursorStaticSpec, createCursorBuildPipeline } from './cursor.js';
 export { OpenCodePackager, opencodeStaticSpec, createOpenCodeBuildPipeline } from './opencode.js';
 export { AntigravityPackager, antigravityStaticSpec, createAntigravityBuildPipeline } from './antigravity.js';
+export { AgentPluginPackager, agentPluginStaticSpec, createAgentPluginBuildPipeline } from './agent-plugin.js';
