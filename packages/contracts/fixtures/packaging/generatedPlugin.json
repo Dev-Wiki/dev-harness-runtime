@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "platform": "opencode",
+  "adapterVersion": "0.1.0",
+  "root": "generated/opencode",
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

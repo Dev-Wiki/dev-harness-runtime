@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "executorCapabilities",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "coreProtocolVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "adapterId": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "targetVersion": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "freshSession": {
+      "type": "boolean"
+    },
+    "structuredOutput": {
+      "type": "boolean"
+    },
+    "nonInteractive": {
+      "type": "boolean"
+    },
+    "cancellation": {
+      "type": "boolean"
+    },
+    "resumeRunWithFreshSession": {
+      "type": "boolean"
+    },
+    "pluginPackaging": {
+      "type": "boolean"
+    },
+    "authorizationEnforced": {
+      "type": "boolean"
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "capability": {
+            "anyOf": [
+              {
+                "const": "available",
+                "type": "string"
+              },
+              {
+                "const": "freshSession",
+                "type": "string"
+              },
+              {
+                "const": "structuredOutput",
+                "type": "string"
+              },
+              {
+                "const": "nonInteractive",
+                "type": "string"
+              },
+              {
+                "const": "cancellation",
+                "type": "string"
+              },
+              {
+                "const": "resumeRunWithFreshSession",
+                "type": "string"
+              },
+              {
+                "const": "pluginPackaging",
+                "type": "string"
+              },
+              {
+                "const": "authorizationEnforced",
+                "type": "string"
+              }
+            ]
+          },
+          "observedAt": {
+            "format": "utc-timestamp",
+            "type": "string"
+          },
+          "ref": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "path",
+              "sha256"
+            ]
+          }
+        },
+        "required": [
+          "capability",
+          "observedAt",
+          "ref"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "coreProtocolVersion",
+    "adapterId",
+    "targetVersion",
+    "available",
+    "freshSession",
+    "structuredOutput",
+    "nonInteractive",
+    "cancellation",
+    "resumeRunWithFreshSession",
+    "pluginPackaging",
+    "authorizationEnforced",
+    "reasons",
+    "evidence"
+  ]
+}

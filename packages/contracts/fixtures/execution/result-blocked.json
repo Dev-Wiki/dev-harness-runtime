@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-a",
+  "taskId": "K1",
+  "attempt": 1,
+  "requestId": "request-a",
+  "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "summary": "Interface fixture only.",
+  "verification": [],
+  "changedFiles": [],
+  "outcome": "blocked",
+  "needsPlanning": false,
+  "reason": "Fixture blocked condition."
+}

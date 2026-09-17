@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-a",
+  "taskId": "K1",
+  "attempt": 1,
+  "requestId": "request-a",
+  "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "summary": "Interface fixture only.",
+  "verification": [],
+  "changedFiles": [
+    "src/a.ts",
+    "docs/plan/tasks/K1.md",
+    "docs/plan/archive/V1/K1.md",
+    "docs/plan/archive/V1/README.md",
+    "docs/plan/Dashboard.md"
+  ],
+  "outcome": "completed",
+  "needsPlanning": false,
+  "closure": {
+    "schemaVersion": 1,
+    "taskId": "K1",
+    "taskPath": "docs/plan/tasks/K1.md",
+    "archivePath": "docs/plan/archive/V1/K1.md",
+    "dashboardPath": "docs/plan/Dashboard.md",
+    "archiveIndexPath": "docs/plan/archive/V1/README.md",
+    "summary": "Fixture Task archived and indexed.",
+    "changes": [
+      {
+        "path": "docs/plan/tasks/K1.md",
+        "beforeHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "afterHash": null
+      },
+      {
+        "path": "docs/plan/archive/V1/K1.md",
+        "beforeHash": null,
+        "afterHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "path": "docs/plan/archive/V1/README.md",
+        "beforeHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "afterHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "path": "docs/plan/Dashboard.md",
+        "beforeHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "afterHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "rawResultRef": {
+    "schemaVersion": 1,
+    "path": "attempts/K1-1/raw-result.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

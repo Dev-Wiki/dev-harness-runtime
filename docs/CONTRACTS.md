@@ -214,7 +214,7 @@ resolution 必须含目标 runId / 原 revision、人工确认的当前项目快
 
 ## 7. Packager 与构建契约
 
-PluginPackager 保持 generate(input)、validate(plugin)、pack(plugin) 三个接口。输入 `PluginBuildInput` 包含 schemaVersion、platform、releaseVersion、adapterVersion、coreProtocolVersion、protocolSource、skills、runtimeBundle、adapterBundle、metadata、buildTimestamp。skills / bundle 均有相对路径、SHA-256 和来源记录，metadata 至少有 name、displayName、description、author、repository 与许可声明引用。
+PluginPackager 保持 generate(input)、validate(plugin, input)、pack(plugin, input) 三个接口。输入 `PluginBuildInput` 包含 schemaVersion、platform、releaseVersion、adapterVersion、coreProtocolVersion、protocolSource、skills、runtimeBundle、adapterBundle、metadata、buildTimestamp。skills / bundle 均有相对路径、SHA-256 和来源记录，metadata 至少有 name、displayName、description、author、repository 与许可声明引用。
 
 GeneratedPlugin 包含 platform、adapterVersion、生成根、相对文件清单与 hash、输入摘要。ValidationReport 包含 valid、检查项列表（code、path、message、severity）、输入摘要与证据引用。Artifact 包含 platform、variant、version、coreProtocolVersion、相对 file、mediaType、size、sha256、生成输入摘要；variant 区分 OpenCode npm / local 等多产物。
 
@@ -247,3 +247,29 @@ CLI 退出码：0 表示请求模式正常结束；2 表示参数或不支持的
 | no-commit 的 A 被接受，B 接着修改 Dashboard | 允许继承本 Run accepted boundary；Run 创建前的用户修改仍须完整保留 |
 | 已提交但 run.json 未确认，commit intent 和实际 Git 唯一匹配 | 接受已有提交，不生成重复提交 |
 | 旧 DSH schema v5 状态被指定给 resume | 拒绝格式与命名空间，保持原文件字节不变 |
+
+## 9. K1 可执行协议
+
+公共实现入口为 [contracts](../packages/contracts/src/index.ts)。TypeBox 的 Schema 是字段定义来源，TypeScript 类型由 `Static` 推导；[JSON Schema 目录](../packages/contracts/schemas/) 是同源导出，`pnpm schemas:check` 检查逐字节一致。`pnpm schemas:write` 在构建后更新导出。Schema 使用 draft-07；外部校验器须注册下述四种 format，并同时执行关联校验，不能只凭 JSON Schema 宣称完整契约有效。
+
+| 解析名称 | 对应对象与字段定义 |
+|---|---|
+| `taskExecutionRequest`、`taskExecutionResult`、`acceptedTaskExecutionResult` | [execution.ts](../packages/contracts/src/execution.ts)：请求、Worker 结果、Core 接受记录；Worker 结果禁止 `commitSha`，只有独立接受记录允许该字段 |
+| `verificationPlan`、`verificationEvidence`、`executorCapabilities` | 同文件：命令 / 人工检查、执行身份、验收 ID、前后快照和证据；每个 true 能力都需要引用证据 |
+| `scope`、`runAuthorization`、`workerAuthorization`、`protocolSource` | [common.ts](../packages/contracts/src/common.ts)：精确文件 / 目录、当前 Task 四个收口路径、Run 授权与固定协议来源 |
+| `snapshot`、`runState`、`lockMetadata`、`reconciliationResolution` | [state.ts](../packages/contracts/src/state.ts)：项目内容、Run 唯一状态、锁 owner 元数据、人工对齐输入 |
+| `pluginBuildInput`、`generatedPlugin`、`validationReport`、`artifact`、`releaseManifest`、`hostEnvironment`、`adapterDoctorResult` | [packaging.ts](../packages/contracts/src/packaging.ts)：构建来源、Skill / Bundle 摘要、许可引用、版本、doctor 与平台产物 |
+
+`parseContract(name, unknown)` 同时执行严格结构和单记录关联校验，返回对应类型；不做值转换、默认填充或删除未知字段。`parseContractJson` 另负责 JSON 语法失败。错误统一为 `ContractValidationError`，包括 `code`、消息和结构错误的 `issues[{path,message}]`。未知版本、缺字段、非法路径和单记录关系错误为 `INVALID_CONTRACT`；这里只支持 schemaVersion / coreProtocolVersion 1，旧 DSH schema 不转换。
+
+四种 format 的实际实现见 [validation.ts](../packages/contracts/src/validation.ts)：`repo-path` 为非空相对 POSIX 路径，禁止空段、`.` / `..`、反斜线、冒号、控制字符、Windows 设备名和末尾空格 / 点别名；`absolute-path` 接受 POSIX、Windows drive / UNC 的绝对路径并拒绝点段和控制字符；`utc-timestamp` 使用 `Z`、真实公历日期、秒或 1–3 位毫秒；`semver` 使用完整 SemVer，支持 prerelease / build，禁止浮动版本。项目文件路径与 Run 内证据引用都使用 `repo-path` 的词法规则，解析根由使用方决定。内存请求和 `repoIdentity` 的仓库定位字段允许绝对路径，便携产物不允许本机绝对路径。
+
+`Snapshot.paths` 明确区分 file（rawContentHash、100644 / 100755）、symlink（原始目标文本、120000）、gitlink（commit、160000）和 missing（deleted=true、mode=null）。每项 `index` 记录 stage / blob / mode，空数组表示没有索引项；stage 0 不与冲突 stage 共存。快照还包含治理文件与 Planning 的摘要引用、协议来源和 adapterConfigHash。对象 ID 允许 SHA-1 / SHA-256 形状；对象是否存在和快照是否完整由 K3 检查。
+
+`RunState` 区分 initialUserChanges 与 acceptedSnapshot 的引用 / 摘要；currentTaskId / currentAttempt / currentRequestId 同时存在或同时缺省。`resultRefs` 使用 `{identity,ref}`；pendingOperation 分 execute / verify / commit，提交另含 parent、paths、expectedTree、messageHash。reconciliation 保留原执行身份和唯一 successor 预留，承接 Run 记录 reconciledFrom。静态校验验证同一记录的身份、时间及摘要一致性；锁、CAS、跨记录唯一性、历史状态转移和崩溃恢复仍由 K3-L / K3-R 实现。Run 布局保持 `$(git rev-parse --git-path dev-harness-runtime)/runs/<run-id>/run.json`，不增加第二种状态文件。
+
+[validateResultForRequest](../packages/contracts/src/binding.ts) 绑定结果与请求的 runId / taskId / attempt / requestId / snapshotHash，核对声明路径、验收 ID、命令 argv / cwd、完整证据覆盖与当前 Task 的四路径收口。`completed` 必须有全部 passed 检查和 closure；其他三类必须有 reason，可以只提供已执行检查。错误结果为 `INVALID_RESULT`，声明越权路径或 Worker commitSha 为 `AUTHORIZATION_VIOLATION`。`assertSnapshotHash` 的边界摘要不等时为 `DRIFT_DETECTED`；`requireExecutionCapabilities` 缺运行能力时为 `CAPABILITY_MISSING`，pluginPackaging 不作为运行能力门槛。
+
+这些 API 校验的是声明。证据引用的 SHA-256、受控验证是否真实运行、命令前后内容边界、symlink / realpath、用户原有修改、实际 HEAD / index 和 Planning delta 仍须 Core 独立核实；通过解析不会自动授予提交或自动启用 Executor。`AcceptedTaskExecutionResult` 也是数据类型，调用解析器不能产生可信接受资格。
+
+[interfaces.ts](../packages/contracts/src/interfaces.ts) 固定 TaskExecutor / PluginPackager / PlatformAdapter / Registry 接口。Executor 的取消使用 AbortSignal，只有执行树静止后才允许以 AbortError 拒绝；共享 [Executor Contract Tests](../tests/contract/executor-contract.mjs) 通过可注入 harness 复用场景，当前只有 Fake Executor 的接口证据。Packager 的 validate / pack 同时显式接收原构建 input，便于保持输入摘要绑定；pack 必须使用已成功验证且未漂移的目录，实际摘要与产物校验由 K10-B 实现。

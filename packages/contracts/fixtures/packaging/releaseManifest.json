@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "0.1.0",
+  "coreProtocolVersion": 1,
+  "sourceCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "cccccccccccccccccccccccccccccccccccccccc",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "adapterCompatibility": [
+    {
+      "platform": "opencode",
+      "adapterVersion": "0.1.0",
+      "coreProtocolVersion": 1,
+      "targetVersion": "1.0.0"
+    }
+  ],
+  "artifacts": [
+    {
+      "schemaVersion": 1,
+      "platform": "opencode",
+      "variant": "npm",
+      "version": "0.1.0",
+      "coreProtocolVersion": 1,
+      "file": "artifacts/opencode-0.1.0.tgz",
+      "mediaType": "application/gzip",
+      "size": 128,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

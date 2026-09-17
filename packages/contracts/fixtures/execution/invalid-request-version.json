@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 5,
+  "coreProtocolVersion": 1,
+  "runId": "run-a",
+  "taskId": "K1",
+  "attempt": 1,
+  "requestId": "request-a",
+  "repoRoot": "/workspace/project",
+  "docsRoot": "/workspace/project/docs",
+  "dashboardPath": "/workspace/project/docs/plan/Dashboard.md",
+  "taskPath": "/workspace/project/docs/plan/tasks/K1.md",
+  "snapshotRef": "attempts/K1-1/snapshots/before.json",
+  "snapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "scope": {
+    "schemaVersion": 1,
+    "files": [
+      "src/a.ts"
+    ],
+    "directories": [],
+    "planning": {
+      "taskId": "K1",
+      "taskPath": "docs/plan/tasks/K1.md",
+      "archivePath": "docs/plan/archive/V1/K1.md",
+      "dashboardPath": "docs/plan/Dashboard.md",
+      "archiveIndexPath": "docs/plan/archive/V1/README.md"
+    }
+  },
+  "authorization": {
+    "schemaVersion": 1,
+    "runId": "run-a",
+    "commit": "deny",
+    "push": false,
+    "pullRequest": false,
+    "tag": false,
+    "release": false,
+    "deploy": false
+  },
+  "verificationPlan": {
+    "schemaVersion": 1,
+    "sources": [
+      {
+        "path": "HARNESS.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "path": "docs/plan/tasks/K1.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "commands": [
+      {
+        "id": "harness-test",
+        "acceptanceIds": [
+          "accept-tests"
+        ],
+        "argv": [
+          "pnpm",
+          "test"
+        ],
+        "cwd": ".",
+        "writableArtifacts": [
+          "build/report.json"
+        ]
+      }
+    ],
+    "manual": [
+      {
+        "id": "review-closure",
+        "acceptanceIds": [
+          "accept-closure"
+        ],
+        "description": "Confirm the current Task closure."
+      }
+    ]
+  },
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "cccccccccccccccccccccccccccccccccccccccc",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "env": {
+    "DEV_HARNESS_WORKER": "1",
+    "DEV_HARNESS_RUN_ID": "run-a",
+    "DEV_HARNESS_TASK_ID": "K1",
+    "DEV_HARNESS_ADAPTER": "fake"
+  }
+}

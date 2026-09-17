@@ -11,7 +11,7 @@ function collect(path) {
     else if (entry.name.endsWith('.test.mjs')) files.push(child);
   }
 }
-for (const root of ['packages', 'build', 'tests/integration']) collect(root);
+for (const root of ['packages', 'build', 'tests/integration', 'tests/contract']) collect(root);
 if (files.length === 0) throw new Error('No tests discovered');
 const result = spawnSync(process.execPath, ['--test', ...files.sort()], { stdio: 'inherit' });
 if (result.error) throw result.error;

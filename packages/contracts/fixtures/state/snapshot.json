@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-a",
+  "capturedAt": "2026-09-17T00:00:00Z",
+  "repoIdentity": {
+    "repoRoot": "/workspace/project",
+    "privateGitDir": "/workspace/project/.git",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "branch": "main"
+  },
+  "paths": [
+    {
+      "path": "src/a.ts",
+      "type": "file",
+      "mode": "100644",
+      "deleted": false,
+      "rawContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "index": [
+        {
+          "stage": 0,
+          "blob": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mode": "100644"
+        }
+      ]
+    },
+    {
+      "path": "src/tool.sh",
+      "type": "file",
+      "mode": "100755",
+      "deleted": false,
+      "rawContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "index": []
+    },
+    {
+      "path": "src/link",
+      "type": "symlink",
+      "mode": "120000",
+      "deleted": false,
+      "symlinkTarget": "a.ts",
+      "index": [
+        {
+          "stage": 0,
+          "blob": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mode": "120000"
+        }
+      ]
+    },
+    {
+      "path": "src/deleted.ts",
+      "type": "missing",
+      "mode": null,
+      "deleted": true,
+      "index": [
+        {
+          "stage": 0,
+          "blob": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mode": "100644"
+        }
+      ]
+    }
+  ],
+  "dashboardRef": {
+    "schemaVersion": 1,
+    "path": "docs/plan/Dashboard.md",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "currentTaskRef": {
+    "schemaVersion": 1,
+    "path": "docs/plan/tasks/K1.md",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "dependencyArchiveRefs": [],
+  "agentsRef": {
+    "schemaVersion": 1,
+    "path": "AGENTS.md",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "harnessRef": {
+    "schemaVersion": 1,
+    "path": "HARNESS.md",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "gitWorkflowRef": {
+    "schemaVersion": 1,
+    "path": "docs/GIT_WORKFLOW.md",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "adapterConfigHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

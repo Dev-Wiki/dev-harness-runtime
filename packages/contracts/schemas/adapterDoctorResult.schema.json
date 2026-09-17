@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "adapterDoctorResult",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "targetVersion": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "observedVersion": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "checks": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "code": {
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "const": "passed",
+                "type": "string"
+              },
+              {
+                "const": "failed",
+                "type": "string"
+              },
+              {
+                "const": "unknown",
+                "type": "string"
+              }
+            ]
+          },
+          "message": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            }
+          }
+        },
+        "required": [
+          "code",
+          "status",
+          "message",
+          "evidenceRefs"
+        ]
+      }
+    },
+    "missingPrerequisites": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "type": "string"
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1,
+            "type": "number"
+          },
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "path",
+          "sha256"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "available",
+    "targetVersion",
+    "observedVersion",
+    "checks",
+    "missingPrerequisites",
+    "evidenceRefs"
+  ]
+}

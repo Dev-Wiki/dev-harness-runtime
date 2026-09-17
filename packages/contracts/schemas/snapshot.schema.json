@@ -1,0 +1,631 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "snapshot",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "runId": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "type": "string"
+    },
+    "capturedAt": {
+      "format": "utc-timestamp",
+      "type": "string"
+    },
+    "repoIdentity": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "repoRoot": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "absolute-path",
+          "type": "string"
+        },
+        "privateGitDir": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "absolute-path",
+          "type": "string"
+        },
+        "head": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "branch": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "maxLength": 4096,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "repoRoot",
+        "privateGitDir",
+        "head",
+        "branch"
+      ]
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "index": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "stage": {
+                      "minimum": 0,
+                      "maximum": 3,
+                      "type": "integer"
+                    },
+                    "blob": {
+                      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                      "type": "string"
+                    },
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "const": "100644",
+                              "type": "string"
+                            },
+                            {
+                              "const": "100755",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "const": "120000",
+                          "type": "string"
+                        },
+                        {
+                          "const": "160000",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stage",
+                    "blob",
+                    "mode"
+                  ]
+                }
+              },
+              "type": {
+                "const": "file",
+                "type": "string"
+              },
+              "mode": {
+                "anyOf": [
+                  {
+                    "const": "100644",
+                    "type": "string"
+                  },
+                  {
+                    "const": "100755",
+                    "type": "string"
+                  }
+                ]
+              },
+              "deleted": {
+                "const": false,
+                "type": "boolean"
+              },
+              "rawContentHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "index",
+              "type",
+              "mode",
+              "deleted",
+              "rawContentHash"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "index": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "stage": {
+                      "minimum": 0,
+                      "maximum": 3,
+                      "type": "integer"
+                    },
+                    "blob": {
+                      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                      "type": "string"
+                    },
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "const": "100644",
+                              "type": "string"
+                            },
+                            {
+                              "const": "100755",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "const": "120000",
+                          "type": "string"
+                        },
+                        {
+                          "const": "160000",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stage",
+                    "blob",
+                    "mode"
+                  ]
+                }
+              },
+              "type": {
+                "const": "symlink",
+                "type": "string"
+              },
+              "mode": {
+                "const": "120000",
+                "type": "string"
+              },
+              "deleted": {
+                "const": false,
+                "type": "boolean"
+              },
+              "symlinkTarget": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "index",
+              "type",
+              "mode",
+              "deleted",
+              "symlinkTarget"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "index": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "stage": {
+                      "minimum": 0,
+                      "maximum": 3,
+                      "type": "integer"
+                    },
+                    "blob": {
+                      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                      "type": "string"
+                    },
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "const": "100644",
+                              "type": "string"
+                            },
+                            {
+                              "const": "100755",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "const": "120000",
+                          "type": "string"
+                        },
+                        {
+                          "const": "160000",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stage",
+                    "blob",
+                    "mode"
+                  ]
+                }
+              },
+              "type": {
+                "const": "gitlink",
+                "type": "string"
+              },
+              "mode": {
+                "const": "160000",
+                "type": "string"
+              },
+              "deleted": {
+                "const": false,
+                "type": "boolean"
+              },
+              "commit": {
+                "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "index",
+              "type",
+              "mode",
+              "deleted",
+              "commit"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "index": {
+                "maxItems": 3,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "stage": {
+                      "minimum": 0,
+                      "maximum": 3,
+                      "type": "integer"
+                    },
+                    "blob": {
+                      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                      "type": "string"
+                    },
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "const": "100644",
+                              "type": "string"
+                            },
+                            {
+                              "const": "100755",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "const": "120000",
+                          "type": "string"
+                        },
+                        {
+                          "const": "160000",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stage",
+                    "blob",
+                    "mode"
+                  ]
+                }
+              },
+              "type": {
+                "const": "missing",
+                "type": "string"
+              },
+              "mode": {
+                "type": "null"
+              },
+              "deleted": {
+                "const": true,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "path",
+              "index",
+              "type",
+              "mode",
+              "deleted"
+            ]
+          }
+        ]
+      }
+    },
+    "dashboardRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "currentTaskRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "dependencyArchiveRefs": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1,
+            "type": "number"
+          },
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "path",
+          "sha256"
+        ]
+      }
+    },
+    "agentsRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "harnessRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "gitWorkflowRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "protocolSource": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "repository": {
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2048,
+          "type": "string"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "commit": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "files": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "repository",
+        "version",
+        "commit",
+        "files"
+      ]
+    },
+    "adapterConfigHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "capturedAt",
+    "repoIdentity",
+    "paths",
+    "dashboardRef",
+    "dependencyArchiveRefs",
+    "agentsRef",
+    "harnessRef",
+    "gitWorkflowRef",
+    "protocolSource",
+    "adapterConfigHash"
+  ]
+}

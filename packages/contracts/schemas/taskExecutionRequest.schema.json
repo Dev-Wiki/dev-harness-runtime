@@ -1,0 +1,429 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "taskExecutionRequest",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "coreProtocolVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "runId": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "type": "string"
+    },
+    "taskId": {
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+      "type": "string"
+    },
+    "attempt": {
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "requestId": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "repoRoot": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "absolute-path",
+      "type": "string"
+    },
+    "docsRoot": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "absolute-path",
+      "type": "string"
+    },
+    "dashboardPath": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "absolute-path",
+      "type": "string"
+    },
+    "taskPath": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "absolute-path",
+      "type": "string"
+    },
+    "snapshotRef": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "repo-path",
+      "type": "string"
+    },
+    "snapshotHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "files": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          }
+        },
+        "directories": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          }
+        },
+        "planning": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "taskId": {
+              "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+              "type": "string"
+            },
+            "taskPath": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "archivePath": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "dashboardPath": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "archiveIndexPath": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            }
+          },
+          "required": [
+            "taskId",
+            "taskPath",
+            "archivePath",
+            "dashboardPath",
+            "archiveIndexPath"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "files",
+        "directories",
+        "planning"
+      ]
+    },
+    "authorization": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "runId": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "type": "string"
+        },
+        "commit": {
+          "const": "deny",
+          "type": "string"
+        },
+        "push": {
+          "const": false,
+          "type": "boolean"
+        },
+        "pullRequest": {
+          "const": false,
+          "type": "boolean"
+        },
+        "tag": {
+          "const": false,
+          "type": "boolean"
+        },
+        "release": {
+          "const": false,
+          "type": "boolean"
+        },
+        "deploy": {
+          "const": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "runId",
+        "commit",
+        "push",
+        "pullRequest",
+        "tag",
+        "release",
+        "deploy"
+      ]
+    },
+    "verificationPlan": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "sources": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "acceptanceIds": {
+                "minItems": 1,
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "argv": {
+                "minItems": 1,
+                "maxItems": 128,
+                "type": "array",
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "^[^\\u0000]+$",
+                  "type": "string"
+                }
+              },
+              "cwd": {
+                "anyOf": [
+                  {
+                    "const": ".",
+                    "type": "string"
+                  },
+                  {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                ]
+              },
+              "writableArtifacts": {
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "acceptanceIds",
+              "argv",
+              "cwd",
+              "writableArtifacts"
+            ]
+          }
+        },
+        "manual": {
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "acceptanceIds": {
+                "minItems": 1,
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "description": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "acceptanceIds",
+              "description"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "sources",
+        "commands",
+        "manual"
+      ]
+    },
+    "protocolSource": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "repository": {
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2048,
+          "type": "string"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "commit": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "files": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "repository",
+        "version",
+        "commit",
+        "files"
+      ]
+    },
+    "env": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "DEV_HARNESS_WORKER": {
+          "const": "1",
+          "type": "string"
+        },
+        "DEV_HARNESS_RUN_ID": {
+          "type": "string"
+        },
+        "DEV_HARNESS_TASK_ID": {
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        "DEV_HARNESS_ADAPTER": {
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+          "maxLength": 64,
+          "type": "string"
+        }
+      },
+      "required": [
+        "DEV_HARNESS_WORKER",
+        "DEV_HARNESS_RUN_ID",
+        "DEV_HARNESS_TASK_ID",
+        "DEV_HARNESS_ADAPTER"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "coreProtocolVersion",
+    "runId",
+    "taskId",
+    "attempt",
+    "requestId",
+    "repoRoot",
+    "docsRoot",
+    "dashboardPath",
+    "taskPath",
+    "snapshotRef",
+    "snapshotHash",
+    "scope",
+    "authorization",
+    "verificationPlan",
+    "protocolSource",
+    "env"
+  ]
+}

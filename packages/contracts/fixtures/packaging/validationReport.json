@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "valid": true,
+  "checks": [
+    {
+      "code": "SCHEMA_VALID",
+      "path": "package.json",
+      "message": "Fixture schema checked.",
+      "severity": "info"
+    }
+  ],
+  "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "evidenceRefs": [
+    {
+      "schemaVersion": 1,
+      "path": "evidence/validate.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

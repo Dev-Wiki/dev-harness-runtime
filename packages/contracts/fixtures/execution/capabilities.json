@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "coreProtocolVersion": 1,
+  "adapterId": "fake",
+  "targetVersion": "fixture-interface-only",
+  "available": true,
+  "freshSession": true,
+  "structuredOutput": true,
+  "nonInteractive": true,
+  "cancellation": true,
+  "resumeRunWithFreshSession": true,
+  "pluginPackaging": true,
+  "authorizationEnforced": true,
+  "reasons": [
+    "Synthetic contract fixture; these claims do not establish real host capabilities."
+  ],
+  "evidence": [
+    {
+      "capability": "available",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/available.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "freshSession",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/freshSession.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "structuredOutput",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/structuredOutput.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "nonInteractive",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/nonInteractive.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "cancellation",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/cancellation.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "resumeRunWithFreshSession",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/resumeRunWithFreshSession.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "pluginPackaging",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/pluginPackaging.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "capability": "authorizationEnforced",
+      "observedAt": "2026-09-17T00:00:00Z",
+      "ref": {
+        "schemaVersion": 1,
+        "path": "fixture-probe/authorizationEnforced.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "artifact",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "platform": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "variant": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "version": {
+      "format": "semver",
+      "type": "string"
+    },
+    "coreProtocolVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "file": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "repo-path",
+      "type": "string"
+    },
+    "mediaType": {
+      "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$",
+      "maxLength": 255,
+      "type": "string"
+    },
+    "size": {
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "inputHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "platform",
+    "variant",
+    "version",
+    "coreProtocolVersion",
+    "file",
+    "mediaType",
+    "size",
+    "sha256",
+    "inputHash"
+  ]
+}

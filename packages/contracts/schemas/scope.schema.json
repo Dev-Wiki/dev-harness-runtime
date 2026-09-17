@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "scope",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "files": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "format": "repo-path",
+        "type": "string"
+      }
+    },
+    "directories": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "format": "repo-path",
+        "type": "string"
+      }
+    },
+    "planning": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        "taskPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "archivePath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "dashboardPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "archiveIndexPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "taskId",
+        "taskPath",
+        "archivePath",
+        "dashboardPath",
+        "archiveIndexPath"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "files",
+    "directories",
+    "planning"
+  ]
+}

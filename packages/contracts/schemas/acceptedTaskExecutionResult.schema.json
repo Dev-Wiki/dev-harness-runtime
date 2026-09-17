@@ -1,0 +1,605 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "acceptedTaskExecutionResult",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "runId": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "type": "string"
+    },
+    "taskId": {
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+      "type": "string"
+    },
+    "attempt": {
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "requestId": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "snapshotHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "summary": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "verification": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "runId": {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              "taskId": {
+                "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                "type": "string"
+              },
+              "attempt": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "requestId": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "acceptanceIds": {
+                "minItems": 1,
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "beforeSnapshotHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "afterSnapshotHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "startedAt": {
+                "format": "utc-timestamp",
+                "type": "string"
+              },
+              "finishedAt": {
+                "format": "utc-timestamp",
+                "type": "string"
+              },
+              "result": {
+                "anyOf": [
+                  {
+                    "const": "passed",
+                    "type": "string"
+                  },
+                  {
+                    "const": "failed",
+                    "type": "string"
+                  },
+                  {
+                    "const": "blocked",
+                    "type": "string"
+                  }
+                ]
+              },
+              "kind": {
+                "const": "command",
+                "type": "string"
+              },
+              "argv": {
+                "minItems": 1,
+                "maxItems": 128,
+                "type": "array",
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "^[^\\u0000]+$",
+                  "type": "string"
+                }
+              },
+              "cwd": {
+                "anyOf": [
+                  {
+                    "const": ".",
+                    "type": "string"
+                  },
+                  {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                ]
+              },
+              "exitCode": {
+                "anyOf": [
+                  {
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "stdout": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "schemaVersion": {
+                    "const": 1,
+                    "type": "number"
+                  },
+                  "path": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "schemaVersion",
+                  "path",
+                  "sha256"
+                ]
+              },
+              "stderr": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "schemaVersion": {
+                    "const": 1,
+                    "type": "number"
+                  },
+                  "path": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "schemaVersion",
+                  "path",
+                  "sha256"
+                ]
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "runId",
+              "taskId",
+              "attempt",
+              "requestId",
+              "id",
+              "acceptanceIds",
+              "beforeSnapshotHash",
+              "afterSnapshotHash",
+              "startedAt",
+              "finishedAt",
+              "result",
+              "kind",
+              "argv",
+              "cwd",
+              "exitCode",
+              "stdout",
+              "stderr"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "runId": {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              "taskId": {
+                "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                "type": "string"
+              },
+              "attempt": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "requestId": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "acceptanceIds": {
+                "minItems": 1,
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "beforeSnapshotHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "afterSnapshotHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "startedAt": {
+                "format": "utc-timestamp",
+                "type": "string"
+              },
+              "finishedAt": {
+                "format": "utc-timestamp",
+                "type": "string"
+              },
+              "result": {
+                "anyOf": [
+                  {
+                    "const": "passed",
+                    "type": "string"
+                  },
+                  {
+                    "const": "failed",
+                    "type": "string"
+                  },
+                  {
+                    "const": "blocked",
+                    "type": "string"
+                  }
+                ]
+              },
+              "kind": {
+                "const": "manual",
+                "type": "string"
+              },
+              "reviewer": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "confirmation": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "schemaVersion": {
+                    "const": 1,
+                    "type": "number"
+                  },
+                  "path": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "schemaVersion",
+                  "path",
+                  "sha256"
+                ]
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "runId",
+              "taskId",
+              "attempt",
+              "requestId",
+              "id",
+              "acceptanceIds",
+              "beforeSnapshotHash",
+              "afterSnapshotHash",
+              "startedAt",
+              "finishedAt",
+              "result",
+              "kind",
+              "reviewer",
+              "confirmation"
+            ]
+          }
+        ]
+      }
+    },
+    "changedFiles": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "format": "repo-path",
+        "type": "string"
+      }
+    },
+    "rawResultRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "outcome": {
+      "const": "completed",
+      "type": "string"
+    },
+    "needsPlanning": {
+      "const": false,
+      "type": "boolean"
+    },
+    "closure": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "taskId": {
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+          "type": "string"
+        },
+        "taskPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "archivePath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "archiveIndexPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "dashboardPath": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "changes": {
+          "minItems": 4,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "beforeHash": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "afterHash": {
+                "anyOf": [
+                  {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "path",
+              "beforeHash",
+              "afterHash"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "taskId",
+        "taskPath",
+        "archivePath",
+        "archiveIndexPath",
+        "dashboardPath",
+        "summary",
+        "changes"
+      ]
+    },
+    "reason": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "commitIntent": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "message": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "paths": {
+          "minItems": 1,
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          }
+        },
+        "workflow": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "path": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "message",
+        "paths",
+        "workflow"
+      ]
+    },
+    "commitSha": {
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+      "type": "string"
+    },
+    "acceptedAt": {
+      "format": "utc-timestamp",
+      "type": "string"
+    },
+    "acceptedSnapshotHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "verifiedEvidenceRefs": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1,
+            "type": "number"
+          },
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "path",
+          "sha256"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "taskId",
+    "attempt",
+    "requestId",
+    "snapshotHash",
+    "summary",
+    "verification",
+    "changedFiles",
+    "outcome",
+    "needsPlanning",
+    "closure",
+    "acceptedAt",
+    "acceptedSnapshotHash",
+    "verifiedEvidenceRefs"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "workerAuthorization",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "runId": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "type": "string"
+    },
+    "commit": {
+      "const": "deny",
+      "type": "string"
+    },
+    "push": {
+      "const": false,
+      "type": "boolean"
+    },
+    "pullRequest": {
+      "const": false,
+      "type": "boolean"
+    },
+    "tag": {
+      "const": false,
+      "type": "boolean"
+    },
+    "release": {
+      "const": false,
+      "type": "boolean"
+    },
+    "deploy": {
+      "const": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "runId",
+    "commit",
+    "push",
+    "pullRequest",
+    "tag",
+    "release",
+    "deploy"
+  ]
+}

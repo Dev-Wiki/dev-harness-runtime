@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "platform": "opencode",
+  "releaseVersion": "0.1.0",
+  "adapterVersion": "0.1.0",
+  "coreProtocolVersion": 1,
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "cccccccccccccccccccccccccccccccccccccccc",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "skills": [
+    {
+      "schemaVersion": 1,
+      "name": "planning",
+      "path": "skills/planning/SKILL.md",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source": {
+        "schemaVersion": 1,
+        "repository": "https://example.com/runtime.git",
+        "version": "0.1.0",
+        "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "path": "skills/planning/SKILL.md"
+      }
+    }
+  ],
+  "runtimeBundle": {
+    "schemaVersion": 1,
+    "version": "0.1.0",
+    "path": "build/runtime.js",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source": {
+      "schemaVersion": 1,
+      "repository": "https://example.com/runtime.git",
+      "version": "0.1.0",
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "path": "packages/core"
+    }
+  },
+  "adapterBundle": {
+    "schemaVersion": 1,
+    "version": "0.1.0",
+    "path": "build/adapter.js",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source": {
+      "schemaVersion": 1,
+      "repository": "https://example.com/runtime.git",
+      "version": "0.1.0",
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "path": "packages/adapter-opencode"
+    }
+  },
+  "metadata": {
+    "schemaVersion": 1,
+    "name": "dev-harness",
+    "displayName": "Dev Harness",
+    "description": "Local development workflow plugin.",
+    "author": "Dev Harness contributors",
+    "repository": "https://example.com/runtime.git",
+    "licenseRefs": [
+      {
+        "path": "legal/LICENSE.txt",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "buildTimestamp": "2026-09-17T00:00:00Z"
+}

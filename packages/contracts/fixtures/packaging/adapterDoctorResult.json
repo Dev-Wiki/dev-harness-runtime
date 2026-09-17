@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "available": false,
+  "targetVersion": "1.0.0",
+  "observedVersion": null,
+  "checks": [
+    {
+      "code": "HOST_NOT_FOUND",
+      "status": "failed",
+      "message": "Fixture host is unavailable.",
+      "evidenceRefs": []
+    }
+  ],
+  "missingPrerequisites": [
+    "host executable"
+  ],
+  "evidenceRefs": []
+}

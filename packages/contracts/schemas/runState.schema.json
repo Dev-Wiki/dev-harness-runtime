@@ -1,0 +1,1376 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "runState",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "revision": {
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "runId": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "type": "string"
+    },
+    "adapter": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "const": "CREATED",
+          "type": "string"
+        },
+        {
+          "const": "RUNNING",
+          "type": "string"
+        },
+        {
+          "const": "BLOCKED",
+          "type": "string"
+        },
+        {
+          "const": "INTERRUPTED",
+          "type": "string"
+        },
+        {
+          "const": "FAILED",
+          "type": "string"
+        },
+        {
+          "const": "COMPLETED",
+          "type": "string"
+        }
+      ]
+    },
+    "phase": {
+      "anyOf": [
+        {
+          "const": "DISCOVERY",
+          "type": "string"
+        },
+        {
+          "const": "SELECT",
+          "type": "string"
+        },
+        {
+          "const": "SNAPSHOT",
+          "type": "string"
+        },
+        {
+          "const": "EXECUTE",
+          "type": "string"
+        },
+        {
+          "const": "REVALIDATE",
+          "type": "string"
+        },
+        {
+          "const": "FINALIZE",
+          "type": "string"
+        }
+      ]
+    },
+    "repoIdentity": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "repoRoot": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "absolute-path",
+          "type": "string"
+        },
+        "privateGitDir": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "absolute-path",
+          "type": "string"
+        },
+        "head": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "branch": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "maxLength": 4096,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "repoRoot",
+        "privateGitDir",
+        "head",
+        "branch"
+      ]
+    },
+    "selectionMode": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "explicit",
+              "type": "string"
+            },
+            "taskId": {
+              "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode",
+            "taskId"
+          ]
+        },
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "next",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ]
+        },
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "all-ready",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ]
+        }
+      ]
+    },
+    "protocolSource": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "repository": {
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2048,
+          "type": "string"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "commit": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "files": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "repository",
+        "version",
+        "commit",
+        "files"
+      ]
+    },
+    "adapterConfigHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "initialUserChangesRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "initialUserChangesHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "acceptedSnapshotRef": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "path",
+        "sha256"
+      ]
+    },
+    "acceptedSnapshotHash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "currentTaskId": {
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+      "type": "string"
+    },
+    "currentAttempt": {
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "currentRequestId": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "completedTasks": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+        "type": "string"
+      }
+    },
+    "resultRefs": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "identity": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "runId": {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              "taskId": {
+                "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                "type": "string"
+              },
+              "attempt": {
+                "minimum": 1,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "requestId": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "runId",
+              "taskId",
+              "attempt",
+              "requestId"
+            ]
+          },
+          "ref": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "path",
+              "sha256"
+            ]
+          }
+        },
+        "required": [
+          "identity",
+          "ref"
+        ]
+      }
+    },
+    "authorization": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "runId": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "const": "deny",
+              "type": "string"
+            },
+            {
+              "const": "task",
+              "type": "string"
+            }
+          ]
+        },
+        "push": {
+          "const": false,
+          "type": "boolean"
+        },
+        "pullRequest": {
+          "const": false,
+          "type": "boolean"
+        },
+        "tag": {
+          "const": false,
+          "type": "boolean"
+        },
+        "release": {
+          "const": false,
+          "type": "boolean"
+        },
+        "deploy": {
+          "const": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "runId",
+        "commit",
+        "push",
+        "pullRequest",
+        "tag",
+        "release",
+        "deploy"
+      ]
+    },
+    "createdAt": {
+      "format": "utc-timestamp",
+      "type": "string"
+    },
+    "updatedAt": {
+      "format": "utc-timestamp",
+      "type": "string"
+    },
+    "stopReason": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "code": {
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 128,
+          "type": "string"
+        },
+        "message": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "pendingOperation": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "operationId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            },
+            "identity": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "type": "string"
+                },
+                "taskId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                  "type": "string"
+                },
+                "attempt": {
+                  "minimum": 1,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runId",
+                "taskId",
+                "attempt",
+                "requestId"
+              ]
+            },
+            "scope": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "files": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "directories": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "planning": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                      "type": "string"
+                    },
+                    "taskPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archivePath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "dashboardPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archiveIndexPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "taskPath",
+                    "archivePath",
+                    "dashboardPath",
+                    "archiveIndexPath"
+                  ]
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "files",
+                "directories",
+                "planning"
+              ]
+            },
+            "beforeSnapshotRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "beforeSnapshotHash": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "checkpointRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "createdAt": {
+              "format": "utc-timestamp",
+              "type": "string"
+            },
+            "kind": {
+              "const": "execute",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "operationId",
+            "identity",
+            "scope",
+            "beforeSnapshotRef",
+            "beforeSnapshotHash",
+            "createdAt",
+            "kind"
+          ]
+        },
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "operationId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            },
+            "identity": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "type": "string"
+                },
+                "taskId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                  "type": "string"
+                },
+                "attempt": {
+                  "minimum": 1,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runId",
+                "taskId",
+                "attempt",
+                "requestId"
+              ]
+            },
+            "scope": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "files": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "directories": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "planning": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                      "type": "string"
+                    },
+                    "taskPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archivePath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "dashboardPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archiveIndexPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "taskPath",
+                    "archivePath",
+                    "dashboardPath",
+                    "archiveIndexPath"
+                  ]
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "files",
+                "directories",
+                "planning"
+              ]
+            },
+            "beforeSnapshotRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "beforeSnapshotHash": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "checkpointRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "createdAt": {
+              "format": "utc-timestamp",
+              "type": "string"
+            },
+            "kind": {
+              "const": "verify",
+              "type": "string"
+            },
+            "verificationPlanRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "operationId",
+            "identity",
+            "scope",
+            "beforeSnapshotRef",
+            "beforeSnapshotHash",
+            "createdAt",
+            "kind",
+            "verificationPlanRef"
+          ]
+        },
+        {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "operationId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            },
+            "identity": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "type": "string"
+                },
+                "taskId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                  "type": "string"
+                },
+                "attempt": {
+                  "minimum": 1,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runId",
+                "taskId",
+                "attempt",
+                "requestId"
+              ]
+            },
+            "scope": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "files": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "directories": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "format": "repo-path",
+                    "type": "string"
+                  }
+                },
+                "planning": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                      "type": "string"
+                    },
+                    "taskPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archivePath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "dashboardPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    },
+                    "archiveIndexPath": {
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "format": "repo-path",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "taskId",
+                    "taskPath",
+                    "archivePath",
+                    "dashboardPath",
+                    "archiveIndexPath"
+                  ]
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "files",
+                "directories",
+                "planning"
+              ]
+            },
+            "beforeSnapshotRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "beforeSnapshotHash": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "checkpointRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            },
+            "createdAt": {
+              "format": "utc-timestamp",
+              "type": "string"
+            },
+            "kind": {
+              "const": "commit",
+              "type": "string"
+            },
+            "parent": {
+              "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+              "type": "string"
+            },
+            "paths": {
+              "minItems": 1,
+              "uniqueItems": true,
+              "type": "array",
+              "items": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              }
+            },
+            "expectedTree": {
+              "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+              "type": "string"
+            },
+            "messageHash": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "indexCheckpointRef": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "const": 1,
+                  "type": "number"
+                },
+                "path": {
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "format": "repo-path",
+                  "type": "string"
+                },
+                "sha256": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schemaVersion",
+                "path",
+                "sha256"
+              ]
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "operationId",
+            "identity",
+            "scope",
+            "beforeSnapshotRef",
+            "beforeSnapshotHash",
+            "createdAt",
+            "kind",
+            "parent",
+            "paths",
+            "expectedTree",
+            "messageHash"
+          ]
+        }
+      ]
+    },
+    "reconciliation": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "originalRevision": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "originalPendingIdentity": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "operationId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            },
+            "kind": {
+              "anyOf": [
+                {
+                  "const": "execute",
+                  "type": "string"
+                },
+                {
+                  "const": "verify",
+                  "type": "string"
+                },
+                {
+                  "const": "commit",
+                  "type": "string"
+                }
+              ]
+            },
+            "identity": {
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "type": "string"
+                },
+                "taskId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+                  "type": "string"
+                },
+                "attempt": {
+                  "minimum": 1,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runId",
+                "taskId",
+                "attempt",
+                "requestId"
+              ]
+            }
+          },
+          "required": [
+            "operationId",
+            "kind",
+            "identity"
+          ]
+        },
+        "resolutionRef": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "path": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "path",
+            "sha256"
+          ]
+        },
+        "resolvedBy": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "currentSnapshotRef": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "path": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "path",
+            "sha256"
+          ]
+        },
+        "currentSnapshotHash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "taskIds": {
+          "minItems": 1,
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$",
+            "type": "string"
+          }
+        },
+        "evidenceRefs": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "path",
+              "sha256"
+            ]
+          }
+        },
+        "resolvedAt": {
+          "format": "utc-timestamp",
+          "type": "string"
+        },
+        "successor": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "runId": {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+              "type": "string"
+            },
+            "reservedAt": {
+              "format": "utc-timestamp",
+              "type": "string"
+            },
+            "createdAt": {
+              "format": "utc-timestamp",
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "reservedAt"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "originalRevision",
+        "originalPendingIdentity",
+        "resolutionRef",
+        "resolvedBy",
+        "currentSnapshotRef",
+        "currentSnapshotHash",
+        "taskIds",
+        "evidenceRefs",
+        "resolvedAt"
+      ]
+    },
+    "reconciledFrom": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "runId": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "type": "integer"
+        },
+        "resolutionHash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "snapshotHash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runId",
+        "revision",
+        "resolutionHash",
+        "snapshotHash"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "revision",
+    "runId",
+    "adapter",
+    "status",
+    "phase",
+    "repoIdentity",
+    "selectionMode",
+    "protocolSource",
+    "adapterConfigHash",
+    "initialUserChangesRef",
+    "initialUserChangesHash",
+    "acceptedSnapshotRef",
+    "acceptedSnapshotHash",
+    "completedTasks",
+    "resultRefs",
+    "authorization",
+    "createdAt",
+    "updatedAt"
+  ]
+}

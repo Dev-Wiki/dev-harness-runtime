@@ -4,7 +4,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 ## 当前阶段
 
-项目已建立 TypeScript / Node.js workspace、Adapter / Build Registry 和 CLI 骨架。`dhr` 当前提供 help / version；任务编排、Run 状态与平台打包尚未实现。
+项目已建立 TypeScript / Node.js workspace、Adapter / Build Registry 和 CLI 骨架，并完成 [公共 Contracts](docs/CONTRACTS.md#9-k1-可执行协议) 的类型、Schema 与校验。`dhr` 当前提供 help / version；任务编排、Run 状态与平台打包尚未实现。
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`

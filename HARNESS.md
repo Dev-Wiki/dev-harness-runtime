@@ -23,7 +23,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 
 ## 已确认命令（人工维护）
 
-工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md) 与 `package.json`。
+工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md) 与 `package.json`。
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
@@ -31,7 +31,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 | test | `pnpm test` | 编译后执行 node:test | confirmed |
 | quick | `pnpm harness:quick` | typecheck + lint | confirmed |
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
-| full | `pnpm verify` | 类型、lint、测试、R1 fixture 和独立 CLI 包检查 | confirmed |
+| full | `pnpm verify` | 类型、lint、测试、Schema 一致性、R1 fixture 和独立 CLI 包检查 | confirmed |
 
 `harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version` 是当前运行入口；其他 dhr 功能尚未实现。
 
@@ -40,6 +40,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 - fixture 使用 Python 3.12；Windows 通过 `python`、其他系统通过 `python3` 调用。
 - Git `2.43.0` 为当前验证下限；上游 checkout 验证入口为 `pnpm verify:protocol --source <checkout>`。普通 verify 不隐式获取上游源码。
 - `pnpm test:fixtures` 单独校验 R1 最小样例；`pnpm test:cli-package` 在临时目录离线安装 CLI tarball；不安装宿主插件。
+- `pnpm schemas:write` 先编译再从 TypeBox 定义写入 packages/contracts/schemas；`pnpm schemas:check` 在编译后核对导出一致性，已纳入 full。
 - `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
 - Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。

@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "revision": 3,
+  "runId": "run-a",
+  "adapter": "codex",
+  "status": "FAILED",
+  "phase": "FINALIZE",
+  "repoIdentity": {
+    "repoRoot": "/workspace/project",
+    "privateGitDir": "/workspace/project/.git",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "branch": "main"
+  },
+  "selectionMode": {
+    "mode": "all-ready"
+  },
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "adapterConfigHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "initialUserChangesRef": {
+    "schemaVersion": 1,
+    "path": "snapshots/initial-user-changes.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "initialUserChangesHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "acceptedSnapshotRef": {
+    "schemaVersion": 1,
+    "path": "snapshots/accepted.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "acceptedSnapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "completedTasks": [],
+  "resultRefs": [],
+  "authorization": {
+    "schemaVersion": 1,
+    "runId": "run-a",
+    "commit": "task",
+    "push": false,
+    "pullRequest": false,
+    "tag": false,
+    "release": false,
+    "deploy": false
+  },
+  "createdAt": "2026-09-17T00:00:00Z",
+  "updatedAt": "2026-09-17T00:00:00Z",
+  "currentTaskId": "K1",
+  "currentAttempt": 1,
+  "currentRequestId": "request-a",
+  "pendingOperation": {
+    "schemaVersion": 1,
+    "operationId": "operation-a",
+    "kind": "commit",
+    "identity": {
+      "runId": "run-a",
+      "taskId": "K1",
+      "attempt": 1,
+      "requestId": "request-a"
+    },
+    "scope": {
+      "schemaVersion": 1,
+      "files": [
+        "src/a.ts"
+      ],
+      "directories": [],
+      "planning": {
+        "taskId": "K1",
+        "taskPath": "docs/plan/tasks/K1.md",
+        "archivePath": "docs/plan/archive/V1/K1.md",
+        "dashboardPath": "docs/plan/Dashboard.md",
+        "archiveIndexPath": "docs/plan/archive/V1/README.md"
+      }
+    },
+    "beforeSnapshotRef": {
+      "schemaVersion": 1,
+      "path": "attempts/K1-1/snapshots/before.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "beforeSnapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "createdAt": "2026-09-17T00:00:00Z",
+    "parent": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "paths": [
+      "src/a.ts",
+      "docs/plan/Dashboard.md",
+      "docs/plan/archive/V1/K1.md",
+      "docs/plan/archive/V1/README.md"
+    ],
+    "expectedTree": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "messageHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "indexCheckpointRef": {
+      "schemaVersion": 1,
+      "path": "attempts/K1-1/snapshots/index.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "stopReason": {
+    "code": "DRIFT_DETECTED",
+    "message": "The recorded boundary changed."
+  },
+  "reconciliation": {
+    "schemaVersion": 1,
+    "originalRevision": 2,
+    "originalPendingIdentity": {
+      "operationId": "operation-a",
+      "kind": "commit",
+      "identity": {
+        "runId": "run-a",
+        "taskId": "K1",
+        "attempt": 1,
+        "requestId": "request-a"
+      }
+    },
+    "resolutionRef": {
+      "schemaVersion": 1,
+      "path": "reconciliation/resolution.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "resolvedBy": "project-maintainer",
+    "currentSnapshotRef": {
+      "schemaVersion": 1,
+      "path": "reconciliation/current.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "currentSnapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "taskIds": [
+      "K1"
+    ],
+    "evidenceRefs": [
+      {
+        "schemaVersion": 1,
+        "path": "reconciliation/confirmation.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "resolvedAt": "2026-09-17T00:00:00Z",
+    "successor": {
+      "runId": "run-b",
+      "reservedAt": "2026-09-17T00:00:00Z"
+    }
+  }
+}

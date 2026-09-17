@@ -7,7 +7,8 @@
     "node": ">=24.15.0 <25"
   },
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ],
   "exports": {
     ".": {
@@ -17,5 +18,9 @@
   },
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.41",
+    "ajv": "8.17.1"
   }
 }

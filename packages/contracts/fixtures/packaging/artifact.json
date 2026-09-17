@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "platform": "opencode",
+  "variant": "npm",
+  "version": "0.1.0",
+  "coreProtocolVersion": 1,
+  "file": "artifacts/opencode-0.1.0.tgz",
+  "mediaType": "application/gzip",
+  "size": 128,
+  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "inputHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

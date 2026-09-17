@@ -1,0 +1,374 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pluginBuildInput",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "platform": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "releaseVersion": {
+      "format": "semver",
+      "type": "string"
+    },
+    "adapterVersion": {
+      "format": "semver",
+      "type": "string"
+    },
+    "coreProtocolVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "protocolSource": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "repository": {
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2048,
+          "type": "string"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "commit": {
+          "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+          "type": "string"
+        },
+        "files": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "repository",
+        "version",
+        "commit",
+        "files"
+      ]
+    },
+    "skills": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1,
+            "type": "number"
+          },
+          "name": {
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "schemaVersion": {
+                "const": 1,
+                "type": "number"
+              },
+              "repository": {
+                "pattern": "^https://[^\\s]+$",
+                "maxLength": 2048,
+                "type": "string"
+              },
+              "version": {
+                "format": "semver",
+                "type": "string"
+              },
+              "commit": {
+                "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+                "type": "string"
+              },
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schemaVersion",
+              "repository",
+              "version",
+              "commit",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "name",
+          "path",
+          "sha256",
+          "source"
+        ]
+      }
+    },
+    "runtimeBundle": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "source": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "repository": {
+              "pattern": "^https://[^\\s]+$",
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "version": {
+              "format": "semver",
+              "type": "string"
+            },
+            "commit": {
+              "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "repository",
+            "version",
+            "commit",
+            "path"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "version",
+        "path",
+        "sha256",
+        "source"
+      ]
+    },
+    "adapterBundle": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "version": {
+          "format": "semver",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "format": "repo-path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "source": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": 1,
+              "type": "number"
+            },
+            "repository": {
+              "pattern": "^https://[^\\s]+$",
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "version": {
+              "format": "semver",
+              "type": "string"
+            },
+            "commit": {
+              "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "maxLength": 4096,
+              "format": "repo-path",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "repository",
+            "version",
+            "commit",
+            "path"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "version",
+        "path",
+        "sha256",
+        "source"
+      ]
+    },
+    "metadata": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "number"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+          "maxLength": 64,
+          "type": "string"
+        },
+        "displayName": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "author": {
+          "minLength": 1,
+          "maxLength": 4096,
+          "type": "string"
+        },
+        "repository": {
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2048,
+          "type": "string"
+        },
+        "licenseRefs": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "maxLength": 4096,
+                "format": "repo-path",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ]
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "name",
+        "displayName",
+        "description",
+        "author",
+        "repository",
+        "licenseRefs"
+      ]
+    },
+    "buildTimestamp": {
+      "format": "utc-timestamp",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "platform",
+    "releaseVersion",
+    "adapterVersion",
+    "coreProtocolVersion",
+    "protocolSource",
+    "skills",
+    "runtimeBundle",
+    "adapterBundle",
+    "metadata",
+    "buildTimestamp"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-a",
+  "expectedRevision": 2,
+  "currentSnapshotRef": {
+    "schemaVersion": 1,
+    "path": "reconciliation/current.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "currentSnapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "resolvedBy": "project-maintainer",
+  "disposition": "Restored K1 to an active task and verified the project boundary.",
+  "taskIds": [
+    "K1"
+  ],
+  "evidenceRefs": [
+    {
+      "schemaVersion": 1,
+      "path": "reconciliation/confirmation.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "createdAt": "2026-09-17T00:00:00Z"
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "ownerToken": "owner-a",
+  "runId": "run-a",
+  "pid": 1234,
+  "processStartIdentity": "boot-a.process-1234.start-100",
+  "adapter": "codex",
+  "repoRoot": "/workspace/project",
+  "privateGitDir": "/workspace/project/.git",
+  "createdAt": "2026-09-17T00:00:00Z"
+}

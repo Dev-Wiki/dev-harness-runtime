@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "revision": 0,
+  "runId": "run-a",
+  "adapter": "codex",
+  "status": "CREATED",
+  "phase": "DISCOVERY",
+  "repoIdentity": {
+    "repoRoot": "/workspace/project",
+    "privateGitDir": "/workspace/project/.git",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "branch": "main"
+  },
+  "selectionMode": {
+    "mode": "all-ready"
+  },
+  "protocolSource": {
+    "schemaVersion": 1,
+    "repository": "https://example.com/protocol.git",
+    "version": "1.0.0",
+    "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "files": [
+      {
+        "path": "skills/planning/SKILL.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  },
+  "adapterConfigHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "initialUserChangesRef": {
+    "schemaVersion": 1,
+    "path": "snapshots/initial-user-changes.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "initialUserChangesHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "acceptedSnapshotRef": {
+    "schemaVersion": 1,
+    "path": "snapshots/accepted.json",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "acceptedSnapshotHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "completedTasks": [],
+  "resultRefs": [],
+  "authorization": {
+    "schemaVersion": 1,
+    "runId": "run-a",
+    "commit": "deny",
+    "push": false,
+    "pullRequest": false,
+    "tag": false,
+    "release": false,
+    "deploy": false
+  },
+  "createdAt": "2026-09-17T00:00:00Z",
+  "updatedAt": "2026-09-17T00:00:00Z"
+}

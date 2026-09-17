@@ -11,19 +11,21 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.check.json",
-    "lint": "oxlint packages build/targets build/tests scripts tests/integration",
+    "lint": "oxlint packages build/targets build/tests scripts tests/integration tests/contract",
     "test": "pnpm build && node scripts/test.mjs",
     "test:fixtures": "node scripts/check-fixtures.mjs",
     "test:cli-package": "node scripts/check-cli-package.mjs",
     "verify:protocol": "node scripts/check-protocol.mjs",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:fixtures && pnpm test:cli-package",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm schemas:check && pnpm test:fixtures && pnpm test:cli-package",
     "clean": "node scripts/clean.mjs",
     "dhr": "node packages/cli/bin/dhr.mjs",
     "harness:build": "pnpm build",
     "harness:test": "pnpm test",
     "harness:quick": "pnpm typecheck && pnpm lint",
     "harness:bugfix": "pnpm test",
-    "harness:full": "pnpm verify"
+    "harness:full": "pnpm verify",
+    "schemas:write": "pnpm build && node scripts/contracts-schema.mjs --write",
+    "schemas:check": "node scripts/contracts-schema.mjs --check"
   },
   "devDependencies": {
     "@types/node": "24.12.2",
