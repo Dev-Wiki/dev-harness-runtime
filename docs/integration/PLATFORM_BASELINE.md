@@ -67,6 +67,8 @@ K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm �
 
 Google Plugin 教程加 `?hl=en` 后可读，补上初查缺口；文档给出 `agy plugin install` 和全局 `~/.gemini/config/plugins/<name>/`。独立 Skills 项目路径为 `.agents/skills/`，全局为 `~/.gemini/config/skills/`，插件内仍为 `skills/`。未证明项目级 plugin 安装路径或最低客户端版本。[Plugin 教程](https://codelabs.developers.google.com/cloud-dev-plugin-agy?hl=en)、[Skills 教程](https://codelabs.developers.google.com/getting-started-with-antigravity-skills)。
 
+K9 已生成 Plugin、项目和 global Skills 三 ZIP；离线静态、golden 与本机 `agy plugin validate/install/list/uninstall` 通过。CLI 验证输出三个 Skill 已处理；没有模型会话内调用、独立 Skill 写入或 Executor 能力证明，见 [K9 验证记录](../verification/K9.md)。
+
 Portable manifest 名称 1–64 字符，小写字母/数字/连字符/点，首尾字母数字，禁止连续连字符或点。样例只使用两个必需字段；其他合法可选字段不在此子集检查器范围。Skills 只发现直接子目录的 SKILL.md。严格 Agent Skills 要求 name/description，而 Google 教程允许省略 name；fixture 采用共同严格子集。[manifest schema](https://agent-plugins.org/schemas/1.0.0/plugin.schema.json)、[Skills 规范](https://agentskills.io/specification)。
 
 可选 MCP 配置必需 `$schema`、`mcpServers`，stdio 需 type/command，远程需 type/url。本轮只校验空 map。生产实现须验证根内路径、symlink 与 `${PLUGIN_ROOT}` / `${PLUGIN_DATA}` 边界，不引入未经证明的别名。[Portable MCP](https://agent-plugins.org/plugin-authors/mcp-servers)。
