@@ -5,7 +5,7 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 已收口；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，宿主调用验收仍缺。
-- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex / DSH 自动 Executor 的逐 Task 权限隔离、Cursor / OpenCode / Antigravity 完整宿主调用、原生 OS CI 运行和对外分发许可仍待落实。
+- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 合成只读会话和 DSH 新旧行为对照已有部分证据，自动 Executor 的逐 Task 权限隔离仍未证明；Cursor / OpenCode / Antigravity 完整宿主调用、原生 OS CI 运行和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0 和 M1 全部任务已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。Codex / DSH 的实际包可安装，但自动执行 Adapter 尚未通过授权门禁，不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
@@ -35,8 +35,8 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K5 — Codex fresh-session Executor** | 🔴 P0 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：只读取得真实 thread 事件；逐 Task 权限隔离未证明，自动运行关闭 | [执行包](tasks/K5.md) |
-| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：通用行为与宿主接口已取证；逐 Task 授权未证明，自动运行关闭 | [执行包](tasks/K6.md) |
+| **K5 — Codex fresh-session Executor** | 🔴 P0 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：两次合成只读会话得到不同 thread 事件与结构化结果；逐 Task 权限隔离未证明，自动运行关闭，见[证据](../verification/K5.md) | [执行包](tasks/K5.md) |
+| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：旧 36 项、新 Core 197 项通过；rc.1 合成 Session 可创建，逐 Task 授权未证明，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；宿主 smoke 被自动审批拒绝，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证及 npm 临时安装通过；缺 OpenCode 宿主，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |

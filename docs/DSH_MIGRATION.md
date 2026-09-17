@@ -10,7 +10,7 @@
 
 新 DSH Adapter 的目标宿主为 `0.1.5-rc.1`，依据用户提供的本机版本输出。旧 `0.1.0-rc.8` 只用于历史行为对照；所有公开 API、组件依赖、安装和运行能力必须在新目标版本重新取得证据。
 
-本次读取的旧源码提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`。以下文件位置与测试名来自该基线；本次没有执行旧测试、宿主调用或新 Adapter 测试。
+本次读取的旧源码提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`。以下文件位置与测试名来自该基线；选定旧测试 36/36 与新 Core 对应专项 197/216 已分别执行，新专项有 19 项因缺少本轮 bubblewrap 而跳过，不能据此宣称 DSH rc.1 Executor 等价。详见 [K6 当前验证](verification/K6.md)。
 
 ## 2. 通用行为映射
 
@@ -45,7 +45,7 @@
 | 验证工作区边界 | [verification.test.mjs](../../dev-harness-dsh/tests/verification.test.mjs)：`rejects verification worktree mutations and retains the OPEN lease` | packages/core/tests/result；明确允许生成物，拒绝源码、计划与 index 变化 |
 | 不一致成功声明 | [report.test.mjs](../../dev-harness-dsh/tests/report.test.mjs)：`refuses incomplete QA, verification, reconciliation, and inconsistent overall claims` | packages/core/tests/result；改用 Task acceptance + Planning closure，不要求旧 QA / Finding 字段 |
 
-K6 应把每条映射记录成“保持的性质、旧运行证据、新测试结果、允许差异”。旧测试通过与新测试通过必须分别取证，不能只给新包换名后将旧测试数量当作 parity。
+本表逐项记录保持性质、旧入口、新位置和新模型差异；旧、新测试运行数量分别记录在 [K6 当前验证](verification/K6.md)。旧测试通过与新 Core 测试通过不能代替 rc.1 宿主 Task Executor parity，尤其不能把旧测试数量直接继承给新 Adapter。
 
 ## 4. 留在 Adapter 的宿主逻辑
 
