@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { createPlatformRegistry } from '../build/dist/targets/platforms.js';
 import { distributionPlatforms } from '../build/dist/targets/repository.js';
 
@@ -15,6 +17,8 @@ const references = Object.freeze({
 const check = process.argv.includes('--check');
 const root = resolve(process.argv.find((arg, index) => index >= 2 && arg !== '--check') ?? '.');
 const manifest = JSON.parse(await readFile(resolve(root, 'dist/manifest.json'), 'utf8'));
+const { stdout: head } = await promisify(execFile)('git', ['-C', root, 'rev-parse', 'HEAD']);
+if (manifest.sourceCommit !== head.trim()) throw new Error('Release manifest belongs to another source commit; clean and rebuild local artifacts');
 const runtimes = createPlatformRegistry().runtimeRegistry().list();
 if (manifest.adapterCompatibility.length !== distributionPlatforms.length || manifest.artifacts.length !== 9) {
   throw new Error('Release manifest must contain six platforms and nine artifacts');
