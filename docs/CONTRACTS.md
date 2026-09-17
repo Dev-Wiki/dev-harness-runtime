@@ -347,3 +347,19 @@ Core 记录实际命令的 stdout / stderr、退出码、身份、时间、前�
 `createAcceptanceRecoveryVerifier` 按 pending 的精确引用重建冻结输入、Worker control、Planning、各命令输出与快照链，再独立接受恢复。Core 私有证据存储与 Adapter 的可信控制验证仍是信任边界；文件存在或 hash 格式本身不授予权限。提交和 no-commit 的 accepted 证据使用同一确定名称及稳定时间，CAS 前中断后可精确复用；不会重复 commit 或重复完成 Task。准备提交但尚未暂存的 `commit-ready` 必须前后引用相同。
 
 本任务验证 Linux 验证进程、真实本地 Git 和 Core 接口；Worker control / 人工确认采用明确标记的接口 fixture。Codex / DSH 的真实 Worker 权限、Session 与凭据边界由 K5 / K6 实测，不因本任务通过而标记为可用。详情见 [K4-V 验证记录](verification/K4-V.md)。
+
+## 15. K4-W 共享 Worker 与父上下文实现
+
+共享 Skill 仅维护 [run](../skills/run/SKILL.md)、[status](../skills/status/SKILL.md)、[worker](../skills/worker/SKILL.md) 三份源码。平台包只转换路径、调用语法和 manifest 元数据，不复制任务选择、授权或收口规则。Skill 描述目标行为，当前 CLI 调度未接入时明确停止，不以手工父对话执行替代 Runtime。
+
+`prepareWorkerInvocation` 接收已校验的 TaskExecutionRequest 与从可信 Bundle 取得的 Worker Skill 字节 / 摘要，生成固定请求和四个环境标记。prompt 定向引用 AGENTS、HARNESS、Dashboard、当前 Task，携带结构化 scope / verificationPlan；不接收旧 Conversation 或任意额外环境。JSON 中的反引号和标记字符转义，避免数据关闭请求块。Skill 上限 64 KiB，请求数据上限 128 KiB；超限拒绝，不能截掉授权或验收字段后继续。
+
+CLI 在解析 run 模式之前检查 Worker 标记；`DEV_HARNESS_WORKER=1` 下任何 run、resume、reconcile 都以 AUTHORIZATION_VIOLATION / 退出码 5 拒绝，包含显式 Task、缺参数或未知模式。help / version 保持可读；其他尚未接入入口仍返回不支持。Core 也拒绝 Worker 再次创建 Worker invocation。环境标记是递归门禁，不替代 Adapter 的 OS / 宿主权限证据。
+
+`appendAttemptLog` 只允许 Core 在持锁、同一 revision、当前 RUNNING / EXECUTE 身份下向已有 stdout.log / stderr.log / events.jsonl 追加原始字节。每块至多 1 MiB，总日志不截断；输入立即复制，追加串行，检查目录、文件身份、唯一硬链接与 owner，写后 fsync。中断留下的部分输出保留供检查，不作为 Task 完成证明。Worker 没有写这些路径的权限。
+
+`captureAttemptLogRefs` 为当前身份或 Run 精确 resultRefs 中的历史身份流式计算完整日志摘要；缺文件、symlink / hardlink、路径漂移或错误 requestId 均拒绝。旧日志只读资格不授予追加权限，日志操作不更新 run.json。
+
+`readParentContext` 只读指定 revision 的 run.json 及其精确引用，输出八个字段：runId、taskId、status、summary、verificationSummary、commitSha、nextTask、logRef。verificationSummary 只计 Core 已接受记录，summary 使用 Core 状态文本，不回显 Worker summary / reason、源码、命令、日志或 JSONL。logRef 是 stdout / stderr / events 三个已核验私有 EvidenceRef 的集合；没有 Task 时为 null。nextTask 当前为 null，后续 Orchestrator 重读 Planning 并完成选择后才可报告下一任务。summary.json 或 Worker completed 声明不能改变父上下文状态。
+
+本任务提供接口和共享源码，没有启动真实宿主。可复现结果见 [K4-W 验证记录](verification/K4-W.md)。

@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { lstat, mkdir, open, readdir } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { constants, type BigIntStats } from 'node:fs';
 import { join } from 'node:path';
 import {
-  isRepoPath, parseContract, parseContractJson,
+  ContractValidationError, isRepoPath, parseContract, parseContractJson,
   type EvidenceRef, type RunState, type Snapshot, type TaskExecutionRequest, type TaskExecutionResult,
 } from '@dev-harness-runtime/contracts';
 import { withLock, type LockContext, type LockHandle } from '../lock/index.js';
@@ -160,6 +160,105 @@ export async function createAttempt(handle: LockHandle, runId: string, expectedR
     await mkdir(paths.snapshotsPath, { mode: 0o700 });
     await syncDirectory(path);
     return paths;
+  });
+}
+
+const attemptLogNames = { stdout: 'stdout.log', stderr: 'stderr.log', events: 'events.jsonl' } as const;
+type AttemptLogStream = keyof typeof attemptLogNames;
+function coreLogsOnly(): void {
+  if (process.env.DEV_HARNESS_WORKER === '1') throw new ContractValidationError('AUTHORIZATION_VIOLATION', 'Workers cannot access Core private attempt logs');
+}
+function logStamp(info: BigIntStats): string {
+  return [info.dev, info.ino, info.mode, info.nlink, info.size, info.mtimeNs, info.ctimeNs].join(':');
+}
+function sameLogFile(first: BigIntStats, current: BigIntStats): boolean {
+  return first.isFile() && current.isFile() && first.nlink === 1n && current.nlink === 1n
+    && first.dev === current.dev && first.ino === current.ino && first.mode === current.mode;
+}
+
+/** Adapter/Core streams bytes under the owner lock; this never grants a Worker a private path to write. */
+export async function appendAttemptLog(handle: LockHandle, runId: string, expectedRevision: number, input: AttemptIdentity,
+  stream: AttemptLogStream, chunk: Uint8Array): Promise<void> {
+  coreLogsOnly();
+  if (!Object.hasOwn(attemptLogNames, stream) || !(chunk instanceof Uint8Array) || chunk.byteLength > 1024 * 1024) {
+    throw new ContractValidationError('AUTHORIZATION_VIOLATION', 'Attempt logs require a valid stream and a byte chunk of at most 1 MiB');
+  }
+  const identity = clone(input); const content = Buffer.from(chunk);
+  return withLock(handle, async (context) => {
+    coreLogsOnly();
+    const state = await load(context, runId, expectedRevision);
+    const name = attemptName(runId, identity); currentIdentity(state, identity);
+    if (state.status !== 'RUNNING' || state.phase !== 'EXECUTE') {
+      throw new ContractValidationError('AUTHORIZATION_VIOLATION', 'Only the current running execution attempt may append logs');
+    }
+    const path = join(await root(context, runId), 'attempts', name, attemptLogNames[stream]);
+    await checkedFile(path);
+    const observed = await lstat(path, { bigint: true });
+    const file = await open(path, constants.O_WRONLY | constants.O_APPEND | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
+    try {
+      const first = await file.stat({ bigint: true });
+      if (!sameLogFile(observed, first) || logStamp(first) !== logStamp(observed)) throw new StateError('STATE_PATH_INVALID', 'Attempt log changed before opening', path);
+      await context.assertOwner();
+      await checkedFile(path);
+      if (logStamp(await lstat(path, { bigint: true })) !== logStamp(first)) throw new StateError('STATE_PATH_INVALID', 'Attempt log changed before append', path);
+      let offset = 0;
+      while (offset < content.length) {
+        const { bytesWritten } = await file.write(content, offset, content.length - offset, null);
+        if (bytesWritten === 0) throw new StateError('STATE_CORRUPT', 'Attempt log append made no progress; partial bytes were preserved', path);
+        offset += bytesWritten;
+      }
+      await file.sync();
+      await checkedFile(path);
+      const last = await file.stat({ bigint: true }); const current = await lstat(path, { bigint: true });
+      if (!sameLogFile(first, last) || logStamp(last) !== logStamp(current) || last.size !== first.size + BigInt(content.length)) {
+        throw new StateError('STATE_CORRUPT', 'Attempt log changed during append; bytes were preserved for inspection', path);
+      }
+    } finally { await file.close(); }
+  });
+}
+
+/** Hash complete existing logs without returning their contents or changing Run authority. */
+export async function captureAttemptLogRefs(handle: LockHandle, runId: string, expectedRevision: number, input: AttemptIdentity): Promise<Record<AttemptLogStream, EvidenceRef>> {
+  coreLogsOnly(); const identity = clone(input);
+  return withLock(handle, async (context) => {
+    coreLogsOnly();
+    const state = await load(context, runId, expectedRevision);
+    const name = attemptName(runId, identity);
+    const current = state.currentTaskId === identity.taskId && state.currentAttempt === identity.attempt && state.currentRequestId === identity.requestId;
+    if (!current && !state.resultRefs.some((entry) => stable(entry.identity) === stable(identity))) {
+      throw new StateError('STATE_IDENTITY_MISMATCH', 'Attempt logs are not bound to the current attempt or a recorded result');
+    }
+    const directory = await root(context, runId);
+    const result = {} as Record<AttemptLogStream, EvidenceRef>;
+    const observed: { path: string; stamp: string }[] = [];
+    for (const stream of ['stdout', 'stderr', 'events'] as const) {
+      const path = `attempts/${name}/${attemptLogNames[stream]}`; const absolute = join(directory, path);
+      await checkedFile(absolute);
+      const initial = await lstat(absolute, { bigint: true });
+      const file = await open(absolute, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
+      try {
+        const first = await file.stat({ bigint: true });
+        if (!sameLogFile(initial, first) || logStamp(initial) !== logStamp(first)) throw new StateError('STATE_PATH_INVALID', 'Attempt log changed before hashing', absolute);
+        const digest = createHash('sha256'); const buffer = Buffer.allocUnsafe(64 * 1024); let count = 0n;
+        while (true) {
+          const { bytesRead } = await file.read(buffer, 0, buffer.length, null);
+          if (bytesRead === 0) break;
+          count += BigInt(bytesRead); digest.update(buffer.subarray(0, bytesRead));
+        }
+        await checkedFile(absolute);
+        const last = await file.stat({ bigint: true }); const actual = await lstat(absolute, { bigint: true });
+        if (count !== first.size || logStamp(first) !== logStamp(last) || logStamp(first) !== logStamp(actual)) {
+          throw new StateError('STATE_CORRUPT', 'Attempt log changed while hashing', absolute);
+        }
+        result[stream] = { schemaVersion: 1, path, sha256: digest.digest('hex') };
+        observed.push({ path: absolute, stamp: logStamp(last) });
+      } finally { await file.close(); }
+    }
+    for (const entry of observed) {
+      await checkedFile(entry.path);
+      if (logStamp(await lstat(entry.path, { bigint: true })) !== entry.stamp) throw new StateError('STATE_CORRUPT', 'Attempt logs changed during reference capture', entry.path);
+    }
+    return result;
   });
 }
 

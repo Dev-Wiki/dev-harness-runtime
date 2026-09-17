@@ -5,9 +5,9 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 已收口，进入 M1 公共 Runtime。
-- **当前瓶颈**：公共契约、项目 / Planning 读取和内容快照已通过验收；私有状态、互斥、恢复、独立验收和受控提交已实现，执行编排尚待接入，宿主能力仍需实测。
+- **当前瓶颈**：公共契约、项目 / Planning 读取和内容快照已通过验收；私有状态、互斥、恢复、独立验收、受控提交和共享 Worker / 日志接口已实现，执行编排尚待接入，宿主能力仍需实测。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
-- **需求状态**：R0 / R1 / V0 / K1 / K2 / K3 / K3-L / K3-R / K4-V 已验收；已有公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、包骨架、独立验收与受控提交；编排与 Adapter 接入尚未实现，不继承旧 DSH 的完成状态。
+- **需求状态**：R0 / R1 / V0 / K1 / K2 / K3 / K3-L / K3-R / K4-V / K4-W 已验收；已有公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、包骨架、独立验收、受控提交、共享 Worker 与紧凑摘要；编排与 Adapter 接入尚未实现，不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
 - **Run 布局**：`<run-id>/run.json` 是每个 Run 唯一权威状态文件；同级 `attempts/`、`results/`、`summary.json` 分别保存日志、结果与派生摘要。
 - **DSH 目标**：`0.1.5-rc.1`（本轮复跑；实际为 rc.1 启动器 + rc.2 组件）；旧 rc.8 仅作历史迁移参考，适配与验证以设计 §19.2 为准。
@@ -21,17 +21,15 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | 里程碑 | 交付门槛 | 当前阶段 |
 |---|---|---|
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
-| M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | K1 / K2 / K3 / K3-L / K3-R / K4-V 已归档；下一项 K4-W |
+| M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | K1 / K2 / K3 / K3-L / K3-R / K4-V / K4-W 已归档；下一项 K4 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | 尚未开始 |
 | M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 尚未开始 |
 
 ## 3. 当前工作顺序
 
-1. [K4-W — 共享 Worker 与父上下文输出](tasks/K4-W.md)：按活跃表核对前置任务后执行。
+1. [K4 — 接通统一 Orchestrator 与运行 CLI](tasks/K4.md)：按活跃表核对前置任务后执行。
 
-2. [K4 — 接通统一 Orchestrator 与运行 CLI](tasks/K4.md)：按活跃表核对前置任务后执行。
-
-3. [K10-B — 共享生成、校验与打包流水线](tasks/K10-B.md)：按活跃表核对前置任务后执行。
+2. [K10-B — 共享生成、校验与打包流水线](tasks/K10-B.md)：按活跃表核对前置任务后执行。
 
 上述执行包已接入 R0 契约；待执行不表示依赖已完成，必须先检查活跃表。平台实施包已接入 R1 基线，待剩余实施输入与验证条件明确后再进入本顺序。
 
@@ -41,9 +39,8 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K4-W — 共享 Worker 与父上下文输出** | 🔴 P0 | 🟢 待执行 | [K1](archive/M1/K1.md)、[K3-L](archive/M1/K3-L.md) | 无 | [执行包](tasks/K4-W.md) |
-| **K4 — 接通统一 Orchestrator 与运行 CLI** | 🔴 P0 | 🟢 待执行 | [K2](archive/M1/K2.md)、[K3-R](archive/M1/K3-R.md)、[K4-V](archive/M1/K4-V.md)、[K4-W](tasks/K4-W.md) | 无 | [执行包](tasks/K4.md) |
-| **K10-B — 共享生成、校验与打包流水线** | 🔴 P0 | 🟢 待执行 | [K1](archive/M1/K1.md)、[K4-W](tasks/K4-W.md) | 无 | [执行包](tasks/K10-B.md) |
+| **K4 — 接通统一 Orchestrator 与运行 CLI** | 🔴 P0 | 🟢 待执行 | [K2](archive/M1/K2.md)、[K3-R](archive/M1/K3-R.md)、[K4-V](archive/M1/K4-V.md)、[K4-W](archive/M1/K4-W.md) | 无 | [执行包](tasks/K4.md) |
+| **K10-B — 共享生成、校验与打包流水线** | 🔴 P0 | 🟢 待执行 | [K1](archive/M1/K1.md)、[K4-W](archive/M1/K4-W.md) | 无 | [执行包](tasks/K10-B.md) |
 | **K5-P — Codex Plugin 与 Marketplace 打包** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K10-B](tasks/K10-B.md) | G6、G7、G8 | [执行包](tasks/K5-P.md) |
 | **K5 — Codex fresh-session Executor** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K4](tasks/K4.md)、[K5-P](tasks/K5-P.md) | G6、G8 | [执行包](tasks/K5.md) |
 | **K6-P — DSH Bundle 打包** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K10-B](tasks/K10-B.md) | G6、G7、G8 | [执行包](tasks/K6-P.md) |
@@ -59,7 +56,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 执行节奏：每个任务先运行类型检查、lint 与本次影响范围的测试，通过后提交并继续；里程碑收口时运行 `pnpm verify` 全量回归。公共接口、依赖或跨模块行为变更按影响范围扩大测试；不要求每个任务无条件重复全量。命令定义仍以 HARNESS 为准。
 
-K4-V 的类型 / lint、编译及 239 项相关测试通过，见 [K4-V 记录](../verification/K4-V.md)。最近一次全量 `pnpm verify` 已通过 K3-L 回归（289 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 离线安装），详见 [HARNESS](../../HARNESS.md) 和 [K3-L 记录](../verification/K3-L.md)。以下平台产物入口仍由 K10-B / K10 落实，当前未实现：
+K4-W 的类型 / lint、编译、69 项相关测试与 CLI 离线安装通过，见 [K4-W 记录](../verification/K4-W.md)；K4-V 独立验收基线见 [记录](../verification/K4-V.md)。最近一次全量 `pnpm verify` 已通过 K3-L 回归（289 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 离线安装），详见 [HARNESS](../../HARNESS.md) 和 [K3-L 记录](../verification/K3-L.md)。以下平台产物入口仍由 K10-B / K10 落实，当前未实现：
 
 ```bash
 # 工作目录：dev-harness-runtime；以下是后续目标，不是已通过命令
@@ -82,11 +79,11 @@ dhr release --dry-run
 
 | 任务 | 完成日期 | 验收摘要 | 归档 |
 |---|---|---|---|
+| K4-W — 共享 Worker 与父上下文输出 | 2026-09-17 | 单一 Skill 源码、递归门禁、完整私有日志和紧凑摘要通过；69 项相关测试通过 | [M1 / K4-W](archive/M1/K4-W.md) |
 | K4-V — 执行结果、授权与收口验证 | 2026-09-17 | 独立验收、实际隔离、精确提交与持久证据恢复通过；真实宿主仍待取证 | [M1 / K4-V](archive/M1/K4-V.md) |
 | K3-R — Run 恢复与中断重入 | 2026-09-17 | 恢复、新执行身份、精确证据复用及唯一 successor 通过；相关 144 项测试通过 | [M1 / K3-R](archive/M1/K3-R.md) |
 | K3-L — 私有状态与互斥锁 | 2026-09-17 | 唯一 run.json、revision CAS、多进程锁和进程崩溃测试通过；全套 289 项 Node 测试通过 | [M1 / K3-L](archive/M1/K3-L.md) |
 | K3 — 内容快照与漂移门禁 | 2026-09-17 | 原始内容、index、初始用户修改保护和真实授权提交校验通过；全套 259 项 Node 测试通过 | [M1 / K3](archive/M1/K3.md) |
-| K2 — 项目与 Planning 读取 | 2026-09-17 | 主仓 / linked worktree、结构读取、资格选择与归档证据验证通过；全套 202 项 Node 测试通过 | [M1 / K2](archive/M1/K2.md) |
 
 [M0 归档索引](archive/M0/README.md)、[M1 归档索引](archive/M1/README.md)；本节最多保留五项摘要。
 
@@ -142,4 +139,4 @@ dhr release --dry-run
 
 ---
 
-*最后更新：2026-09-17（K4-V 归档；下一项 K4-W）*
+*最后更新：2026-09-17（K4-W 归档；下一项 K4）*
