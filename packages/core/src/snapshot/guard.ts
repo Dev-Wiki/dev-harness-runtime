@@ -6,6 +6,7 @@ import { PlanningError } from '../planning/types.js';
 import { serializeSnapshot, snapshotBoundaryHash } from './capture.js';
 import type { CapturedSnapshot } from './types.js';
 import { verifyAuthorizedCommit, type CommitIntent } from './commit.js';
+import { createWorkerWritePolicy } from '../worker/bridge-policy.js';
 
 export interface OwnedOperationBoundary {
   readonly runId: string;
@@ -63,15 +64,6 @@ export function assertUnchanged(before: CapturedSnapshot, after: CapturedSnapsho
   validateCapture(before); validateCapture(after);
   fail(before.boundaryHash === after.boundaryHash, 'Project changed across a guarded boundary');
 }
-function planningPaths(scope: Scope): string[] {
-  return [scope.planning.taskPath, scope.planning.archivePath, scope.planning.dashboardPath, scope.planning.archiveIndexPath];
-}
-function allowed(path: string, scope: Scope): boolean {
-  if (path.split('/').some((component) => component.toLowerCase() === '.git')) return false;
-  const root = scope.planning.dashboardPath.slice(0, scope.planning.dashboardPath.lastIndexOf('/'));
-  if (path.startsWith(`${root}/`)) return planningPaths(scope).includes(path);
-  return scope.files.includes(path) || scope.directories.some((directory) => path.startsWith(`${directory}/`));
-}
 async function assertContainedSymlink(repoRoot: string, privateGitDir: string, path: string, target: string): Promise<void> {
   const absolute = isAbsolute(target) ? target : `${dirname(resolve(repoRoot, path))}${sep}${target}`;
   let current = parse(absolute).root;
@@ -107,9 +99,10 @@ async function assertContainedSymlink(repoRoot: string, privateGitDir: string, p
 /** Preexisting user changes and staged content must not enter the Task's write scope. */
 export function assertTaskStart(initial: CapturedSnapshot, accepted: CapturedSnapshot, scopeInput: Scope): void {
   const scope = parseContract('scope', scopeInput); validateCapture(initial); validateCapture(accepted);
+  const allowed = createWorkerWritePolicy(scope);
   fail(initial.snapshot.runId === accepted.snapshot.runId && initial.snapshot.repoIdentity.repoRoot === accepted.snapshot.repoIdentity.repoRoot && initial.snapshot.repoIdentity.privateGitDir === accepted.snapshot.repoIdentity.privateGitDir, 'Initial and accepted snapshots belong to different Runs or worktrees');
   if (initial.stagedPaths.length > 0 || accepted.stagedPaths.length > 0) throw new PlanningError('USER_CHANGES_PRESENT', 'Automatic Tasks cannot start with staged changes');
-  for (const path of initial.dirtyPaths) if (allowed(path, scope)) throw new PlanningError('USER_CHANGES_PRESENT', `Task scope overlaps preexisting user change: ${path}`);
+  for (const path of initial.dirtyPaths) if (allowed(path)) throw new PlanningError('USER_CHANGES_PRESENT', `Task scope overlaps preexisting user change: ${path}`);
   const protectedPaths = new Map(initial.snapshot.paths.map((entry) => [entry.path, entry]));
   const current = new Map(accepted.snapshot.paths.map((entry) => [entry.path, entry]));
   for (const path of initial.dirtyPaths) fail(stable(protectedPaths.get(path)) === stable(current.get(path)), `Preexisting user change drifted: ${path}`);
@@ -121,6 +114,7 @@ export function assertTaskStart(initial: CapturedSnapshot, accepted: CapturedSna
 export async function verifyOwnedTransition(before: CapturedSnapshot, after: CapturedSnapshot, policy: TransitionPolicy): Promise<SnapshotDelta> {
   const left = validateCapture(before); const right = validateCapture(after);
   const scope = parseContract('scope', policy.scope); const authorization = parseContract('runAuthorization', policy.authorization);
+  const allowed = createWorkerWritePolicy(scope);
   assertTaskStart(policy.initial, before, scope);
   fail(left.runId === right.runId && authorization.runId === left.runId, 'Authorization must bind the captured Run', 'AUTHORIZATION_VIOLATION');
   fail(left.repoIdentity.repoRoot === right.repoIdentity.repoRoot && left.repoIdentity.privateGitDir === right.repoIdentity.privateGitDir, 'Repository/worktree identity changed');
@@ -128,7 +122,7 @@ export async function verifyOwnedTransition(before: CapturedSnapshot, after: Cap
   fail(stable(left.protocolSource) === stable(right.protocolSource) && left.adapterConfigHash === right.adapterConfigHash, 'Protocol or Adapter configuration changed');
   for (const key of ['dashboardRef', 'agentsRef', 'harnessRef', 'gitWorkflowRef'] as const) fail(left[key].path === right[key].path, `Governance reference identity changed: ${key}`);
   const delta = compareSnapshots(left, right);
-  for (const path of delta.paths) fail(allowed(path, scope), `Out-of-scope file or index change: ${path}`, 'AUTHORIZATION_VIOLATION');
+  for (const path of delta.paths) fail(allowed(path), `Out-of-scope file or index change: ${path}`, 'AUTHORIZATION_VIOLATION');
   const initialPaths = new Map(policy.initial.snapshot.paths.map((entry) => [entry.path, entry]));
   const afterPaths = new Map(right.paths.map((entry) => [entry.path, entry]));
   for (const path of policy.initial.dirtyPaths) fail(stable(initialPaths.get(path)) === stable(afterPaths.get(path)), `Preexisting user content changed: ${path}`);
