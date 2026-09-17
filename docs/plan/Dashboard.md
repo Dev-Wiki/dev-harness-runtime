@@ -4,8 +4,8 @@
 
 ## 1. 进度快照
 
-- **核心阶段**：M0 / M1 已收口；M3 的共享打包基础 K10-B 已验收，平台接入仍待实施。
-- **当前瓶颈**：公共 Core 与共享打包流水线分别通过 Fake Executor / Fake Packager 验证；真实平台包、宿主执行能力和对外分发许可仍待落实。
+- **核心阶段**：M0 / M1 已收口；M3 的共享打包基础 K10-B 与 Codex 本地包 K5-P 已验收，其余平台仍待接入。
+- **当前瓶颈**：Codex 包已通过本机隔离安装与卸载，真实模型会话调用、Codex / DSH Executor、其余平台包和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0 和 M1 全部任务已验收；已有公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、包骨架、独立验收、受控提交、共享 Worker 与紧凑摘要；串行编排与共享生成 / 校验 / 打包基础已验证，实际 Adapter 接入尚未实现，不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
@@ -23,11 +23,11 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | 尚未开始 |
-| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 共享 K10-B 基础已归档；平台产物尚未验收 |
+| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | K10-B 与 Codex K5-P 已归档；其余平台产物尚未验收 |
 
 ## 3. 当前工作顺序
 
-当前没有标为「🟢 待执行」的执行包。K10-B 已归档；平台实施包保持规划中，需先核对活跃表的 G6 / G7 / G8 与真实宿主条件，再进入工作顺序。
+1. [K5 — Codex fresh-session Executor](tasks/K5.md)：基于已验收的 K5-P 包与本机 0.154.0 宿主，取证会话、取消、结构化结果和授权能力；能力未证明前保持自动执行关闭。
 
 ## 4. 活跃任务
 
@@ -35,8 +35,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K5-P — Codex Plugin 与 Marketplace 打包** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | G6、G7、G8 | [执行包](tasks/K5-P.md) |
-| **K5 — Codex fresh-session Executor** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](tasks/K5-P.md) | G6、G8 | [执行包](tasks/K5.md) |
+| **K5 — Codex fresh-session Executor** | 🔴 P0 | 🟢 待执行 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：验证真实会话和授权后再启用能力 | [执行包](tasks/K5.md) |
 | **K6-P — DSH Bundle 打包** | 🔴 P0 | 📋 规划中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | G6、G7、G8 | [执行包](tasks/K6-P.md) |
 | **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 📋 规划中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](tasks/K6-P.md) | G5、G6、G8 | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 📋 规划中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | G6、G7、G8 | [执行包](tasks/K7.md) |
@@ -50,7 +49,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 执行节奏：每个任务先运行类型检查、lint 与本次影响范围的测试，通过后提交并继续；里程碑收口时运行 `pnpm verify` 全量回归。公共接口、依赖或跨模块行为变更按影响范围扩大测试；不要求每个任务无条件重复全量。命令定义仍以 HARNESS 为准。
 
-K4 / M1 全量 `pnpm verify` 已通过：496 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 空 store 离线安装；未跳过真实 bubblewrap 专项。全量后仅修正三处测试 getter 的 lint 提示，定向复验及 quick 无警告通过。详见 [K4 记录](../verification/K4.md) 和 [HARNESS](../../HARNESS.md)。共享流水线与 `dhr build|validate|pack` 的可信接口已由 K10-B 验证；以下仓库级平台产物入口及本地 release dry-run 仍由平台实施 / K10 落实，当前未实现：
+K4 / M1 全量 `pnpm verify` 已通过：496 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 空 store 离线安装；未跳过真实 bubblewrap 专项。全量后仅修正三处测试 getter 的 lint 提示，定向复验及 quick 无警告通过。详见 [K4 记录](../verification/K4.md) 和 [HARNESS](../../HARNESS.md)。共享流水线与 `dhr build|validate|pack` 的可信接口已由 K10-B 验证；K5-P 已通过 Codex 真实来源生成和隔离安装。以下仓库级平台产物入口及本地 release dry-run 仍由后续平台实施 / K10 落实，当前未实现：
 
 ```bash
 # 工作目录：dev-harness-runtime；以下是后续目标，不是已通过命令
@@ -61,6 +60,7 @@ dhr release --dry-run
 ```
 
 - V0 已建立固定工具链、workspace、CLI 骨架和 HARNESS；Windows / 原生 Linux CI 已配置但未实跑。build 编译并生成独立 CLI bundle；K10-B 已接通共享生成与打包基础，实际平台产物由后续 Packager 提供。
+- K5-P 的兼容 Codex 包通过本机 0.154.0 原生 Marketplace 安装、发现、包内 CLI 调用和卸载；未进行模型会话内 Skill 调用，不据此启用 Executor。见 [验证记录](../verification/K5-P.md)。
 - 公共验证覆盖 task selector、完整内容快照、CAS / 锁、crash / resume、授权与结果独立校验；Windows / Linux / WSL 分别报告。
 - 所有 Executor 使用相同 Contract Tests；Codex / DSH 另有三任务、独立 Session 身份、取消与恢复证据。
 - 五平台与 Portable 均需静态校验和 golden；真实安装 smoke 缺少宿主时记录无法运行，不能冒充通过。
@@ -73,10 +73,10 @@ dhr release --dry-run
 
 | 任务 | 完成日期 | 验收摘要 | 归档 |
 |---|---|---|---|
+| K5-P — Codex Plugin 与 Marketplace 打包 | 2026-09-17 | 真实 11 文件包、34 项打包专项与 Codex 隔离安装链通过；会话调用另验 | [M3 / K5-P](archive/M3/K5-P.md) |
 | K10-B — 共享生成、校验与打包流水线 | 2026-09-17 | 统一 Registry、来源锁、31 项打包专项与 19 项 CLI 专项通过 | [M3 / K10-B](archive/M3/K10-B.md) |
 | K4 — 统一 Orchestrator 与运行 CLI | 2026-09-17 | 三任务、取消、只读状态、恢复与 CLI 通过；M1 全量 496 项 Node 测试零跳过 | [M1 / K4](archive/M1/K4.md) |
 | K4-W — 共享 Worker 与父上下文输出 | 2026-09-17 | 单一 Skill 源码、递归门禁、完整私有日志和紧凑摘要通过；69 项相关测试通过 | [M1 / K4-W](archive/M1/K4-W.md) |
-| K4-V — 执行结果、授权与收口验证 | 2026-09-17 | 独立验收、实际隔离、精确提交与持久证据恢复通过；真实宿主仍待取证 | [M1 / K4-V](archive/M1/K4-V.md) |
 | K3-R — Run 恢复与中断重入 | 2026-09-17 | 恢复、新执行身份、精确证据复用及唯一 successor 通过；相关 144 项测试通过 | [M1 / K3-R](archive/M1/K3-R.md) |
 
 [M0 归档索引](archive/M0/README.md)、[M1 归档索引](archive/M1/README.md)、[M3 归档索引](archive/M3/README.md)；本节最多保留五项摘要。
@@ -111,9 +111,9 @@ dhr release --dry-run
 | G3 结果与收口责任 | R0、K1、K3、K4-V | Core 独立验收、单任务收口、Linux 验证隔离与受控提交已验证 | Adapter 仍须证明实际 Worker 权限与静止；宿主能力归 G6 / G8 |
 | G4 持久性与恢复 | R0、K1、K3-L、K3-R | 设计已解决 | 实现锁 / CAS / pending intent / reconcile 与进程崩溃测试；不泛化断电保证 |
 | G5 DSH 等价范围 | R0、K6 | 用户已确认；映射清单已完成 | K6 证明通用行为等价；旧流程与旧 Run 留在旧实现 |
-| G6 平台格式与能力 | R1、各平台任务 | 六类格式与最小 fixture 已取证；生产校验与宿主能力仍缺 | 针对目标版本固定规范与 fixture；启用 Executor 另需实际能力证据 |
-| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享版本输入、来源锁和确定性 ZIP / TAR 已验证；分发许可材料仍缺 | 平台产物复现与发布门禁由 K10 验收；对外分发前取得项目许可与随包声明 |
-| G8 实测环境与证据 | R1、K3-L、K5、K6、K10 | WSL2 工程验证通过；原生 OS、插件 smoke 与 Executor 未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
+| G6 平台格式与能力 | R1、各平台任务 | 六类最小 fixture 已取证；Codex 兼容包生产校验与本机安装通过，其余格式和 Executor 能力仍缺 | 针对目标版本固定规范与 fixture；启用 Executor 另需实际能力证据 |
+| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享版本输入、来源锁和确定性 ZIP / TAR 已验证；Codex 本地包可复现，分发许可材料仍缺 | 其余平台产物复现与发布门禁由 K10 验收；对外分发前取得项目许可与随包声明 |
+| G8 实测环境与证据 | R1、K3-L、K5、K6、K10 | WSL2 工程与 Codex 0.154.0 隔离安装链通过；原生 OS、模型会话调用与 Executor 未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
 
 ## 8. 验收口径
 
@@ -133,4 +133,4 @@ dhr release --dry-run
 
 ---
 
-*最后更新：2026-09-17（K10-B 归档；平台实施包仍需核对门禁）*
+*最后更新：2026-09-17（K5-P 归档；K5 准备执行）*

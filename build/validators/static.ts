@@ -1,5 +1,6 @@
 import { Ajv } from 'ajv';
 import { isRepoPath, parseContract, type PluginBuildInput, type ValidationReport } from '@dev-harness-runtime/contracts';
+import { sha256 } from '../manifests/input.js';
 
 export type ValidationCheck = ValidationReport['checks'][number];
 export interface ManifestSpec {
@@ -13,6 +14,8 @@ export interface StaticSpec {
   allowedFiles: readonly string[];
   manifests: readonly ManifestSpec[];
   skillFiles: readonly string[];
+  /** Generated JS may contain checker source or dependency comments; only exact locked bundle bytes may bypass lexical text lint. */
+  lockedBundles?: Readonly<Record<string, 'runtimeBundle' | 'adapterBundle'>>;
 }
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const validPath = (value: unknown): value is string => typeof value === 'string' && isRepoPath(value);
@@ -115,6 +118,11 @@ export async function validateStatic(files: ReadonlyMap<string, Uint8Array>, inp
   };
   list([...files.keys()], 'Package'); list(spec.requiredFiles, 'Required files'); list(spec.allowedFiles, 'Allowed files'); list(spec.skillFiles, 'Skill files');
   list(spec.manifests.map((manifest) => manifest?.path), 'Manifests');
+  for (const [path, source] of Object.entries(spec.lockedBundles ?? {})) {
+    if (!validPath(path) || !spec.allowedFiles.includes(path) || (source !== 'runtimeBundle' && source !== 'adapterBundle')) {
+      add('INVALID_STATIC_SPEC', path, 'Locked bundle must be an allowed canonical file bound to an input bundle');
+    }
+  }
   if (!spec.manifests.some((manifest) => record(manifest?.versionFields) && Object.keys(manifest.versionFields).length > 0)) {
     add('VERSION_BINDING_MISSING', 'manifest.json', 'Static validation needs at least one explicit manifest version binding');
   }
@@ -128,6 +136,15 @@ export async function validateStatic(files: ReadonlyMap<string, Uint8Array>, inp
   for (const [path, bytes] of files) {
     if (!spec.allowedFiles.includes(path)) add('UNEXPECTED_PACKAGE_CONTENT', path, 'Package file is not in the explicit allowlist');
     if (!(bytes instanceof Uint8Array)) { add('INVALID_PACKAGE_CONTENT', path, 'Package content must be byte data'); continue; }
+    const locked = spec.lockedBundles?.[path];
+    if (locked !== undefined) {
+      if (locked !== 'runtimeBundle' && locked !== 'adapterBundle') {
+        add('INVALID_STATIC_SPEC', path, 'Locked bundle references an unsupported input field');
+      } else if (sha256(bytes) !== input[locked].sha256) {
+        add('BUNDLE_DIGEST_MISMATCH', path, 'Packaged bundle differs from the locked build input');
+      }
+      continue;
+    }
     try {
       const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
       if (text.includes('\0')) {

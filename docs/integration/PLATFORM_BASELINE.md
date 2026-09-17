@@ -29,7 +29,7 @@
 
 本机随附 `plugin-creator/scripts/validate_plugin.py` 是兼容 profile 的额外离线检查器：要求 name、version、description、author.name，以及 interface 的 displayName、shortDescription、longDescription、developerName、category、defaultPrompt/default_prompt、capabilities。样例包含这些字段及 `skills: ./skills`。这些是该工具快照的检查要求，不代表所有官方格式的最小必需集合。工具拒绝 hooks，但当前官网允许；因此它不能代替未来生产校验器，也不能验证根 portable manifest。
 
-K5-P 应分别测试兼容包和根 manifest，依据目标宿主 smoke 确定最终输出，不能直接重命名 manifest。`codex exec` 的 JSONL、output-schema、输出文件为候选入口；本机 help 支持不证明结果可靠、历史隔离、取消或权限约束。[官方非交互入口](https://learn.chatgpt.com/docs/non-interactive-mode)。
+K5-P 已在 Codex 0.154.0 的隔离配置中测试兼容包和根 Portable fixture，两者均可原生安装、发现并移除；最终输出遵循设计 §19.1 的兼容 `.codex-plugin` 格式，未在一个包内混用两种 manifest。包内 CLI 0.1.0 可执行，但未进行模型会话内 Skill 调用，见 [K5-P 验证记录](../verification/K5-P.md)。`codex exec` 的 JSONL、output-schema、输出文件为 K5 候选入口；help 和插件安装成功都不证明结果可靠、历史隔离、取消或权限约束。[官方非交互入口](https://learn.chatgpt.com/docs/non-interactive-mode)。
 
 ### DSH
 

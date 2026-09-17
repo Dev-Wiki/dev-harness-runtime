@@ -1,6 +1,6 @@
 # 共享打包流水线
 
-K10-B 提供平台 Packager 共用的输入、阶段门禁和静态验证。它已用显式注册的 Fake Packager 验证；Codex、DSH、Cursor、OpenCode、Antigravity 和 Portable 的真实 Packager 分别由后续任务接入。默认 `dhr` 列出六个平台 ID，但没有把描述符当作可执行能力。此时 `dhr build|validate|pack --adapter <id>` 返回 `CAPABILITY_MISSING`，不会加载项目中的可执行配置。
+K10-B 提供平台 Packager 共用的输入、阶段门禁和静态验证，已用显式注册的 Fake Packager 验证。K5-P 接入 Codex 真实 Packager；其余五类目标仍待接入。默认 `dhr` 列出六个平台 ID，但没有把描述符当作可执行能力；未显式注入可信 BuildPipeline 的命令仍返回 `CAPABILITY_MISSING`，不会加载项目中的可执行配置。
 
 ## 来源与依赖图
 
@@ -36,6 +36,10 @@ pnpm build → 可信 BuildPipeline.generate → .generated/<platform>/plugin/
 `createTarGzip` 和 `createZip` 只接受内存中的规范相对路径及普通文件字节，按 UTF-8 路径排序并拒绝大小写别名、路径越界或格式边界溢出。TAR 使用 USTAR、mode 0644、uid/gid 0；gzip mtime 0。ZIP 使用固定 Unix mode 0100644、无额外字段，UTC 时间按 DOS 两秒粒度向下取整。两种归档的时间都来自输入的显式 `buildTimestamp`，不用当前时钟。ZIP 无 ZIP64；超出经典格式限制直接失败。
 
 golden 快照在 [tests/packaging/golden](../tests/packaging/golden/)；普通比较只读，漂移时失败。只有维护者明确调用 `compareGolden(path, snapshot, { update: true })` 才写入新 golden，随后需复核输入与 SHA-256。后续平台 Packager 应各自增加格式 fixture、golden 和真实安装 smoke 证据；当前 Fake Packager 不代表六平台可用。
+
+Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，由调用者提供固定的、干净的上游协议 checkout；输入从本仓 Git HEAD、真实 Skill / CLI / Adapter bundle、共享元数据和提交时间构造。`generate` 输出 `.generated/codex/plugin/` 下的 Marketplace 源布局；`validate` 检查封闭 manifest、来源版本、三个 Skill、相对引用和 bundle 摘要；`pack` 输出单一 `dist/codex/dev-harness-codex-v<version>.zip`。ZIP 解包后把 `marketplace/` 路径交给 `codex plugin marketplace add`。包内 `scripts/dhr.mjs` 可运行已编译 CLI；Host Executor 能力仍需 K5 probe。
+
+编译后的 CLI bundle 包含校验器源码中的占位词正则和依赖库注释，普通文本 lint 会把它们误报为包内容。Codex StaticSpec 仅对与 `PluginBuildInput` SHA-256 完全相同的两个源码锁定 bundle 跳过词法文本 lint；任一字节漂移直接报 `BUNDLE_DIGEST_MISMATCH`。manifest、Skill、README、脚本和声明仍按公共静态规则扫描。这个例外只用于已锁定的代码字节，不授予任意生成文件豁免。
 
 ## 验证入口
 
