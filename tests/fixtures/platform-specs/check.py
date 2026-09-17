@@ -140,7 +140,7 @@ class FixtureChecks(unittest.TestCase):
 
     def test_pinned_fixture_bytes(self):
         expected = read(ROOT / 'fixture-hashes.json')
-        actual = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+        actual = {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in ROOT.rglob('*') if p.is_file()
                   and p.name not in ('check.py', 'README.md', 'fixture-hashes.json')
                   and '__pycache__' not in p.parts}

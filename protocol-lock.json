@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/Dev-Wiki/dev-harness",
+  "commit": "1ed830aa0d696b52dbd666118ced475f4d6e8f79",
+  "protocolVersion": "1.11.8",
+  "files": [
+    {
+      "path": "VERSION",
+      "sha256": "4f23e147cb95d00a3be55724a0a20b6298b8bb6450e1fb9d2eb798604fb9e870"
+    },
+    {
+      "path": "commands/SKILL.md",
+      "sha256": "7491e80c13b3e1f4ca84addcb234ee5f4c59c5b3484d9b2226d90a145e3e5846"
+    },
+    {
+      "path": "commands/references/platform-command-mapping.md",
+      "sha256": "d15ee456a7910f3e33d66a750d04303a0c1efa026acf477373abae13b4916c7f"
+    },
+    {
+      "path": "commands/references/windows-shell.md",
+      "sha256": "0b70f5864cd89886ab245014331c826c1cc55237378628d4a3bb30b92ba66ed1"
+    },
+    {
+      "path": "context/SKILL.md",
+      "sha256": "1554cf5577643204094f02425eee066aaf1eec1c9e064ebdba69c3be7dc4c0dd"
+    },
+    {
+      "path": "context/references/platform-enhancements.md",
+      "sha256": "fb6230022369022258dfd82ff84444856ca4d162aec17c267707f8993bb53290"
+    },
+    {
+      "path": "context/templates/AGENTS.template.md",
+      "sha256": "4f60ef33ef38d8fee7d18bafed1bdb534a812096bc2eb451ef2a314bbe296f33"
+    },
+    {
+      "path": "context/templates/ARCHITECTURE.template.md",
+      "sha256": "867a8c087aff53c5e38f88ab76eb4971fa4bb652d8aa0a7c7374914df7bf943a"
+    },
+    {
+      "path": "context/templates/HARNESS.template.md",
+      "sha256": "f4517c589e81bc3aa97905bb462cc3782f02bdaea6615e23d4f15db002ceca48"
+    },
+    {
+      "path": "context/templates/README.template.md",
+      "sha256": "eca1feb4e75e1a1cd1285051dc285b9711c4093230e2cf49480a89ff87450448"
+    },
+    {
+      "path": "git-workflow/SKILL.md",
+      "sha256": "fc4b9d7b09a281ae4d353a110f8d187181bdeb848226af3688d3224149bd1915"
+    },
+    {
+      "path": "git-workflow/references/default-contract.md",
+      "sha256": "1efb5726988ba9fc60a0f279f31be33a638145f251e35c7dcf9fabfa0e39d7a9"
+    },
+    {
+      "path": "git-workflow/templates/CHANGELOG.template.md",
+      "sha256": "d2ad4c6b326d841104b4508a965928cc5c06374761473898d55f103a4f9f1cd3"
+    },
+    {
+      "path": "git-workflow/templates/GIT_WORKFLOW.template.md",
+      "sha256": "2df37b97352d1e9a28fde72f6b823ac108e03a0f6babe9fe4054a278ce50a060"
+    },
+    {
+      "path": "planning/SKILL.md",
+      "sha256": "ddf7dce2fa25e0a7415ff16ad799a0cfbebe85b9cc1c47ac7ade0f4b0e0b621b"
+    },
+    {
+      "path": "planning/references/legacy-migration.md",
+      "sha256": "120d8d6b0efa181f73b175c2a263a9795870cff9c99bceb5129107c3a7edea57"
+    },
+    {
+      "path": "planning/templates/ArchiveIndex.template.md",
+      "sha256": "8a6e0c58fe5f1ee5d0a1a806f1af93f9f242d9f4c7757209edac56b2209b095a"
+    },
+    {
+      "path": "planning/templates/Dashboard.template.md",
+      "sha256": "bccd73207d9d40dd6355e983689563eff9c8289e6a8e8915fefc87fcf0ceb422"
+    },
+    {
+      "path": "planning/templates/Task.template.md",
+      "sha256": "5b07c992961c96982519e40c8e98cb53a5ea070ff494828a831ff0abdb612a88"
+    },
+    {
+      "path": "planning/templates/TaskDetails.template.md",
+      "sha256": "cb04647391ea48eac2d6959002a48acf8d5bccbec57f35070e117b290d927513"
+    }
+  ]
+}

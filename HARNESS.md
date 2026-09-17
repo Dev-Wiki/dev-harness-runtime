@@ -1,0 +1,62 @@
+# HARNESS — 项目构建与验证契约
+
+本文件是项目构建、验证和执行环境的唯一事实源。
+它定义可执行命令、运行条件和验证边界，不替代 `AGENTS.md` 中的行为、安全与修改约束。
+
+## 项目类型
+TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
+
+## 编译与启动问题排查
+- **WorkingDirectory**（工作目录）：仓库根目录
+- **RecommendedTerminal**（建议终端）：PowerShell（Windows）或项目兼容 shell
+- **CanRunBuildHere**（当前环境能否构建）：yes（WSL2，详见下方实测记录；其他 OS 未验证）
+- **BuildCommand**（构建命令）：`pnpm build`
+- **FailureEvidence**（失败证据）：记录完整命令、工作目录、终端类型、退出码、前 50 行和最后 100 行构建日志
+
+## 自动识别构建命令候选
+
+- **build**: `pnpm build`
+- **test**: `pnpm test`
+- **quick**: `pnpm harness:quick`
+- **bugfix**: `pnpm harness:bugfix`
+- **full**: `pnpm verify`
+
+## 已确认命令（人工维护）
+
+工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md) 与 `package.json`。
+
+| 用途 | 命令 | 语义 | 状态 |
+|---|---|---|---|
+| build | `pnpm build` | TypeScript workspace 编译；不生成平台产物 | confirmed |
+| test | `pnpm test` | 编译后执行 node:test | confirmed |
+| quick | `pnpm harness:quick` | typecheck + lint | confirmed |
+| bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
+| full | `pnpm verify` | 类型、lint、测试、R1 fixture 和独立 CLI 包检查 | confirmed |
+
+`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version` 是当前运行入口；其他 dhr 功能尚未实现。
+
+- Node `24.15.0`，包 engines 为 `>=24.15.0 <25`；pnpm `11.1.0`。
+- TypeScript `6.0.3`、Oxlint `1.76.0`、`@types/node 24.12.2`，精确依赖见锁文件。
+- fixture 使用 Python 3.12；Windows 通过 `python`、其他系统通过 `python3` 调用。
+- Git `2.43.0` 为当前验证下限；上游 checkout 验证入口为 `pnpm verify:protocol --source <checkout>`。普通 verify 不隐式获取上游源码。
+- `pnpm test:fixtures` 单独校验 R1 最小样例；`pnpm test:cli-package` 在临时目录离线安装 CLI tarball；不安装宿主插件。
+- `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
+- 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
+- Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
+- `generate`、`validate:plugins`、平台 `pack`、`dhr release --dry-run` 尚未实现，不属于本阶段 full；没有以空脚本代替验收。
+
+## 高风险目录
+- scripts/：临时包安装、输出清理及外部 checkout 校验。
+
+## 禁改区域
+- packages/*/dist、build/dist：编译输出；build/targets 是可编辑源码。
+- node_modules、.cache/pnpm：依赖和缓存，通过安装器维护。
+- .git: 版本控制元数据
+
+## 自动识别候选
+- Windows / Ubuntu CI 已配置，尚无远端运行结果。
+
+## 需人工确认
+- 当前无数据库、业务授权执行器、网络客户端、运行锁或重试实现；设计能力由后续任务验证。
+- 分发许可材料尚需落实，本轮仅本地私有产物。
+- 原生 Windows / Linux、真实插件安装和模型 Session 本轮未运行。

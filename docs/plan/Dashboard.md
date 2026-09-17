@@ -4,10 +4,10 @@
 
 ## 1. 进度快照
 
-- **核心阶段**：M0 资料与契约准备。
-- **当前瓶颈**：公共设计与平台格式基线已建立；工程脚手架尚未实现，宿主执行能力仍需实测。
+- **核心阶段**：M0 已收口，进入 M1 公共 Runtime。
+- **当前瓶颈**：工程骨架与验证入口已建立；公共运行契约和 Core 行为尚待实现，宿主能力仍需实测。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
-- **需求状态**：R0 / R1 已验收；Core 与 Adapter 实现尚未开始，不继承旧 DSH 的完成状态。
+- **需求状态**：R0 / R1 / V0 已验收；已有 Registry 与包骨架，Core 运行行为与 Adapter 接入尚未实现，不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
 - **Run 布局**：`<run-id>/run.json` 是每个 Run 唯一权威状态文件；同级 `attempts/`、`results/`、`summary.json` 分别保存日志、结果与派生摘要。
 - **DSH 目标**：`0.1.5-rc.1`（本轮复跑；实际为 rc.1 启动器 + rc.2 组件）；旧 rc.8 仅作历史迁移参考，适配与验证以设计 §19.2 为准。
@@ -20,32 +20,30 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 里程碑 | 交付门槛 | 当前阶段 |
 |---|---|---|
-| M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 已归档；V0 待执行 |
-| M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 尚未开始 |
+| M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
+| M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | K1 待执行 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | 尚未开始 |
 | M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 尚未开始 |
 
 ## 3. 当前工作顺序
 
-1. [V0 — 建立 Monorepo 与验证入口](tasks/V0.md)：按活跃表核对前置任务后执行。
+1. [K1 — 定义并校验公共 Contracts](tasks/K1.md)：按活跃表核对前置任务后执行。
 
-2. [K1 — 定义并校验公共 Contracts](tasks/K1.md)：按活跃表核对前置任务后执行。
+2. [K2 — 发现项目并读取、选择 Planning Task](tasks/K2.md)：按活跃表核对前置任务后执行。
 
-3. [K2 — 发现项目并读取、选择 Planning Task](tasks/K2.md)：按活跃表核对前置任务后执行。
+3. [K3 — 实现内容快照与漂移门禁](tasks/K3.md)：按活跃表核对前置任务后执行。
 
-4. [K3 — 实现内容快照与漂移门禁](tasks/K3.md)：按活跃表核对前置任务后执行。
+4. [K3-L — 实现私有状态、原子写入与互斥锁](tasks/K3-L.md)：按活跃表核对前置任务后执行。
 
-5. [K3-L — 实现私有状态、原子写入与互斥锁](tasks/K3-L.md)：按活跃表核对前置任务后执行。
+5. [K3-R — 实现 Run 恢复与中断重入](tasks/K3-R.md)：按活跃表核对前置任务后执行。
 
-6. [K3-R — 实现 Run 恢复与中断重入](tasks/K3-R.md)：按活跃表核对前置任务后执行。
+6. [K4-V — 执行结果、授权与收口验证](tasks/K4-V.md)：按活跃表核对前置任务后执行。
 
-7. [K4-V — 执行结果、授权与收口验证](tasks/K4-V.md)：按活跃表核对前置任务后执行。
+7. [K4-W — 共享 Worker 与父上下文输出](tasks/K4-W.md)：按活跃表核对前置任务后执行。
 
-8. [K4-W — 共享 Worker 与父上下文输出](tasks/K4-W.md)：按活跃表核对前置任务后执行。
+8. [K4 — 接通统一 Orchestrator 与运行 CLI](tasks/K4.md)：按活跃表核对前置任务后执行。
 
-9. [K4 — 接通统一 Orchestrator 与运行 CLI](tasks/K4.md)：按活跃表核对前置任务后执行。
-
-10. [K10-B — 共享生成、校验与打包流水线](tasks/K10-B.md)：按活跃表核对前置任务后执行。
+9. [K10-B — 共享生成、校验与打包流水线](tasks/K10-B.md)：按活跃表核对前置任务后执行。
 
 上述执行包已接入 R0 契约；待执行不表示依赖已完成，必须先检查活跃表。平台实施包已接入 R1 基线，待剩余实施输入与验证条件明确后再进入本顺序。
 
@@ -55,8 +53,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **V0 — 建立 Monorepo 与验证入口** | 🔴 P0 | 🟢 待执行 | [R0](archive/M0/R0.md) | 无 | [执行包](tasks/V0.md) |
-| **K1 — 定义并校验公共 Contracts** | 🔴 P0 | 🟢 待执行 | [V0](tasks/V0.md)、[R0](archive/M0/R0.md) | 无 | [执行包](tasks/K1.md) |
+| **K1 — 定义并校验公共 Contracts** | 🔴 P0 | 🟢 待执行 | [V0](archive/M0/V0.md)、[R0](archive/M0/R0.md) | 无 | [执行包](tasks/K1.md) |
 | **K2 — 发现项目并读取、选择 Planning Task** | 🔴 P0 | 🟢 待执行 | [K1](tasks/K1.md) | 无 | [执行包](tasks/K2.md) |
 | **K3 — 实现内容快照与漂移门禁** | 🔴 P0 | 🟢 待执行 | [K1](tasks/K1.md)、[K2](tasks/K2.md) | 无 | [执行包](tasks/K3.md) |
 | **K3-L — 实现私有状态、原子写入与互斥锁** | 🔴 P0 | 🟢 待执行 | [K1](tasks/K1.md) | 无 | [执行包](tasks/K3-L.md) |
@@ -78,19 +75,17 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 ## 5. 共享验证基线
 
-当前已有文档与 R1 离线 fixture 检查，尚不存在可运行的 Runtime 构建、测试或 CLI。以下为设计要求的目标入口，必须由 V0 / K10-B / K10 落实并记录真实结果，当前不宣称已通过：
+当前 `pnpm verify`、`pnpm build` 与 `pnpm dhr --help` 已通过 V0 验证，详见 [HARNESS](../../HARNESS.md) 和 [V0 记录](../verification/V0.md)。以下平台产物入口仍由 K10-B / K10 落实，当前未实现：
 
 ```bash
-# 工作目录：dev-harness-runtime；先确认 HARNESS 已登记这些入口
-pnpm verify
-pnpm build
+# 工作目录：dev-harness-runtime；以下是后续目标，不是已通过命令
 pnpm generate
 pnpm validate:plugins
 pnpm pack
 dhr release --dry-run
 ```
 
-- V0 建立 Node / pnpm 与 OS 基线、typecheck / lint / unit 和 HARNESS 权威命令；K10-B 确定 build / generate 调用图。
+- V0 已建立固定工具链、workspace、CLI 骨架和 HARNESS；Windows / 原生 Linux CI 已配置但未实跑。build 只编译，K10-B 接通后续生成与打包。
 - 公共验证覆盖 task selector、完整内容快照、CAS / 锁、crash / resume、授权与结果独立校验；Windows / Linux / WSL 分别报告。
 - 所有 Executor 使用相同 Contract Tests；Codex / DSH 另有三任务、独立 Session 身份、取消与恢复证据。
 - 五平台与 Portable 均需静态校验和 golden；真实安装 smoke 缺少宿主时记录无法运行，不能冒充通过。
@@ -103,6 +98,7 @@ dhr release --dry-run
 
 | 任务 | 完成日期 | 验收摘要 | 归档 |
 |---|---|---|---|
+| V0 — Monorepo 与验证入口 | 2026-09-17 | 干净安装与全套验证通过，CLI tarball 可独立安装；无宿主能力声明 | [M0 / V0](archive/M0/V0.md) |
 | R1 — 平台格式与验证环境基线 | 2026-09-17 | 六类产物八个 profile；10 项离线检查通过；宿主能力保持门禁 | [M0 / R1](archive/M0/R1.md) |
 | R0 — 公共契约与迁移边界 | 2026-09-17 | 三份规范、源码映射与设计走查通过；尚无 Runtime 实现 | [M0 / R0](archive/M0/R0.md) |
 
@@ -133,14 +129,14 @@ dhr release --dry-run
 
 | 缺口 | 处理任务 | 当前处理状态 | 解除条件 |
 |---|---|---|---|
-| G1 工程与协议来源 | R0、V0 | 设计已确定；本地 Git / 规范已初始化 | V0 落地工具链、protocol-lock、设计归属和 HARNESS；已有初始化提交 HEAD，Runtime 执行前重新检查 |
+| G1 工程与协议来源 | R0、V0 | 已完成工程、protocol-lock、设计归属和 HARNESS | 后续执行前重验 HEAD、协议来源与工具链漂移 |
 | G2 Planning 解析规则 | R0、K1、K2 | 设计已解决 | K1 / K2 实现 CONTRACTS §2 并取得测试证据 |
 | G3 结果与收口责任 | R0、K1、K3、K4-V | 设计已解决 | 实现身份、可信验证、单任务收口、Core 提交及全进程权限门禁 |
 | G4 持久性与恢复 | R0、K1、K3-L、K3-R | 设计已解决 | 实现锁 / CAS / pending intent / reconcile 与进程崩溃测试；不泛化断电保证 |
 | G5 DSH 等价范围 | R0、K6 | 用户已确认；映射清单已完成 | K6 证明通用行为等价；旧流程与旧 Run 留在旧实现 |
 | G6 平台格式与能力 | R1、各平台任务 | 六类格式与最小 fixture 已取证；生产校验与宿主能力仍缺 | 针对目标版本固定规范与 fixture；启用 Executor 另需实际能力证据 |
 | G7 构建与分发规则 | R0、K1、K10-B、K10 | 设计已确定；分发许可材料仍缺 | 落地版本与可重复构建；对外分发前取得项目许可与随包声明 |
-| G8 实测环境与证据 | R1、K3-L、K5、K6、K10 | WSL2 和宿主入口已盘点；原生 OS、插件 smoke 与 Executor 未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
+| G8 实测环境与证据 | R1、K3-L、K5、K6、K10 | WSL2 工程验证通过；原生 OS、插件 smoke 与 Executor 未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
 
 ## 8. 验收口径
 
@@ -160,4 +156,4 @@ dhr release --dry-run
 
 ---
 
-*最后更新：2026-09-17（R1 验收归档；下一项 V0，平台实测门禁保留）*
+*最后更新：2026-09-17（V0 归档、M0 收口；下一项 K1）*

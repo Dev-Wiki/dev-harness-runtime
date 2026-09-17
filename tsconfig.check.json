@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@dev-harness-runtime/contracts": [
+        "./packages/contracts/src/index.ts"
+      ],
+      "@dev-harness-runtime/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@dev-harness-runtime/cli": [
+        "./packages/cli/src/index.ts"
+      ],
+      "@dev-harness-runtime/adapter-codex": [
+        "./packages/adapter-codex/src/index.ts"
+      ],
+      "@dev-harness-runtime/adapter-dsh": [
+        "./packages/adapter-dsh/src/index.ts"
+      ],
+      "@dev-harness-runtime/adapter-cursor": [
+        "./packages/adapter-cursor/src/index.ts"
+      ],
+      "@dev-harness-runtime/adapter-opencode": [
+        "./packages/adapter-opencode/src/index.ts"
+      ],
+      "@dev-harness-runtime/adapter-antigravity": [
+        "./packages/adapter-antigravity/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "build/targets/**/*.ts"
+  ]
+}

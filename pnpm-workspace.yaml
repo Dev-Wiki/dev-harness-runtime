@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+  - 'build'
+
+minimumReleaseAge: 1440
+engineStrict: true
+saveExact: true
+verifyDepsBeforeRun: error
+storeDir: .cache/pnpm

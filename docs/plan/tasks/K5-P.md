@@ -8,7 +8,7 @@
 
 ## 执行上下文
 
-- **权威需求**：[设计文档](../../../../dev-harness-runtime-design.md) §19.1、§25、§41、§45 K5；[资料评估](../Readiness.md)。
+- **权威需求**：[设计文档](../../design/runtime-design.md) §19.1、§25、§41、§45 K5；[资料评估](../Readiness.md)。
 - **平台输入**：[R1 平台基线](../../integration/PLATFORM_BASELINE.md)、[fixture 与离线命令](../../../tests/fixtures/platform-specs/README.md)。
 - **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
 - **相关测试**：最小 fixture 与真实生成目录逐项比较；解包后检查引用、Skill 和 runtime 资源；宿主可用时隔离安装、发现、调用 smoke、卸载。
@@ -47,6 +47,10 @@
 |---|---|---|
 | 本任务验收 | 最小 fixture 与真实生成目录逐项比较；解包后检查引用、Skill 和 runtime 资源；宿主可用时隔离安装、发现、调用 smoke、卸载。 | 尚未执行；交付时记录真实结果与稳定证据。 |
 | 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | 尚未执行；当前无 Runtime 实现或命令通过记录。 |
+
+## 本机测试授权
+
+用户于 2026-09-17 明确允许使用本机 Codex 环境安装测试插件。本机 0.154.0 的帮助已确认 `plugin marketplace add/list/remove` 与 `plugin add/list/remove` 入口；执行时保护既有安装，使用当前样例标识并记录安装、发现、调用和卸载各自结果。帮助可用不表示已安装成功；不据此扩张到发布动作。
 
 ## 已确认决策
 

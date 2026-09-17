@@ -3,6 +3,7 @@ node_modules/
 .generated/
 dist/
 coverage/
+.cache/
 *.tsbuildinfo
 
 # Local environment files

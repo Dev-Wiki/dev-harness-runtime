@@ -1,0 +1,44 @@
+name: 验证工程基线
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 保留协议与 fixture 的原始 LF 字节
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+        with:
+          path: runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: Dev-Wiki/dev-harness
+          ref: 1ed830aa0d696b52dbd666118ced475f4d6e8f79
+          path: protocol-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装固定版本 pnpm
+        run: npm install --global pnpm@11.1.0
+      - name: 安装锁定依赖
+        working-directory: runtime
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: 校验协议来源
+        working-directory: runtime
+        run: pnpm verify:protocol --source ../protocol-source
+      - name: 类型、lint、单元、fixture 与 CLI 安装包验证
+        working-directory: runtime
+        run: pnpm verify

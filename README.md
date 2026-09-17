@@ -4,7 +4,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 ## 当前阶段
 
-项目处于开发规划阶段，已初始化本地 Git 仓库；Runtime、CLI 和构建工具链尚未实现。
+项目已建立 TypeScript / Node.js workspace、Adapter / Build Registry 和 CLI 骨架。`dhr` 当前提供 help / version；任务编排、Run 状态与平台打包尚未实现。
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`
@@ -19,4 +19,16 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 - [资料完整性评估](docs/plan/Readiness.md)
 - [Git 提交与发布规范](docs/GIT_WORKFLOW.md)
 
-构建和测试入口由后续工程初始化任务建立，并在 `HARNESS.md` 中记录实际验证结果。
+## 本地开发
+
+使用 Node `24.15.0`、pnpm `11.1.0`，fixture 校验另需 Python 3.12。依赖版本由锁文件固定。
+
+```bash
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm verify
+pnpm dhr --help
+```
+
+已验证环境为 WSL2；Windows / 原生 Linux 的 CI 已配置，尚无远端运行结果。构建、测试及命令语义以 [HARNESS](HARNESS.md) 为准；模块边界见 [ARCHITECTURE](ARCHITECTURE.md)。
+
+`protocol-lock.json` 固定上游提交和文件摘要。需要验证上游 checkout 时运行 `pnpm verify:protocol --source <checkout>`，不会自动下载或更新协议。

@@ -1,0 +1,20 @@
+{
+  "name": "@dev-harness-runtime/build",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dev-harness-runtime/core": "workspace:*",
+    "@dev-harness-runtime/adapter-codex": "workspace:*",
+    "@dev-harness-runtime/adapter-dsh": "workspace:*",
+    "@dev-harness-runtime/adapter-cursor": "workspace:*",
+    "@dev-harness-runtime/adapter-opencode": "workspace:*",
+    "@dev-harness-runtime/adapter-antigravity": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "engines": {
+    "node": ">=24.15.0 <25"
+  }
+}

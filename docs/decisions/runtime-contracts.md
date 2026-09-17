@@ -6,7 +6,7 @@
 
 ## 1. 来源与已确认约束
 
-- [原始设计](../../../dev-harness-runtime-design.md) §5–18、§22–28、§37–40、§45–47 定义架构和范围；其中 TypeScript 片段是设计示例，完整公共契约由本次文档细化。
+- [原始设计](../design/runtime-design.md) §5–18、§22–28、§37–40、§45–47 定义架构和范围；其中 TypeScript 片段是设计示例，完整公共契约由本次文档细化。
 - 上游协议基线为本地 `dev-harness` 提交 `1ed830aa0d696b52dbd666118ced475f4d6e8f79`，`VERSION` 为 `1.11.8`。引用 [Planning](../../../dev-harness/planning/SKILL.md)、[Commands](../../../dev-harness/commands/SKILL.md)、[Git Workflow](../../../dev-harness/git-workflow/SKILL.md)；不能用本机已安装 Skill 的版本替代项目锁定来源。
 - 旧 DSH 参考提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`，仅作为迁移证据，不作为新公共协议。
 - 用户已确认项目名 `dev-harness-runtime`、CLI `dhr`、唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`，以及 `<run-id>/run.json` 的唯一状态权威。

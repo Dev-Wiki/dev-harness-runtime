@@ -6,6 +6,8 @@
 
 R1 后续取证见 [平台基线](../integration/PLATFORM_BASELINE.md) 和 [验证记录](../verification/R1.md)。下文“本次未复跑 / 未定位”等描述属于初次评估；R1 已复跑 DSH 版本、找到 Codex 精确格式和可读的 Antigravity Plugin 教程。运行能力仍未验证。
 
+V0 后续已建立 workspace、验证入口与来源锁；原设计已迁入 [docs/design](../design/runtime-design.md)。下文目标仓库为空、尚无 HARNESS 等描述为初次评估历史，当前实现入口见 [架构](../../ARCHITECTURE.md) 与 [HARNESS](../../HARNESS.md)。
+
 ## 结论
 
 现有资料足以明确产品边界、拆分 MVP 并启动契约澄清和平台取证；尚不足以把所有实施任务交给新会话直接执行。关键缺项集中在机器可读契约、收口与恢复的责任边界、DSH 等价范围以及平台运行证据。无需等待额外 PRD 才能建立计划，但不能把接口示例当作完整协议。
@@ -16,7 +18,7 @@ R1 后续取证见 [平台基线](../integration/PLATFORM_BASELINE.md) 和 [验�
 
 | 资料 | 能支持的判断 | 证据边界 |
 |---|---|---|
-| [Runtime 设计](../../../dev-harness-runtime-design.md) §1–50 | 目标、Core / Adapter / Packager 分层、V0 与 K1–K10、最终验收 | 设计输入，尚无目标实现 |
+| [Runtime 设计](../design/runtime-design.md) §1–50 | 目标、Core / Adapter / Packager 分层、V0 与 K1–K10、最终验收 | 设计输入，尚无目标实现 |
 | [Planning 协议](../../../dev-harness/planning/SKILL.md) | Dashboard 唯一权威、任务执行包、归档与漂移门禁 | 文字协议，尚非完整 Markdown 解析规范 |
 | [dev-harness 文档入口](../../../dev-harness/docs/README.md) | 上游 Context / HARNESS / Git / Docs 的来源定位 | Runtime 不应复制这些业务协议 |
 | [旧 DSH 架构](../../../dev-harness-dsh/ARCHITECTURE.md)、[HARNESS](../../../dev-harness-dsh/HARNESS.md) | 已有工程入口与历史验证说明 | 历史记录，本次未重跑 |

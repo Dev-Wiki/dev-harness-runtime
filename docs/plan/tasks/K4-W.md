@@ -8,7 +8,7 @@
 
 ## 执行上下文
 
-- **权威需求**：[设计文档](../../../../dev-harness-runtime-design.md) §16–17、§27、§34–35；[资料评估](../Readiness.md)。
+- **权威需求**：[设计文档](../../design/runtime-design.md) §16–17、§27、§34–35；[资料评估](../Readiness.md)。
 - **公共实施依据**：[CONTRACTS](../../CONTRACTS.md)、[R0 决策](../../decisions/runtime-contracts.md)、[DSH 迁移边界](../../DSH_MIGRATION.md)。
 - **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
 - **相关测试**：prompt fixture、环境传播与递归入口测试、长日志下的摘要输出测试。

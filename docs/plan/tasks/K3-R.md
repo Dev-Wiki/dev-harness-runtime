@@ -8,7 +8,7 @@
 
 ## 执行上下文
 
-- **权威需求**：[设计文档](../../../../dev-harness-runtime-design.md) §10–12、§17、§45 K3；[资料评估](../Readiness.md)。
+- **权威需求**：[设计文档](../../design/runtime-design.md) §10–12、§17、§45 K3；[资料评估](../Readiness.md)。
 - **公共实施依据**：[CONTRACTS](../../CONTRACTS.md)、[R0 决策](../../decisions/runtime-contracts.md)、[DSH 迁移边界](../../DSH_MIGRATION.md)。
 - **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
 - **相关测试**：在 execute、result、计划收口、commit、state persist 边界注入崩溃后启动新的 Fake Executor。

@@ -1,0 +1,18 @@
+# 项目架构分析
+
+## 模块依赖关系图
+五个 Adapter → contracts；build → core 与 Adapter 包；CLI 当前无 workspace 运行依赖，独立 tarball 提供 help/version。
+
+## 核心业务流程
+CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list，拒绝重复与未知 ID；尚无 Task 调度或 Run 写入。
+
+## 架构模式
+公共 Core / Adapter / Build 分层骨架；当前仅注册元数据，没有 Executor 或 Packager 实例。
+
+## 模块接口与通信方式
+- Adapter 通过 workspace:* 引用 contracts；build 通过 workspace 包引用 core。
+- Registry 使用 register/get/list；CLI 通过 CliOutput 注入输出。
+
+## 关键模块标记
+- docs/design/runtime-design.md 是唯一设计正文，ARCHITECTURE 描述当前实现。
+- protocol-lock.json 与校验脚本固定来源，不自动 clone 或升级。

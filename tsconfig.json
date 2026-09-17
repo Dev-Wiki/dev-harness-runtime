@@ -1,0 +1,32 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "packages/adapter-codex"
+    },
+    {
+      "path": "packages/adapter-dsh"
+    },
+    {
+      "path": "packages/adapter-cursor"
+    },
+    {
+      "path": "packages/adapter-opencode"
+    },
+    {
+      "path": "packages/adapter-antigravity"
+    },
+    {
+      "path": "build"
+    }
+  ]
+}
