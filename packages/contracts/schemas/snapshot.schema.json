@@ -56,6 +56,33 @@
         "branch"
       ]
     },
+    "indexFingerprint": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "indexFlags": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "tag": {
+            "pattern": "^[A-Za-z]$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "tag"
+        ]
+      }
+    },
     "paths": {
       "type": "array",
       "items": {
@@ -402,6 +429,26 @@
         ]
       }
     },
+    "dirtyPaths": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "format": "repo-path",
+        "type": "string"
+      }
+    },
+    "stagedPaths": {
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "minLength": 1,
+        "maxLength": 4096,
+        "format": "repo-path",
+        "type": "string"
+      }
+    },
     "dashboardRef": {
       "additionalProperties": false,
       "type": "object",
@@ -619,7 +666,11 @@
     "runId",
     "capturedAt",
     "repoIdentity",
+    "indexFingerprint",
+    "indexFlags",
     "paths",
+    "dirtyPaths",
+    "stagedPaths",
     "dashboardRef",
     "dependencyArchiveRefs",
     "agentsRef",

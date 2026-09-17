@@ -289,3 +289,17 @@ Planning 使用 [markdown-it 的结构 token](https://markdown-it.github.io/mark
 选择返回 selected / blocked / completed(queueExhausted)。不存在的 explicit Task 抛 `PlanningError` / TASK_NOT_FOUND；结构损坏、缺文件、空白 blocker、未知状态、缺失 ready 顺序项等抛带 code、path、可用行号的错误。非空且不符合“无”规则的 blocker 返回 blocked。all-ready 每次只选一个 Task，调用方须在接受结果后重新读取，不能缓存整批任务直接执行。
 
 相对 Markdown 引用与 K1 的持久路径字段不同：链接允许 `../`，但规范化及 realpath 后须留在真实仓库内；禁止 URL、query、fragment、反斜杠、控制字符和路径大小写别名。已存在的 symlink 逐段检查，避免越界读取。上述检查是读取时检查；启动前的并发漂移和全内容快照由 K3 负责，未接受的 Run 归档与 pendingOperation 门禁由 K3-R / K4 联合完成。
+
+## 11. K3 内容快照与漂移门禁实现
+
+`captureSnapshot` 接收 K2 的 ProjectContext、当前 Task、PlanningReference、协议来源与 Adapter 配置摘要；重新读取真实 Git 和文件字节。它不创建 Run 状态。`serializeSnapshot` 定义持久记录的稳定 JSON 字节及末尾换行，`hash` 对完整记录取 SHA-256；`snapshotBoundaryHash` 仅排除 capturedAt，供重复捕获比较。
+
+Snapshot 增加必填 indexFingerprint、indexFlags、dirtyPaths、stagedPaths。indexFingerprint 绑定全部 stage / blob / mode、assume-unchanged / skip-worktree 标志和暂存 raw diff；不依赖易变的 index stat cache。dirty / staged 分类写入受摘要保护的 Snapshot，外层兼容数组必须与记录一致。路径覆盖 tracked、untracked、ignored、删除、文件模式、原始 symlink 目标和 gitlink；脏或未初始化的 submodule 明确阻止捕获，不以单个 commit 冒充其内部修改。
+
+文件 rawContentHash 始终按原始字节计算。判断工作树是否有修改时，Core 将捕获字节、有效属性与原 index blob 送入隔离临时 Git 仓库，由 Git 自身处理 text / eol / autocrlf / ident / working-tree-encoding；不改写项目，不运行外部 filter。项目配置了外部内容 filter 时返回 UNSUPPORTED_PROJECT_FILTER。转换行为依据 [Git hash-object](https://git-scm.com/docs/git-hash-object) 与 [Git v2.43.0 convert.c](https://github.com/git/git/blob/v2.43.0/convert.c)，LF/CRLF 和 UTF-16LE 有实际 Git 正反例。
+
+捕获前后核对 Git 身份、index、路径列表和转换设置，逐文件核对打开前后身份与 stat，完成前再次检查全部观察值。遇到读取期间变化返回 DRIFT_DETECTED；这不是文件系统原子快照，也不保证检测两次观察之间被完全恢复的瞬时改动。执行期隔离和持锁仍由后续任务完成。
+
+`assertUnchanged` 比较完整边界；`assertTaskStart` 阻止任何预存暂存内容、scope 与初始用户修改重叠及初始修改漂移。`verifyOwnedTransition` 限制代码 scope 和当前 Task 的四个 Planning 收口路径，保护初始用户内容，禁止未授权 HEAD / index / branch 变化。新 symlink 逐段解析，不能指向仓库外或 Git 私有目录。允许的路径仍必须通过 Core 提供的 `verifyOwnership`，该回调核验可信操作记录绑定的 runId / taskId / beforeHash / afterHash / 实际路径集合；Worker 的 changedFiles 或自行生成的摘要不构成证据。K4-V 接通持久操作证据和独立验证，K3 的回调测试只验证此接口的门禁。
+
+`verifyAuthorizedCommit` 只读校验已经发生的提交：授权、完整快照摘要、当前实际 HEAD / branch / index、唯一父提交、预期 tree、原始 messageHash、精确文件集合及提交后内容均须一致，忽略 Git replace refs；不执行 commit、hook 或发布。no-commit 不接受 HEAD 前进。上述 API 尚未接入 CLI 编排，锁、状态落盘与恢复另由 K3-L / K3-R 实现。

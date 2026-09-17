@@ -10,7 +10,7 @@
 
 - **权威需求**：[设计文档](../../design/runtime-design.md) §10–11、§35、§45 K3；[资料评估](../Readiness.md)。
 - **公共实施依据**：[CONTRACTS](../../CONTRACTS.md)、[R0 决策](../../decisions/runtime-contracts.md)、[DSH 迁移边界](../../DSH_MIGRATION.md)。
-- **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
+- **代码入口**：已有 contracts 的 RunState / LockMetadata 校验、core/discovery 的 privateGitDir / stateRoot 以及 K3 快照 API；state / lock 实现仍需新建。
 - **相关测试**：多进程写入争用、revision 冲突、半写与进程退出故障注入、linked worktree 隔离。
 - **必须保持的不变量**：唯一状态根为 $(git rev-parse --git-path dev-harness-runtime)/runs/；状态不进入 worktree 或 Git 提交。
 
@@ -47,7 +47,7 @@
 | 验证项 | 命令 / 操作 | 结果 / 证据链接 |
 |---|---|---|
 | 本任务验收 | 多进程写入争用、revision 冲突、半写与进程退出故障注入、linked worktree 隔离。 | 尚未执行；交付时记录真实结果与稳定证据。 |
-| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | 尚未执行；当前无 Runtime 实现或命令通过记录。 |
+| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | K3 全套回归已通过；状态与锁尚未实现，需本任务独立取证。 |
 
 ## 已确认决策
 

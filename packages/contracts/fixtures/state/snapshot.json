@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "runId": "run-a",
   "capturedAt": "2026-09-17T00:00:00Z",
+  "indexFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "dirtyPaths": ["src/tool.sh", "src/deleted.ts"],
+  "stagedPaths": [],
+  "indexFlags": [
+    { "path": "src/a.ts", "tag": "H" },
+    { "path": "src/link", "tag": "H" },
+    { "path": "src/deleted.ts", "tag": "H" }
+  ],
   "repoIdentity": {
     "repoRoot": "/workspace/project",
     "privateGitDir": "/workspace/project/.git",

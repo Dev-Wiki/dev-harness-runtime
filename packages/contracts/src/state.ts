@@ -49,7 +49,11 @@ export const SnapshotSchema = object({
   runId: RunIdSchema,
   capturedAt: TimestampSchema,
   repoIdentity: RepoIdentitySchema,
+  indexFingerprint: HashSchema,
+  indexFlags: Type.Array(object({ path: RelativePathSchema, tag: Type.String({ pattern: '^[A-Za-z]$' }) })),
   paths: Type.Array(SnapshotPathSchema),
+  dirtyPaths: Type.Array(RelativePathSchema, { uniqueItems: true }),
+  stagedPaths: Type.Array(RelativePathSchema, { uniqueItems: true }),
   dashboardRef: EvidenceRefSchema,
   currentTaskRef: Type.Optional(EvidenceRefSchema),
   dependencyArchiveRefs: Type.Array(EvidenceRefSchema),
@@ -195,6 +199,17 @@ export function validateSnapshot(snapshot: Snapshot): void {
     invariant(new Set(stages).size === stages.length, 'Index stages must be unique for each path');
     invariant(!stages.includes(0) || stages.length === 1, 'Stage zero cannot coexist with conflict stages');
     if (entry.type === 'symlink') invariant(!entry.symlinkTarget.includes('\0'), 'Symlink text cannot contain NUL');
+  }
+  const flags = new Set<string>();
+  for (const entry of snapshot.indexFlags) {
+    invariant(!flags.has(entry.path.toLowerCase()), 'Index flags must have unique paths without case aliases');
+    flags.add(entry.path.toLowerCase());
+    invariant(snapshot.paths.some((path) => path.path === entry.path && path.index.length > 0), 'Index flags must identify indexed snapshot paths');
+  }
+  invariant(snapshot.paths.every((path) => path.index.length === 0 || snapshot.indexFlags.some((flag) => flag.path === path.path)), 'Every indexed path requires an index flag');
+  for (const list of [snapshot.dirtyPaths, snapshot.stagedPaths]) {
+    invariant(new Set(list.map((path) => path.toLowerCase())).size === list.length, 'Dirty/staged paths must be unique without case aliases');
+    invariant(list.every((path) => snapshot.paths.some((entry) => entry.path === path)), 'Dirty/staged paths must identify snapshot entries');
   }
 }
 

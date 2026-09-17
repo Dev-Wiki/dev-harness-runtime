@@ -19,6 +19,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "markdown-it": "15.0.2"
+    "markdown-it": "15.0.2",
+    "@dev-harness-runtime/contracts": "workspace:*"
   }
 }

@@ -27,9 +27,9 @@
 ## 1. 项目上下文速查
 
 - **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM。
-- **架构模式**: 公共 Core / Adapter / Build 分层；Core 已有项目发现与 Planning 读取，Adapter 仍为元数据，没有 Executor 或 Packager 实例。
+- **架构模式**: 公共 Core / Adapter / Build 分层；Core 已有项目发现、Planning 读取与快照 / 漂移校验，Adapter 仍为元数据，没有 Executor 或 Packager 实例。
 - **核心入口**: packages/cli/bin/dhr.mjs → packages/cli/src/index.ts；注册入口为 packages/core/src/index.ts 与 build/targets/index.ts。
-- **核心调用链**: CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list；discoverProject → readPlan → selectTask 提供只读选择，尚无 Executor 调度或 Run 写入。
+- **核心调用链**: CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list；discoverProject → readPlan → selectTask 提供只读选择，captureSnapshot / verifyOwnedTransition 提供边界校验；尚无 Executor 调度或 Run 写入。
 - **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交与二十个文件摘要。
 
 ## 1b. 文件信任等级

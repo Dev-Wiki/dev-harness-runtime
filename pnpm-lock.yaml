@@ -82,6 +82,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@dev-harness-runtime/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       markdown-it:
         specifier: 15.0.2
         version: 15.0.2
