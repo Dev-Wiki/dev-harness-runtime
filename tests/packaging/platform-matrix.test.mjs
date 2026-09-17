@@ -4,11 +4,12 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import test from 'node:test';
 
 const run = promisify(execFile);
-const script = new URL('../../scripts/platform-matrix.mjs', import.meta.url).pathname;
+const script = fileURLToPath(new URL('../../scripts/platform-matrix.mjs', import.meta.url));
 const variants = {
   codex: ['plugin'], dsh: ['bundle'], cursor: ['plugin'],
   opencode: ['npm', 'local'], antigravity: ['plugin', 'project', 'global'],
