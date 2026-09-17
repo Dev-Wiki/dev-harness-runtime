@@ -23,6 +23,7 @@
     "dhr": "./bin/dhr.mjs"
   },
   "devDependencies": {
+    "@dev-harness-runtime/build": "workspace:*",
     "@dev-harness-runtime/contracts": "workspace:*",
     "@dev-harness-runtime/core": "workspace:*"
   }

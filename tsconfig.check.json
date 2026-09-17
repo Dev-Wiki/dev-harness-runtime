@@ -31,6 +31,9 @@
   },
   "include": [
     "packages/*/src/**/*.ts",
-    "build/targets/**/*.ts"
+    "build/targets/**/*.ts",
+    "build/transforms/**/*.ts",
+    "build/validators/**/*.ts",
+    "build/manifests/**/*.ts"
   ]
 }

@@ -5,7 +5,7 @@
 
 ## 项目类型
 
-TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI，平台 Adapter 仍为元数据骨架。
+TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI，共享打包流水线通过 Fake Packager 验证，平台 Adapter / Packager 仍为元数据骨架。
 
 ## 编译与启动问题排查
 
@@ -25,17 +25,17 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 ## 已确认命令（人工维护）
 
-工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md)、[K3-L 验证记录](docs/verification/K3-L.md)、[K3-R 验证记录](docs/verification/K3-R.md)、[K4-V 验证记录](docs/verification/K4-V.md)、[K4-W 验证记录](docs/verification/K4-W.md)、[K4 / M1 完整回归](docs/verification/K4.md) 与 `package.json`。
+工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md)、[K3-L 验证记录](docs/verification/K3-L.md)、[K3-R 验证记录](docs/verification/K3-R.md)、[K4-V 验证记录](docs/verification/K4-V.md)、[K4-W 验证记录](docs/verification/K4-W.md)、[K4 / M1 完整回归](docs/verification/K4.md)、[K10-B 打包专项](docs/verification/K10-B.md) 与 `package.json`。
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
 | build | `pnpm build` | TypeScript workspace 编译及独立 CLI bundle；不生成平台插件产物 | confirmed |
-| test | `pnpm test` | 编译后执行 node:test | confirmed |
+| test | `pnpm test` | 编译后执行 node:test，包含 tests/packaging 专项 | confirmed |
 | quick | `pnpm harness:quick` | typecheck + lint | confirmed |
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
 | full | `pnpm verify` | 类型、lint、测试、Schema 一致性、R1 fixture 和独立 CLI 包检查 | confirmed |
 
-`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，当前生产包未提供宿主 Executor 时返回 CAPABILITY_MISSING。
+`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。当前生产包没有宿主 Executor / 平台 Packager，相应命令返回 CAPABILITY_MISSING。
 
 - Node `24.15.0`，包 engines 为 `>=24.15.0 <25`；pnpm `11.1.0`。
 - TypeScript `6.0.3`、Oxlint `1.76.0`、esbuild `0.28.0`、`@types/node 24.12.2`，精确依赖见锁文件。
@@ -46,7 +46,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
 - Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
-- `generate`、`validate:plugins`、平台 `pack`、`dhr release --dry-run` 尚未实现，不属于本阶段 full；没有以空脚本代替验收。
+- 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现，使用可信显式注入测试；没有真实平台 Packager 时不能生成实际插件。仓库级 `pnpm generate`、`pnpm validate:plugins`、`pnpm pack` 及 `dhr release --dry-run` 留给平台接入与收口任务，不属于当前已确认命令；没有以空脚本代替验收。
 
 ## 高风险目录
 

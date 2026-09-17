@@ -27,9 +27,9 @@
 ## 1. 项目上下文速查
 
 - **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM，esbuild 0.28.0 将 Core / Contracts 及依赖打入独立 CLI bundle。
-- **架构模式**: 公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；RuntimeAdapter 由可信调用者显式注册，分发平台描述符尚无真实 Executor 或 Packager 实例。
+- **架构模式**: 公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；统一 PlatformRegistry 显式注册 RuntimeAdapter 和 PluginPackager，分发平台描述符尚无真实 Executor 或 Packager 实例。
 - **核心入口**: packages/cli/bin/dhr.mjs → 编译生成的 dist/bundle.js → packages/cli/src/index.ts；公共 API 入口为 packages/core/src/index.ts，构建目标注册入口为 build/targets/index.ts。
-- **核心调用链**: CLI 解析 doctor / status / run / resume / reconcile；doctor 只读诊断，status 从 run.json 及证据投影紧凑结果。可信 RuntimeServices 注入后，startRuntimeRun 经能力 probe、锁与旧 Run 门禁初始化状态；runLoop 重读 Planning、选择一个任务、冻结请求和验收输入、派发独立 Worker、验证结束证据、独立验收并按 Run 授权收尾。all-ready 每次接受后重读计划；恢复复用持久证据或以新 attempt / request / Session 继续。分发 CLI 未配置宿主服务时明确 CAPABILITY_MISSING。partial 保存 Worker-ended 后停止为 INTERRUPTED；noncompleted ending 不能通过 resume 自动继续，只有可信 worker-checkpoint 支持继续剩余工作，未改变的取消边界可新建 attempt 重试。
+- **核心调用链**: CLI 解析 doctor / status / run / resume / reconcile / build / validate / pack；doctor 只读诊断，status 从 run.json 及证据投影紧凑结果。可信 RuntimeServices 注入后，startRuntimeRun 经能力 probe、锁与旧 Run 门禁初始化状态；runLoop 重读 Planning、选择一个任务、冻结请求和验收输入、派发独立 Worker、验证结束证据、独立验收并按 Run 授权收尾。all-ready 每次接受后重读计划；恢复复用持久证据或以新 attempt / request / Session 继续。BuildPipeline 只从显式注册 Packager、锁定来源和共享元数据生成、校验、打包。分发 CLI 未配置宿主服务或平台 Packager 时明确 CAPABILITY_MISSING。partial 保存 Worker-ended 后停止为 INTERRUPTED；noncompleted ending 不能通过 resume 自动继续，只有可信 worker-checkpoint 支持继续剩余工作，未改变的取消边界可新建 attempt 重试。
 - **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交和文件摘要。
 
 ## 1b. 文件信任等级
@@ -50,7 +50,7 @@ ESM、TypeScript strict / noUncheckedIndexedAccess / exactOptionalPropertyTypes�
 
 ## 3. 架构边界规则
 
-Core 使用显式 Registry / RuntimeAdapter，不导入宿主 SDK；implemented=false 平台描述符不能作为执行能力证据。自动派发要求通过能力 probe 和受控验证；Worker 始终 commit=deny，提交经 Core 的独立验收 capability 与 Git policy 处理。完整协议见 docs/CONTRACTS.md。
+Core 使用显式 Registry / RuntimeAdapter，不导入宿主 SDK；implemented=false 平台描述符不能作为执行能力证据。BuildPipeline 与 run 共用 PlatformRegistry，静态打包通过不能当作 Executor 能力证明。自动派发要求通过能力 probe 和受控验证；Worker 始终 commit=deny，提交经 Core 的独立验收 capability 与 Git policy 处理。完整协议见 docs/CONTRACTS.md 和 docs/PACKAGING.md。
 
 ## 4. 禁止操作清单
 
@@ -60,11 +60,11 @@ Core 使用显式 Registry / RuntimeAdapter，不导入宿主 SDK；implemented=
 
 ## 5. 高风险文件标注
 
-scripts/clean.mjs 清理已知编译目录；scripts/check-cli-package.mjs 在临时目录离线安装 tarball；scripts/check-protocol.mjs 校验外部 checkout；scripts/bundle-cli.mjs 写入编译目录。Core 的 state/files.ts 处理原子文件发布，lock/index.ts 处理 owner 与 guard，authorization/sandbox.ts 启动隔离子进程，authorization/git.ts 执行受控 Git。CLI 启动绑定取消信号并从明确参数进入 Core；数据输入经 contracts / 路径 / 摘要校验。当前没有数据库迁移、认证服务、网络客户端或宿主服务安装实现；fixture / 安装型测试不证明真实宿主能力。
+scripts/clean.mjs 清理已知编译目录；scripts/check-cli-package.mjs 在临时目录离线安装 tarball；scripts/check-protocol.mjs 校验外部 checkout；scripts/bundle-cli.mjs 写入编译目录。Core 的 state/files.ts 处理原子文件发布，lock/index.ts 处理 owner 与 guard，authorization/sandbox.ts 启动隔离子进程，authorization/git.ts 执行受控 Git。build/targets/pipeline.ts 校验锁定来源、生成树与校验记录，build/manifests/archive.ts 创建确定性归档；仅显式可信 Packager 可写产物。CLI 启动绑定取消信号并从明确参数进入 Core / Build；数据输入经 contracts / 路径 / 摘要校验。当前没有数据库迁移、认证服务、网络客户端或宿主服务安装实现；fixture / 安装型测试不证明真实宿主能力。
 
 ## 6. 新增功能的一般流程
 
-从 Dashboard 当前执行包进入；contracts 定义公共数据；Core 按 discovery / planning / snapshot / state / lock / recovery / result / authorization / worker / orchestrator 职责扩展；adapter-* 管宿主接入，build/targets 管分发目标，共享 Skill 源码位于 skills/run、skills/status、skills/worker。
+从 Dashboard 当前执行包进入；contracts 定义公共数据；Core 按 discovery / planning / snapshot / state / lock / recovery / result / authorization / worker / orchestrator 职责扩展；adapter-* 管宿主接入，build/targets 管统一平台注册与流水线，build/validators 管静态包检查，build/manifests 管共享元数据与来源，共享 Skill 源码位于 skills/run、skills/status、skills/worker。
 
 ## 7. 代码安全规范
 

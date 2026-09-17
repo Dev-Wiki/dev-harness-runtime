@@ -3,13 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/targets/index.d.ts",
+      "import": "./dist/targets/index.js"
+    }
+  },
   "dependencies": {
     "@dev-harness-runtime/core": "workspace:*",
+    "@dev-harness-runtime/contracts": "workspace:*",
     "@dev-harness-runtime/adapter-codex": "workspace:*",
     "@dev-harness-runtime/adapter-dsh": "workspace:*",
     "@dev-harness-runtime/adapter-cursor": "workspace:*",
     "@dev-harness-runtime/adapter-opencode": "workspace:*",
     "@dev-harness-runtime/adapter-antigravity": "workspace:*"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1"
   },
   "scripts": {
     "build": "tsc -b"

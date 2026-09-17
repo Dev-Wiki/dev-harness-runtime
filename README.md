@@ -6,7 +6,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 ## 当前阶段
 
-公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。三任务流程通过 Fake Executor 与真实本地验收验证；当前分发包没有宿主 Executor，Codex / DSH 自动执行和平台打包仍待后续任务落实。
+公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。三任务流程通过 Fake Executor 与真实本地验收验证。共享打包流水线已通过 Fake Packager 验证；各平台真实 Executor / Packager 仍待后续任务接入。
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`
@@ -34,8 +34,9 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - packages/core/src/authorization：Linux 隔离验证 provider 与按冻结 Git policy 执行的受控提交 / 提交恢复。
 - packages/core/src/worker：共享 Worker 请求构造、递归保护与紧凑父上下文投影。
 - packages/core/src/orchestrator：可信 RuntimeAdapter 注册接入、任务执行循环、接受后重读计划及 resume / reconcile 桥接。
-- packages/cli：参数、退出码与信号边界；doctor / status 只读入口及显式 RuntimeServices 注入入口；构建生成独立 bundle。
-- packages/adapter-* / build/targets：平台元数据和分发目标 Registry，当前没有真实宿主 Executor / Packager。
+- packages/cli：参数、退出码与信号边界；doctor / status 只读入口，以及显式 RuntimeServices / BuildPipeline 注入入口；构建生成独立 bundle。
+- packages/adapter-* / build/targets：统一 PlatformRegistry 为 run 和 build / validate / pack 提供同一平台注册表；现有描述符没有真实宿主 Executor / Packager。
+- build/manifests、build/validators、build/transforms：来源与共享元数据校验、静态包检查、受限 Skill 转换和确定性归档。
 - skills/run、skills/status、skills/worker：唯一共享 Skill 业务源码，平台差异留给后续转换。
 
 ## 使用说明
@@ -50,6 +51,7 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - [开发看板](docs/plan/Dashboard.md)
 - [资料完整性评估](docs/plan/Readiness.md)
 - [Git 提交与发布规范](docs/GIT_WORKFLOW.md)
+- [共享打包契约](docs/PACKAGING.md)
 
 ## 本地开发
 

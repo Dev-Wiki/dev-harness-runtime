@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pluginMetadata",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "name": {
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "maxLength": 64,
+      "type": "string"
+    },
+    "displayName": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "description": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "author": {
+      "minLength": 1,
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "repository": {
+      "pattern": "^https://[^\\s]+$",
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "licenseRefs": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "format": "repo-path",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "name",
+    "displayName",
+    "description",
+    "author",
+    "repository",
+    "licenseRefs"
+  ]
+}

@@ -7,9 +7,15 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": [
-    "targets/**/*.ts"
+    "targets/**/*.ts",
+    "transforms/**/*.ts",
+    "validators/**/*.ts",
+    "manifests/**/*.ts"
   ],
   "references": [
+    {
+      "path": "../packages/contracts"
+    },
     {
       "path": "../packages/core"
     },

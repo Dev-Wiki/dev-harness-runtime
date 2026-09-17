@@ -377,3 +377,11 @@ Worker 结束后先证明静止，再保存结果、实际结束快照和控制�
 CLI 提供 doctor、status、run（--task / --next / --all-ready）、resume 与 reconcile。参数冲突或未知 Adapter 退出 2，blocked 退出 3，执行或验收失败及 partial 退出 4，漂移 / 授权 / 互斥拒绝退出 5，取消退出 130。默认不提交；--commit-each / --no-commit 与 --commit task|deny 互斥。resume 未提供 expected revision 时只读取得当前值，再交给 Core CAS；不能借此修改 Run 授权。reconcile 只接收已由可信 Core 持久化的显式 resolution 引用，不能把用户 JSON 当作已验证的同意或证据。
 
 生产 CLI 当前可以运行只读 doctor / status；宿主 Executor 尚未安装时运行命令返回 CAPABILITY_MISSING。测试以显式注入的 Fake Executor 调用同一 Core，真实 Git、Planning 收口和 bubblewrap 验收证明公共流程，不证明 Codex / DSH 能力。CLI 使用固定 esbuild 将 Core 与依赖打入 ESM bundle；独立 tarball 在空 store 离线安装后实际验证项目发现和 Markdown 读取。验证记录见 [K4](verification/K4.md)。
+
+## 17. K10-B 共享打包流水线
+
+`PlatformRegistry` 是运行与打包入口共用的显式平台注册表。默认 codex、dsh、cursor、opencode、antigravity、agent-plugin 仅提供 ID 元数据；只有可信调用者注入的 `RuntimeAdapter` 或 `PluginPackager` 才增加相应能力。CLI 的 `dhr build|validate|pack --adapter ID` 使用同一实例；参数中的项目路径必须等于 BuildPipeline 根目录。未注册的 ID 与已知但无 Packager 的 ID 分别报 UNKNOWN_ADAPTER、CAPABILITY_MISSING；环境或项目文件不能注入执行代码。
+
+`BuildPipeline` 的阶段依赖严格为已编译 bundle → `generate` → `validate` → `pack`。任何阶段都不隐式运行前一阶段。输入先通过 `PluginBuildInput` 严格 Schema 和关联验证，协议字段与 `protocol-lock.json` 精确一致；实际上游 checkout 的 HEAD、干净状态及锁定文件逐个核验。本仓 Skill、bundle、分发声明均核对实际 SHA-256；共享元数据须等于 `build/manifests/metadata.json` 和真实声明文件生成的值。显式构建时间进入归档，不采用当前时钟。未提交本地输入标记 `localUnversioned`，不得将其表述为可分发 release。
+
+生成记录绑定完整输入、来源提交、协议锁摘要、规范摘要和目录文件摘要。公共静态验证覆盖设计 §29 十项，以显式封闭 JSON Schema、精确文件 allowlist、Skill frontmatter、版本字段和引用字段为依据；平台特有格式由各 Packager 验证。可信 Packager 回调后再次核验来源，validate / pack 还重查生成树；报告只在实际目录与生成记录吻合时落盘。每平台阶段锁防止并发互删，根目录 manifest 锁序列化跨平台合并；崩溃锁不自动删除。`pack` 只读取已通过的验证记录，打包后重查原树与每个产物的文件、大小、SHA-256，再写 `dist/manifest.json` 与本地构建证据。平台构建成功不能推断宿主执行、安装 smoke 或对外分发许可。确定性 ZIP / USTAR gzip 与 golden 更新规则见 [打包文档](PACKAGING.md)，专项记录见 [K10-B](verification/K10-B.md)。

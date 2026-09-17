@@ -11,6 +11,9 @@
   ],
   "references": [
     {
+      "path": "../../build"
+    },
+    {
       "path": "../core"
     },
     {

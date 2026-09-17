@@ -41,6 +41,13 @@ importers:
       '@dev-harness-runtime/core':
         specifier: workspace:*
         version: link:../packages/core
+      '@dev-harness-runtime/contracts':
+        specifier: workspace:*
+        version: link:../packages/contracts
+    devDependencies:
+      ajv:
+        specifier: 8.17.1
+        version: 8.17.1
 
   packages/adapter-antigravity:
     dependencies:
@@ -74,6 +81,9 @@ importers:
 
   packages/cli:
     devDependencies:
+      '@dev-harness-runtime/build':
+        specifier: workspace:*
+        version: link:../../build
       '@dev-harness-runtime/contracts':
         specifier: workspace:*
         version: link:../contracts

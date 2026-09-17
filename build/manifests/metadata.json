@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "dev-harness",
+  "displayName": "Dev Harness",
+  "description": "Cross-session engineering workflow runtime for dev-harness",
+  "author": "Dev-Wiki",
+  "repository": "https://github.com/Dev-Wiki/dev-harness-runtime",
+  "distribution": {
+    "external": false,
+    "reason": "Project license and bundled third-party notices have not been approved"
+  }
+}

@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc -b && node scripts/bundle-cli.mjs",
     "typecheck": "tsc -p tsconfig.check.json",
-    "lint": "oxlint packages build/targets build/tests scripts tests/integration tests/contract",
+    "lint": "oxlint packages build/targets build/transforms build/validators build/manifests build/tests scripts tests/integration tests/contract tests/packaging",
     "test": "pnpm build && node scripts/test.mjs",
     "test:fixtures": "node scripts/check-fixtures.mjs",
     "test:cli-package": "node scripts/check-cli-package.mjs",

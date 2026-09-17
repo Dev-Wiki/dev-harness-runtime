@@ -66,7 +66,7 @@ test('doctor bundles real project discovery and Planning while reporting missing
   assert.equal(result.status, 2, result.stderr); assert.equal(result.stderr, '');
   const report = JSON.parse(result.stdout);
   assert.equal(report.project, f.root); assert.equal(report.planning.tasks, 3); assert.equal(report.planning.orderedTasks, 3);
-  assert.deepEqual(report.adapters.map((adapter) => adapter.id), ['codex', 'dsh', 'cursor', 'opencode', 'antigravity']);
+  assert.deepEqual(report.adapters.map((adapter) => adapter.id), ['codex', 'dsh', 'cursor', 'opencode', 'antigravity', 'agent-plugin']);
   assert.ok(report.adapters.every((adapter) => !adapter.available && !adapter.authorizationEnforced));
   assert.ok(report.issues.some((issue) => issue.code === 'CAPABILITY_MISSING'));
   await assert.rejects(readdir(f.project.stateRoot), { code: 'ENOENT' });

@@ -3,6 +3,7 @@
 - [实现架构](../ARCHITECTURE.md)：当前 workspace、Registry 与 CLI 边界。
 - [构建验证契约](../HARNESS.md)：工具链、已确认命令与验证范围。
 - [公共契约](CONTRACTS.md)：Planning 读取、执行结果、授权、状态恢复与打包接口。
+- [共享打包流水线](PACKAGING.md)：锁定输入、阶段门禁、静态校验和确定性归档。
 - [契约决策](decisions/runtime-contracts.md)：设计选择、来源锁定与工程基线。
 - [DSH 迁移边界](DSH_MIGRATION.md)：通用行为、旧产品流程和旧 Run 的处理。
 - [R0 验证记录](verification/R0.md)：契约走查、源码映射与文档验证。
@@ -17,6 +18,7 @@
 - [K4-V 验证记录](verification/K4-V.md)：独立验收、实际隔离、精确提交及证据恢复。
 - [K4-W 验证记录](verification/K4-W.md)：共享 Skill、Worker 请求、递归门禁和父上下文 / 日志边界。
 - [K4 验证记录](verification/K4.md)：串行三任务、运行 CLI、只读状态、取消及提交恢复。
+- [K10-B 验证记录](verification/K10-B.md)：共享来源锁、Fake Packager、静态负例和 golden。
 - [恢复与人工对齐](RECOVERY.md)：Core 恢复接口、可信证据与唯一 successor。
 - [开发看板](plan/Dashboard.md)：唯一活跃计划、任务顺序与跨任务状态。
 - [资料完整性评估](plan/Readiness.md)：设计输入、缺项与官网初查证据。
