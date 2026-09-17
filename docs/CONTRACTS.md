@@ -303,3 +303,17 @@ Snapshot 增加必填 indexFingerprint、indexFlags、dirtyPaths、stagedPaths�
 `assertUnchanged` 比较完整边界；`assertTaskStart` 阻止任何预存暂存内容、scope 与初始用户修改重叠及初始修改漂移。`verifyOwnedTransition` 限制代码 scope 和当前 Task 的四个 Planning 收口路径，保护初始用户内容，禁止未授权 HEAD / index / branch 变化。新 symlink 逐段解析，不能指向仓库外或 Git 私有目录。允许的路径仍必须通过 Core 提供的 `verifyOwnership`，该回调核验可信操作记录绑定的 runId / taskId / beforeHash / afterHash / 实际路径集合；Worker 的 changedFiles 或自行生成的摘要不构成证据。K4-V 接通持久操作证据和独立验证，K3 的回调测试只验证此接口的门禁。
 
 `verifyAuthorizedCommit` 只读校验已经发生的提交：授权、完整快照摘要、当前实际 HEAD / branch / index、唯一父提交、预期 tree、原始 messageHash、精确文件集合及提交后内容均须一致，忽略 Git replace refs；不执行 commit、hook 或发布。no-commit 不接受 HEAD 前进。上述 API 尚未接入 CLI 编排，锁、状态落盘与恢复另由 K3-L / K3-R 实现。
+
+## 12. K3-L 私有存储与互斥实现
+
+Core 的 `acquireLock` / `withLock` / `releaseLock` / `inspectLock` 使用每个 worktree 私有状态根中的 `.orchestrator.lock/`，获取和释放以及持锁读写共同遵守独占 `.orchestrator.guard/`。handle 由本进程 WeakMap 登记，序列化后或自行构造的对象不能作为 handle；同一 handle 的操作和释放排队执行。每次操作重新向 Git 确认 repoRoot / privateGitDir / stateRoot，并检查目录、权限和磁盘 ownerToken；写入发布前再次核验 owner。
+
+Linux 使用 boot ID 与 `/proc/<pid>/stat` 的启动 ticks 区分进程身份，依据 [Linux proc 文档](https://www.kernel.org/doc/html/v6.15/filesystems/proc.html)。这只足以识别当前 owner；PID 消失、身份缺失、损坏 metadata 或遗留 guard 都不能证明旧子进程静止。当前实现返回 LOCK_OWNER_UNKNOWN 并保留现场，不自动回收 stale lock。其他平台可使用独占目录原语，但缺少启动身份时同样报告 unknown，不以 PID 或过期时间替代证据。
+
+`createRun` 只创建新的 Run 目录和 CREATED / DISCOVERY / revision=0 记录。`readRunAtRevision` 与 `compareAndSwapRun` 显式指定目标 runId 和 expectedRevision；CAS 只能增加一版，拒绝溢出、倒退时间和修改创建身份 / 授权 / 协议 / 初始用户边界。RunState.repoIdentity 保存创建时身份；后续 Git HEAD 从 acceptedSnapshot 读取。一个 worktree 锁可读写该 worktree 的多个显式 Run，供 K3-R 在同锁内记录对齐来源与唯一 successor；锁 metadata 的 runId 标识 orchestrator，不是第二份 Run 状态。
+
+唯一权威记录仍为 `<run-id>/run.json`。写入先在同目录独占创建临时文件，完整写入并 sync，重验 owner、目标和临时文件身份，再发布完整文件；更新使用 rename，首次发布使用不覆盖已有目标的 link，随后移除临时链接。支持时执行目录 fsync。[Node 24.15 FileHandle.sync](https://nodejs.org/download/release/v24.15.0/docs/api/fs.html#filehandlesync) 的行为依赖 OS 和设备，进程退出测试不能推定断电保证。半写临时文件不用于状态恢复；首次 link 后临时链接尚未移除的异常窗口会因非唯一 inode 安全停止，需核验现场。
+
+`createAttempt` 创建 attempts 下的日志与 snapshots 目录；`writeResult` / `writeSnapshot` 发布当前 attempt 的不可覆盖证据，引用按精确持久字节取 SHA-256。`readEvidence` 限制 Run 内路径并复核摘要，拒绝 symlink / 硬链接别名和路径大小写别名。`writeSummary` 只从指定 revision 的 run.json 投影派生摘要，不接收调用者自报完成状态。
+
+存储层不把 Schema 合法或证据落盘当作 Task 完成证明，不执行恢复状态机，也不自动追认目录中未引用的 result。K3-R / K4 负责证据来源、状态转移、初始边界与 pending operation 的跨记录一致性。文件与目录检查针对本地文件系统及遵守同一锁协议的 Core；真实 Worker 的私有状态隔离仍须 Adapter 验证。

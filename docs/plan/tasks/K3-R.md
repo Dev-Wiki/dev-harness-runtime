@@ -10,7 +10,7 @@
 
 - **权威需求**：[设计文档](../../design/runtime-design.md) §10–12、§17、§45 K3；[资料评估](../Readiness.md)。
 - **公共实施依据**：[CONTRACTS](../../CONTRACTS.md)、[R0 决策](../../decisions/runtime-contracts.md)、[DSH 迁移边界](../../DSH_MIGRATION.md)。
-- **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
+- **代码入口**：已有 core/snapshot、state、lock；恢复模块尚未建立。RunState.repoIdentity 固定创建身份，当前 Git 边界须读取 acceptedSnapshot。需补持锁诊断读取 / 枚举和无 Task 的初始证据初始化，不能伪造 attempt。
 - **相关测试**：在 execute、result、计划收口、commit、state persist 边界注入崩溃后启动新的 Fake Executor。
 - **必须保持的不变量**：恢复 Run 必须新建执行 Session；不能把已产生的副作用盲目重放。
 
@@ -46,7 +46,7 @@
 | 验证项 | 命令 / 操作 | 结果 / 证据链接 |
 |---|---|---|
 | 本任务验收 | 在 execute、result、计划收口、commit、state persist 边界注入崩溃后启动新的 Fake Executor。 | 尚未执行；交付时记录真实结果与稳定证据。 |
-| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | 尚未执行；当前无 Runtime 实现或命令通过记录。 |
+| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | K3-L 已有 289 项完整回归通过；恢复任务按 Dashboard 节奏运行类型 / lint 与相关测试，M1 收口全量验证。 |
 
 ## 已确认决策
 

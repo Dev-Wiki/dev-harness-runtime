@@ -7,3 +7,5 @@ export * from './snapshot/types.js';
 export * from './snapshot/capture.js';
 export * from './snapshot/guard.js';
 export * from './snapshot/commit.js';
+export * from './lock/index.js';
+export * from './state/index.js';

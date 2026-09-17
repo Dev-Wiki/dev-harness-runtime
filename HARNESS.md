@@ -23,7 +23,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 
 ## 已确认命令（人工维护）
 
-工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md) 与 `package.json`。
+工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md)、[K3-L 验证记录](docs/verification/K3-L.md) 与 `package.json`。
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
@@ -58,6 +58,6 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 - Windows / Ubuntu CI 已配置，尚无远端运行结果。
 
 ## 需人工确认
-- 当前无数据库、业务授权执行器、网络客户端、运行锁或重试实现；设计能力由后续任务验证。
+- 当前无数据库、业务授权执行器、网络客户端或重试实现；设计能力由后续任务验证。
 - 分发许可材料尚需落实，本轮仅本地私有产物。
 - 原生 Windows / Linux、真实插件安装和模型 Session 本轮未运行。
