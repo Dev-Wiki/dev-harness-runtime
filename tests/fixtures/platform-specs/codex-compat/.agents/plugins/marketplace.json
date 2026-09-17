@@ -1,0 +1,20 @@
+{
+  "name": "runtime-spec",
+  "interface": {
+    "displayName": "Runtime Spec"
+  },
+  "plugins": [
+    {
+      "name": "dev-harness-runtime-spec",
+      "source": {
+        "source": "local",
+        "path": "./plugins/dev-harness-runtime-spec"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

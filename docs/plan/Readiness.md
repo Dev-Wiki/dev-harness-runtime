@@ -4,6 +4,8 @@
 
 后续决定见 [公共契约](../CONTRACTS.md)、[决策记录](../decisions/runtime-contracts.md) 和 [DSH 迁移边界](../DSH_MIGRATION.md)。下列 G1–G8 保留为初次评估依据，解除情况以 Dashboard 为准。
 
+R1 后续取证见 [平台基线](../integration/PLATFORM_BASELINE.md) 和 [验证记录](../verification/R1.md)。下文“本次未复跑 / 未定位”等描述属于初次评估；R1 已复跑 DSH 版本、找到 Codex 精确格式和可读的 Antigravity Plugin 教程。运行能力仍未验证。
+
 ## 结论
 
 现有资料足以明确产品边界、拆分 MVP 并启动契约澄清和平台取证；尚不足以把所有实施任务交给新会话直接执行。关键缺项集中在机器可读契约、收口与恢复的责任边界、DSH 等价范围以及平台运行证据。无需等待额外 PRD 才能建立计划，但不能把接口示例当作完整协议。

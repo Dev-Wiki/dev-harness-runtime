@@ -1,0 +1,20 @@
+{
+  "name": "dev-harness-runtime-spec",
+  "version": "0.0.0",
+  "description": "Offline format fixture",
+  "author": {
+    "name": "Dev-Wiki"
+  },
+  "skills": "./skills",
+  "interface": {
+    "displayName": "Runtime Spec",
+    "shortDescription": "Platform format fixture",
+    "longDescription": "An offline fixture for reviewing plugin package structure.",
+    "developerName": "Dev-Wiki",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Inspect the fixture files."
+    ]
+  }
+}

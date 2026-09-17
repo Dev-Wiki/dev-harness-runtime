@@ -1,0 +1,9 @@
+{
+  "name": "dev-harness-runtime-spec-opencode",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.mjs",
+  "files": [
+    "index.mjs"
+  ]
+}

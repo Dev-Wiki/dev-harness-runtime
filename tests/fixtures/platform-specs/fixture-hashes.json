@@ -1,0 +1,23 @@
+{
+  "antigravity/plugin.json": "491ad475edb56717c94d6ba729fcbb1727112450c5cb7d4a451e750402d23e18",
+  "antigravity/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "codex-compat/.agents/plugins/marketplace.json": "d2a40b81cdef44145d579aed005c534eff431869be131227a40c4d6164c97ca8",
+  "codex-compat/plugins/dev-harness-runtime-spec/.codex-plugin/plugin.json": "ccb04650d766f537ca591d8a7100c3ab7416f559ecbc6b64ba625db1792e2db8",
+  "codex-compat/plugins/dev-harness-runtime-spec/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "codex-portable/plugin.json": "491ad475edb56717c94d6ba729fcbb1727112450c5cb7d4a451e750402d23e18",
+  "codex-portable/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "cursor/.cursor-plugin/plugin.json": "dc5a2863ca9a4c01d17d022a70aef8cf9e3b95ddf034f3fcded9253b3a93e1fd",
+  "cursor/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "dsh/cordis.patch.yml": "66dd4895e356a282452b25b8d8b49824b5ed904c3b0270ed23e0bb94c2443cc4",
+  "dsh/lib/index.js": "9d16e7894f6577e2ea7734d956f5c276c68fb41527132c9df20051715f2a4698",
+  "dsh/package.json": "b9b4e15c3ebc8a4a32c5341c256e2f8576936c0f151189b5ad77017a9d9370d6",
+  "opencode-local/.opencode/plugins/runtime-spec.js": "53771744b9ce74dd5be6682a86bec7a08ee5142625dca08671aaf0fa0deb3761",
+  "opencode-local/.opencode/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "opencode-npm/consumer/opencode.json": "49ebafecddac1f8e980becb6a301b7afb98b8d3a3283c95be23772a2132860b3",
+  "opencode-npm/package/index.mjs": "53771744b9ce74dd5be6682a86bec7a08ee5142625dca08671aaf0fa0deb3761",
+  "opencode-npm/package/package.json": "0bc05f7e9f69305586eeb4e0385072c65a6d03656956d1613f221983b00af78a",
+  "portable/mcp.json": "1788697eb2d3aa1caa8da59a62331a92529e24885f0e7151418f915000fbf7fd",
+  "portable/plugin.json": "491ad475edb56717c94d6ba729fcbb1727112450c5cb7d4a451e750402d23e18",
+  "portable/skills/runtime-check/SKILL.md": "fda1461b4af18cca5a2d15a06353e4439c7049f7fc1e282923292cf30bb00893",
+  "sources.json": "47bdcfc2798848a2be87e087846bebbb6893aefe407ae516a85608e71a3bc2de"
+}

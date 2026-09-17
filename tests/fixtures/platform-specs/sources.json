@@ -1,0 +1,93 @@
+{
+  "accessed": "2026-09-17",
+  "scope": "offline fixture profiles; not complete platform validators or host evidence",
+  "official": {
+    "codex": [
+      "https://developers.openai.com/plugins/build/plugins",
+      "https://learn.chatgpt.com/docs/non-interactive-mode"
+    ],
+    "cursor": [
+      "https://cursor.com/docs/reference/plugins",
+      "https://cursor.com/docs/skills",
+      "https://cursor.com/docs/plugins"
+    ],
+    "opencode": [
+      "https://opencode.ai/docs/plugins/",
+      "https://opencode.ai/docs/skills/",
+      "https://opencode.ai/docs/sdk/"
+    ],
+    "antigravity": [
+      "https://codelabs.developers.google.com/cloud-dev-plugin-agy?hl=en",
+      "https://codelabs.developers.google.com/getting-started-with-antigravity-skills"
+    ],
+    "portable": [
+      "https://agent-plugins.org/specification",
+      "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+      "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+      "https://agent-plugins.org/client-implementers/loading-and-discovery",
+      "https://agentskills.io/specification"
+    ]
+  },
+  "profiles": {
+    "portable": "1.0.0 minimal subset",
+    "codex-portable": "Agent Plugins 1.0.0 without OpenAI extensions",
+    "codex-compat": "bundled plugin-creator validator snapshot",
+    "cursor": "native reference, numeric format version not declared",
+    "dsh": "launcher 0.1.5-rc.1 / resolved components 0.1.5-rc.2",
+    "opencode-local": "documented export-function shape, API version not declared",
+    "opencode-npm": "documented module + config shape, package not published",
+    "antigravity": "Google tutorial / Agent Plugins 1.0.0"
+  },
+  "localPublicSources": [
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "package.json",
+      "sha256": "8da881a5aa7d371dc1244ebb7acb8dfa9ac5fafce50404b31185d89cf152763a"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-package-manifest/lib/types/types.d.ts",
+      "sha256": "5d9bdce33121eb6831d2981f3e91f5a932f7db58cea96f722a913b3be26cef93"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts",
+      "sha256": "f6aec10d76b2200ce1052900e7893149547cbc47d1a0230ea2f9d837666448e4"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-agent/lib/types/runtime-types.d.ts",
+      "sha256": "da5d808efec816fe81a1d334c8cef6e0fa18f2daefc4085df4c68e02d426c60c"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-session/lib/types/types.d.ts",
+      "sha256": "54cf6f064abba4bfdca99eea4fb55d16629a91044c10a4d16940a5ffd11b74b6"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-commands/lib/types/index.d.ts",
+      "sha256": "cb65f1b0b32c0bc2e30125f1e087c9f044794cf0e354a5f5bcbab4dc98a3a977"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-sandbox/lib/types/index.d.ts",
+      "sha256": "8e5fca22b53e76511c25d56482b9baaf24bfefdc6f05948f8264f653a983b3c1"
+    },
+    {
+      "base": "installed @deepseek-ai/dsh",
+      "path": "node_modules/@deepseek-ai/dsh-sdk-minimal/cordis.patch.yml",
+      "sha256": "31805d5b233c33eabc57f4bac562b2d2db00e8a7bb1f205926f43e5f84749680"
+    },
+    {
+      "base": "bundled plugin-creator/scripts",
+      "path": "validate_plugin.py",
+      "sha256": "f4eeadb733b28b0c3e714de263a76d6542866a672f3e99bdffcf4dbcdf85e944"
+    },
+    {
+      "base": "bundled plugin-creator/scripts",
+      "path": "identifier_validation.py",
+      "sha256": "a6d51ce4a9a7e8f85626ff5808a467a67574e7f8cdf1167ffb467c5f67e57223"
+    }
+  ]
+}
