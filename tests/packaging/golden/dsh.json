@@ -1,0 +1,1 @@
+{"artifact":{"file":"dsh/dev-harness-dsh-v0.1.0.tgz","sha256":"4f78d479d0a993c6e96180b424ffe875e10ad1199eca7a86956942b3018a0395"},"paths":["DISTRIBUTION_NOTICE.md","README.md","cordis.patch.yml","lib/dhr.js","lib/index.js","package.json","scripts/dhr.mjs","skills/run/SKILL.md","skills/status/SKILL.md","skills/worker/SKILL.md"]}

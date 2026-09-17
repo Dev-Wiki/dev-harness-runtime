@@ -4,3 +4,4 @@ export { BuildPipeline, BuildError } from './pipeline.js';
 export type { BuildPipelineOptions } from './pipeline.js';
 export { CodexPackager, codexStaticSpec, createCodexBuildPipeline } from './codex.js';
 export { repositoryBuildInput } from './source.js';
+export { DshPackager, dshStaticSpec, dshHostDependencies, createDshBuildPipeline } from './dsh.js';

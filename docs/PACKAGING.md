@@ -1,6 +1,6 @@
 # 共享打包流水线
 
-K10-B 提供平台 Packager 共用的输入、阶段门禁和静态验证，已用显式注册的 Fake Packager 验证。K5-P 接入 Codex 真实 Packager；其余五类目标仍待接入。默认 `dhr` 列出六个平台 ID，但没有把描述符当作可执行能力；未显式注入可信 BuildPipeline 的命令仍返回 `CAPABILITY_MISSING`，不会加载项目中的可执行配置。
+K10-B 提供平台 Packager 共用的输入、阶段门禁和静态验证，已用显式注册的 Fake Packager 验证。K5-P / K6-P 已接入 Codex 与 DSH 真实 Packager；其余四类目标仍待接入。默认 `dhr` 列出六个平台 ID，但没有把描述符当作可执行能力；未显式注入可信 BuildPipeline 的命令仍返回 `CAPABILITY_MISSING`，不会加载项目中的可执行配置。
 
 ## 来源与依赖图
 
@@ -40,6 +40,8 @@ golden 快照在 [tests/packaging/golden](../tests/packaging/golden/)；普通�
 Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，由调用者提供固定的、干净的上游协议 checkout；输入从本仓 Git HEAD、真实 Skill / CLI / Adapter bundle、共享元数据和提交时间构造。`generate` 输出 `.generated/codex/plugin/` 下的 Marketplace 源布局；`validate` 检查封闭 manifest、来源版本、三个 Skill、相对引用和 bundle 摘要；`pack` 输出单一 `dist/codex/dev-harness-codex-v<version>.zip`。ZIP 解包后把 `marketplace/` 路径交给 `codex plugin marketplace add`。包内 `scripts/dhr.mjs` 可运行已编译 CLI；Host Executor 能力仍需 K5 probe。
 
 编译后的 CLI bundle 包含校验器源码中的占位词正则和依赖库注释，普通文本 lint 会把它们误报为包内容。Codex StaticSpec 仅对与 `PluginBuildInput` SHA-256 完全相同的两个源码锁定 bundle 跳过词法文本 lint；任一字节漂移直接报 `BUNDLE_DIGEST_MISMATCH`。manifest、Skill、README、脚本和声明仍按公共静态规则扫描。这个例外只用于已锁定的代码字节，不授予任意生成文件豁免。
+
+DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `package.json`、`cordis.patch.yml`、已编译 Cordis plugin / CLI、三个 Skill 和本地声明，最终打为 `dist/dsh/dev-harness-dsh-v<version>.tgz`。`package.json.dsh.bundle.patch` 指向相对包根的 YAML，peer 精确标注本机 rc.1 启动器实际解析的 Cordis 4.0.2 与 dsh-commands rc.2。插件只注册可读 `/dhr-status`，Executor 继续关闭；安装、公开 CommandRuntime 调用与卸载见 [K6-P 验证记录](verification/K6-P.md)。DSH 的两个已锁定 JS bundle 同样走 SHA-256 绑定例外，其余文本继续接受公共 lint。
 
 ## 验证入口
 
