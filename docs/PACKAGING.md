@@ -45,7 +45,7 @@ DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `p
 
 Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生成 Native `.cursor-plugin/plugin.json`、三个共享 Skill、一个可请求 rule、一个只读状态 command 与包内 CLI，输出 `dist/cursor/dev-harness-cursor-v<version>.zip`。ZIP 顶层为 `dev-harness/`，按 Cursor 官方本地插件目录放置并重新加载。当前只完成离线内容和包内 CLI 验证；宿主 `--plugin-dir` 调用被自动审批拒绝，不能记为安装 smoke 或 Executor 能力。见 [K7 验证记录](verification/K7.md)。
 
-OpenCode 对应入口为 `createOpenCodeBuildPipeline(root, protocolCheckout)`，从同一锁定输入生成 npm tgz 和项目本地 ZIP。tgz 含 `package.json`、JS 插件导出、已编译 bundle 与三个 Skill；ZIP 按 `.opencode/plugins/` 和 `.opencode/skills/` 放置。npm 包内 Skill 需另行复制到原生 Skill 目录，OpenCode 不保证从 npm 插件自动发现。两种插件变体不可同时安装。离线 npm 安装、入口导入和包内 CLI 已通过；隔离的 OpenCode 1.18.31 宿主也已发现本地 ZIP 插件入口与三个 Skill，并确认移除后消失。npm 变体宿主加载、hook 与模型会话调用未验。见 [K8 验证记录](verification/K8.md)。
+OpenCode 对应入口为 `createOpenCodeBuildPipeline(root, protocolCheckout)`，从同一锁定输入生成 npm tgz 和项目本地 ZIP。tgz 含 `package.json`、JS 插件导出、已编译 bundle 与三个 Skill；ZIP 按 `.opencode/plugins/` 和 `.opencode/skills/` 放置。npm 包内 Skill 需另行复制到原生 Skill 目录，OpenCode 不保证从 npm 插件自动发现。两种插件变体不可同时安装。离线 npm 安装、入口导入和包内 CLI 已通过；隔离的 OpenCode 1.18.31 宿主也已发现本地 ZIP 插件入口与三个 Skill，并确认移除后消失。npm tgz 离线安装后的包内 JS 入口也可通过 `file://` 配置被宿主发现；按 npm 包名自动安装、hook 与模型会话调用未验。见 [K8 验证记录](verification/K8.md)。
 
 Antigravity 对应入口为 `createAntigravityBuildPipeline(root, protocolCheckout)`，从同一份 Skill 生成 Agent Plugin、项目 `.agents/skills/` 与独立 global Skills 三种 ZIP。Plugin 的 `plugin.json` 使用 Agent Plugins 1.0.0；本机 `agy plugin validate/install/list/uninstall` 已确认三个 Skills 被处理并可安装、发现、移除。尚未调用模型会话内 Skill 或验证独立 Skill 安装，不能把安装链称为 Executor 能力。见 [K9 验证记录](verification/K9.md)。
 

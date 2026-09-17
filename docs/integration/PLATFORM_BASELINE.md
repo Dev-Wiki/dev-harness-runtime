@@ -61,7 +61,7 @@ K7 已生成含 Native manifest、三个 Skill、一个非全局 rule、一个 c
 
 OpenCode local 从 `.opencode/plugins/` 发现；npm 由 `opencode.json.plugin` 指定，宿主负责依赖安装。样例包名仅示意，未发布；Node 导入成功不等于 OpenCode 加载成功。官方没有保证 npm 包内 skills 自动发现，因此技能单独放 `.opencode/skills/<name>/SKILL.md`。来源：[Plugins](https://opencode.ai/docs/plugins/)、[Skills](https://opencode.ai/docs/skills/)。[SDK](https://opencode.ai/docs/sdk/) 有 session.create/prompt/abort 候选入口，尚无本项目 Session 生命周期证明。
 
-K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。虽当前 PATH 无 OpenCode，通过 `/tmp` 隔离安装的官方 1.18.31 宿主已在临时项目发现本地插件入口与三个 Skill，移除后均消失；npm 变体的宿主加载和模型会话调用未验，见 [K8 验证记录](../verification/K8.md)。
+K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。虽当前 PATH 无 OpenCode，通过 `/tmp` 隔离安装的官方 1.18.31 宿主已在临时项目发现本地 ZIP 插件入口与三个 Skill，移除后均消失；npm tgz 已安装包内入口经 `file://` 配置也能被宿主发现。按 npm 包名自动安装、hook 与模型会话调用未验，见 [K8 验证记录](../verification/K8.md)。
 
 ### Antigravity 与 Portable
 
