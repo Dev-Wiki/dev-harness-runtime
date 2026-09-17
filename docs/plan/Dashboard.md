@@ -36,7 +36,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
 | **K5 — Codex fresh-session Executor** | 🔴 P0 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：合成会话可返回不同 thread 与结构化结果；本机 `workspace-write` 可写同级临时路径，逐 Task 权限隔离未成立，自动运行关闭，见[证据](../verification/K5.md) | [执行包](tasks/K5.md) |
-| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：旧 36 项、新 Core 216 项无跳过；rc.1 两次合成 Agent 返回不同 Session，逐 Task 授权未证明，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
+| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：旧 36 项、新 Core 216 项无跳过；rc.1 合成 Agent 返回不同 Session，但 `workspace-write` 实测可写工作区外 `/tmp`，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；已授权的宿主 smoke 在 headless 认证门禁处停止，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证、npm 临时安装及 OpenCode 1.18.31 双变体入口发现通过；本地变体移除通过，模型调用与按包名安装未验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
