@@ -43,7 +43,7 @@ Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，�
 
 DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `package.json`、`cordis.patch.yml`、已编译 Cordis plugin / CLI、三个 Skill 和本地声明，最终打为 `dist/dsh/dev-harness-dsh-v<version>.tgz`。`package.json.dsh.bundle.patch` 指向相对包根的 YAML，peer 精确标注本机 rc.1 启动器实际解析的 Cordis 4.0.2 与 dsh-commands rc.2。插件只注册可读 `/dhr-status`，Executor 继续关闭；安装、公开 CommandRuntime 调用与卸载见 [K6-P 验证记录](verification/K6-P.md)。DSH 的两个已锁定 JS bundle 同样走 SHA-256 绑定例外，其余文本继续接受公共 lint。
 
-Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生成 Native `.cursor-plugin/plugin.json`、三个共享 Skill、一个可请求 rule、一个只读状态 command 与包内 CLI，输出 `dist/cursor/dev-harness-cursor-v<version>.zip`。ZIP 顶层为 `dev-harness/`，按 Cursor 官方本地插件目录放置并重新加载。当前只完成离线内容和包内 CLI 验证；宿主 `--plugin-dir` 调用被自动审批拒绝，不能记为安装 smoke 或 Executor 能力。见 [K7 验证记录](verification/K7.md)。
+Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生成 Native `.cursor-plugin/plugin.json`、三个共享 Skill、一个可请求 rule、一个只读状态 command 与包内 CLI，输出 `dist/cursor/dev-harness-cursor-v<version>.zip`。ZIP 顶层为 `dev-harness/`，按 Cursor 官方本地插件目录放置并重新加载。离线内容和包内 CLI 验证已通过；用户授权后的宿主 `--plugin-dir` headless 调用在加载前因认证缺失退出，不能记为安装 smoke 或 Executor 能力。见 [K7 验证记录](verification/K7.md)。
 
 OpenCode 对应入口为 `createOpenCodeBuildPipeline(root, protocolCheckout)`，从同一锁定输入生成 npm tgz 和项目本地 ZIP。tgz 含 `package.json`、JS 插件导出、已编译 bundle 与三个 Skill；ZIP 按 `.opencode/plugins/` 和 `.opencode/skills/` 放置。npm 包内 Skill 需另行复制到原生 Skill 目录，OpenCode 不保证从 npm 插件自动发现。两种插件变体不可同时安装。离线 npm 安装、入口导入和包内 CLI 已通过；隔离的 OpenCode 1.18.31 宿主也已发现本地 ZIP 插件入口与三个 Skill，并确认移除后消失。npm tgz 离线安装后的包内 JS 入口也可通过 `file://` 配置被宿主发现；按 npm 包名自动安装、hook 与模型会话调用未验。见 [K8 验证记录](verification/K8.md)。
 
