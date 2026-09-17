@@ -9,3 +9,5 @@ export * from './snapshot/guard.js';
 export * from './snapshot/commit.js';
 export * from './lock/index.js';
 export * from './state/index.js';
+export * from './recovery/index.js';
+export * from './recovery/reconcile.js';

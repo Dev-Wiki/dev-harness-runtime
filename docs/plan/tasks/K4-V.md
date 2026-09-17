@@ -10,7 +10,7 @@
 
 - **权威需求**：[设计文档](../../design/runtime-design.md) §9、§13、§15、§30、§37；[资料评估](../Readiness.md)。
 - **公共实施依据**：[CONTRACTS](../../CONTRACTS.md)、[R0 决策](../../decisions/runtime-contracts.md)、[DSH 迁移边界](../../DSH_MIGRATION.md)。
-- **代码入口**：从下列影响文件进入。初始化时目标项目为空，所列实现与测试路径均为建议新建路径，不能当作已有代码。
+- **代码入口**：已有 contracts/binding、Core Planning / Snapshot / state / lock / recovery。恢复所需可信验证器目前为接口，需本任务实现受控验收、授权与收口证明；不得把 fixture 回调当作真实宿主能力。
 - **相关测试**：伪造成功、跨 attempt 结果、证据缺失、未授权 commit、混入用户修改和不完整归档的失败 fixture。
 - **必须保持的不变量**：push / PR / tag / release / deploy 保持 false；Worker 返回值不能成为唯一完成证据。
 - 参考 [Git Workflow Skill](../../../../dev-harness/git-workflow/SKILL.md) 与 [旧授权测试](../../../../dev-harness-dsh/tests/authorization.test.mjs)。
@@ -46,7 +46,7 @@
 | 验证项 | 命令 / 操作 | 结果 / 证据链接 |
 |---|---|---|
 | 本任务验收 | 伪造成功、跨 attempt 结果、证据缺失、未授权 commit、混入用户修改和不完整归档的失败 fixture。 | 尚未执行；交付时记录真实结果与稳定证据。 |
-| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | 尚未执行；当前无 Runtime 实现或命令通过记录。 |
+| 共享回归 | 采用 Dashboard 的共享验证基线与届时 HARNESS 已验证入口 | K3-R 已通过类型 / lint 与 144 项相关测试；本任务独立取证，M1 收口全量验证。 |
 
 ## 已确认决策
 

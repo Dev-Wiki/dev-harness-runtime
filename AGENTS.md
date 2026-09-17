@@ -27,9 +27,9 @@
 ## 1. 项目上下文速查
 
 - **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM。
-- **架构模式**: 公共 Core / Adapter / Build 分层；Core 已有项目发现、Planning 读取与快照 / 漂移校验及 state / lock，Adapter 仍为元数据，没有 Executor 或 Packager 实例。
+- **架构模式**: 公共 Core / Adapter / Build 分层；Core 已有项目发现、Planning 读取与快照 / 漂移校验及 state / lock / recovery，Adapter 仍为元数据，没有 Executor 或 Packager 实例。
 - **核心入口**: packages/cli/bin/dhr.mjs → packages/cli/src/index.ts；注册入口为 packages/core/src/index.ts 与 build/targets/index.ts。
-- **核心调用链**: CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list；discoverProject → readPlan → selectTask 提供只读选择，captureSnapshot / verifyOwnedTransition 提供边界校验；state / lock 提供持锁存储；尚无 Executor 调度或恢复。
+- **核心调用链**: CLI 输出帮助/版本；其他命令退出 2。Registry 显式 register/get/list；discoverProject → readPlan → selectTask 提供只读选择，captureSnapshot / verifyOwnedTransition 提供边界校验；state / lock 提供持锁存储；recovery 提供恢复 / 显式对齐，尚无 Executor 调度。
 - **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交与二十个文件摘要。
 
 ## 1b. 文件信任等级
@@ -88,7 +88,7 @@ CLI 当前向 stdout/stderr 输出帮助、版本或诊断；未来 Run 日志�
 
 ## 12. 需人工确认
 
-- 当前无数据库、业务授权执行器、网络客户端或重试实现；设计能力由后续任务验证。
+- 当前无数据库、业务授权执行器或网络客户端；恢复有确定证据重试，宿主执行能力由后续任务验证。
 - 分发许可材料尚需落实，本轮仅本地私有产物。
 - 原生 Windows / Linux、真实插件安装和模型 Session 本轮未运行。
 

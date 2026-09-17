@@ -92,6 +92,14 @@ function contention(inspection: LockInspection, path: string): never {
   throw new LockError('LOCK_OWNER_UNKNOWN', inspection.status === 'unknown' ? inspection.reason : 'Lock changed during acquisition; manual intervention required', path);
 }
 
+async function releaseGuard(project: LockProject, directory: string, guard: LockMetadata): Promise<void> {
+  await checkProject(project, false);
+  const current = await readOwner(directory);
+  if (!sameOwner(current, guard)) throw new LockError('LOCK_OWNER_UNKNOWN', 'Guard ownership changed; preserving the directory', directory);
+  await unlink(join(directory, OWNER));
+  await rmdir(directory);
+}
+
 /** No automatic stale deletion: the current metadata cannot prove descendant termination. */
 async function guarded<T>(project: LockProject, owner: LockMetadata, fn: () => Promise<T>): Promise<T> {
   await checkProject(project, true);
@@ -105,13 +113,7 @@ async function guarded<T>(project: LockProject, owner: LockMetadata, fn: () => P
   // If initialization fails, preserve the incomplete guard rather than guess ownership.
   await writeOwner(directory, guard);
   try { return await fn(); }
-  finally {
-    await checkProject(project, false);
-    const current = await readOwner(directory);
-    if (!sameOwner(current, guard)) throw new LockError('LOCK_OWNER_UNKNOWN', 'Guard ownership changed; preserving the directory', directory);
-    await unlink(join(directory, OWNER));
-    await rmdir(directory);
-  }
+  finally { await releaseGuard(project, directory, guard); }
 }
 
 function stateOf(handle: LockHandle): OwnerState {

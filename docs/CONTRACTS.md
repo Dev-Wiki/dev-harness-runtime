@@ -317,3 +317,15 @@ Linux 使用 boot ID 与 `/proc/<pid>/stat` 的启动 ticks 区分进程身份�
 `createAttempt` 创建 attempts 下的日志与 snapshots 目录；`writeResult` / `writeSnapshot` 发布当前 attempt 的不可覆盖证据，引用按精确持久字节取 SHA-256。`readEvidence` 限制 Run 内路径并复核摘要，拒绝 symlink / 硬链接别名和路径大小写别名。`writeSummary` 只从指定 revision 的 run.json 投影派生摘要，不接收调用者自报完成状态。
 
 存储层不把 Schema 合法或证据落盘当作 Task 完成证明，不执行恢复状态机，也不自动追认目录中未引用的 result。K3-R / K4 负责证据来源、状态转移、初始边界与 pending operation 的跨记录一致性。文件与目录检查针对本地文件系统及遵守同一锁协议的 Core；真实 Worker 的私有状态隔离仍须 Adapter 验证。
+
+## 13. K3-R 恢复与显式对齐实现
+
+`initializeRun` 先验证当前真实初始快照，写入 Run 级初始证据和仅含 seedHash / 引用的初始化意图，再创建唯一 run.json；`resumeRunInitialization` 只补建同一意图的确定中断窗口。已有 Run 返回当前 revision，不覆盖进度。`readCurrentRun` 和 `listRunIds` 用于持锁诊断；所有写入仍须显式 expectedRevision。初始化证据位于 results/run-evidence，不伪造 Task / attempt，也不是第二份状态。
+
+`resumeRun` 重新核对当前授权、Adapter、配置与协议，验证引用字节和实际快照，并通过可信 Core 验证器确认静止、checkpoint 来源及独立验收。缺少验证器时停止。纯函数 `decideRecovery` 只分类，不授权持久状态转换。execute / verify / commit 分别使用本阶段 before 边界，原始请求快照独立核验。恢复产生新 attempt / requestId；执行 checkpoint 的延续用新 execute-intent 绑定前序记录，不能复用旧 Session。
+
+恢复可返回重新执行、采纳已核实 Worker 结果后重新验收、补记已验收结果、交回 Core 提交桥接或停止。实际提交只有在 parent / tree / message / 路径和当前边界均符合冻结意图、且独立验收成立时才能补记；恢复 API 不自行 commit。确定命名的恢复证据在 CAS 前中断后可以精确复用，不能通过目录时间猜测最新结果。
+
+`reconcileRun` 验证显式 resolution 和当前 Planning / 内容；保留归档须重新独立验收。它只记录对齐，保留原失败状态、pending 历史和 completedTasks，不修改 Planning。`assertNewRunAllowed` 阻止未决操作、未接受归档、未知初始化窗口和未消费的对齐记录。`createReconciledSuccessor` 先 CAS 预留唯一 successor，再补建该 ID；验证双向绑定及无环，并使已完成历史不永久约束后续正常提交。
+
+这些接口尚未接入 CLI、实际宿主或执行隔离；可信验证器的测试实现只证明接口门禁，不能作为宿主能力证据。操作说明见 [RECOVERY](RECOVERY.md)。
