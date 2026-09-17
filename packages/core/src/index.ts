@@ -20,6 +20,7 @@ export * from './authorization/sandbox.js';
 export * from './authorization/git.js';
 export * from './worker/prompt.js';
 export * from './worker/bridge-policy.js';
+export * from './worker/proposals.js';
 export * from './worker/summary.js';
 export * from './state/inspect.js';
 export * from './worker/status.js';
