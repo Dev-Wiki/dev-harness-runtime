@@ -25,4 +25,4 @@
 
 当前已落地 `createWorkerWritePolicy` 这一纯路径判定，并让 Core 的最终快照所有权检查复用它；专项 17/17 通过。`WorkerProposalCollector` 进一步把请求和执行前快照绑定，按同一判定暂存文件写入/删除提议，复制字节并限制大小，拒绝 symlink/gitlink；专项 2/2 通过。它不写工作树，也不提供持久审计、文件系统竞态防护、进程隔离或宿主工具目录证明，不能单独作为桥接权限证据。
 
-Codex 侧已有只返回哈希的 `dhr_propose_text` MCP 入口和与宿主 JSONL 事件配对的提议解码；一次真实空目录调用通过且未写文件。它还未绑定 Core 的提议暂存或实际文件应用。DSH 侧现有 Worker guard 在桥接未启用时拒绝全部模型工具。这些组件保持生产 Executor 关闭。
+Codex 侧已有只返回哈希的 `dhr_propose_text` MCP 入口和与宿主 JSONL 事件配对的提议解码；一次真实空目录调用通过且未写文件。它还未绑定 Core 的提议暂存或实际文件应用。DSH 侧 Worker guard 仅放行插件自身注册的无写入 `dhr_propose_text` 定义，真实 rc.1 headless Session 已返回提议哈希，另一次 bash 写入调用被拒绝；DSH Session 事件到 Core 提议暂存尚未连接。这些组件保持生产 Executor 关闭。
