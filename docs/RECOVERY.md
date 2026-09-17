@@ -12,7 +12,7 @@
 
 恢复使用当前 Core 的 Adapter、授权、协议来源与配置摘要，逐项核对持久 Run。RunState.repoIdentity 保存创建时身份；当前 Git 内容以 acceptedSnapshot 或 pending operation 对应的边界校验，不能一直要求 HEAD 等于创建提交。
 
-checkpoint 是 Core 的受控操作记录，绑定 operationId、执行身份、阶段、前后 Snapshot、请求、结果及验证证据的精确引用。`indexCheckpointRef` 同样引用带 `index-staged` 阶段的 checkpoint，不能以一份没有身份的 index 摘要替代。私有文件存在、Schema 合法、摘要匹配都不单独证明来源；Core 的可信验证器仍需核验受控操作、执行静止和独立验收。
+checkpoint 是 Core 的受控操作记录，绑定 operationId、执行身份、阶段、前后 Snapshot、请求、结果及验证证据的精确引用。`commit-ready` 声明尚未暂存的提交意图，前后 Snapshot 引用必须相同；`indexCheckpointRef` 同样引用带 `index-staged` 阶段的 checkpoint，不能以一份没有身份的 index 摘要替代。私有文件存在、Schema 合法、摘要匹配都不单独证明来源；Core 的可信验证器仍需核验受控操作、执行静止和独立验收。
 
 从执行 checkpoint 继续时，新 attempt 使用新的 requestId，另写 `execute-intent`，精确引用上一 attempt 的 checkpoint。该记录只声明新的执行意图，前后边界相同；恢复时仍校验前序身份、边界和可信来源，不能将新意图当作已执行结果。
 
@@ -35,3 +35,9 @@ checkpoint 是 Core 的受控操作记录，绑定 operationId、执行身份、
 对齐仅在原 run.json 记录验证过的处置，保留失败状态、原因、pending 历史及原 completedTasks；不会代写 Planning 或追认失败执行。承接 Run 先由原记录 CAS 预留唯一 successorRunId，再建立同一个 ID。中断重试不得另建第二个 successor，也不得覆盖已经前进的 Run revision。
 
 未消费的对齐记录仍阻止普通新 Run 绕过专用承接流程。消费后验证来源和承接关系；已闭合的历史对齐不应永久要求后续正常开发匹配旧快照。
+
+## 独立验收后的恢复
+
+K4-V 的 `createAcceptanceRecoveryVerifier` 从 pending 的唯一 acceptance 引用遍历原始冻结输入、Worker 控制记录、Planning delta、命令输出与快照链。Adapter 仍提供实际 Worker 控制与旧执行树静止证明，接口 fixture 不代替宿主证据。
+
+verification 只允许冻结计划明确声明的未跟踪产物变化，恢复时采用与正常验收相同的窄写入策略。commit-ready / index-staged 分别区分尚未暂存和已完成暂存；无法匹配阶段边界时停止。提交桥接与恢复共用 committed / accepted 的确定名称和稳定接受时间，证据发布后 CAS 前中断可复用原字节，且不重复提交。实际故障测试见 [K4-V](verification/K4-V.md)。

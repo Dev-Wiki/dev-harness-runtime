@@ -41,8 +41,8 @@ export function parseRecoveryCheckpoint(input: unknown): RecoveryCheckpoint {
   const identity = record(field(value, 'identity'), ['runId', 'taskId', 'attempt', 'requestId']);
   const attempt = field(identity, 'attempt'); requireValue(typeof attempt === 'number' && Number.isSafeInteger(attempt) && attempt >= 1, 'Invalid attempt');
   const kind = field(value, 'kind'); requireValue(kind === 'execute' || kind === 'verify' || kind === 'commit', 'Unknown operation kind');
-  const stage = field(value, 'stage'); requireValue(stage === 'execute-intent' || stage === 'worker-checkpoint' || stage === 'worker-ended' || stage === 'verification-passed' || stage === 'index-staged', 'Unknown checkpoint stage');
-  requireValue((kind === 'execute' && ['execute-intent', 'worker-checkpoint', 'worker-ended'].includes(stage)) || (kind === 'verify' && stage === 'verification-passed') || (kind === 'commit' && stage === 'index-staged'), 'Checkpoint kind/stage mismatch');
+  const stage = field(value, 'stage'); requireValue(stage === 'execute-intent' || stage === 'worker-checkpoint' || stage === 'worker-ended' || stage === 'verification-passed' || stage === 'commit-ready' || stage === 'index-staged', 'Unknown checkpoint stage');
+  requireValue((kind === 'execute' && ['execute-intent', 'worker-checkpoint', 'worker-ended'].includes(stage)) || (kind === 'verify' && stage === 'verification-passed') || (kind === 'commit' && ['commit-ready', 'index-staged'].includes(stage)), 'Checkpoint kind/stage mismatch');
   const refs = field(value, 'evidenceRefs'); requireValue(Array.isArray(refs) && refs.length > 0, 'Checkpoint needs persistent controlled evidence');
   const result: RecoveryCheckpoint = {
     schemaVersion: 1, operationId: text(field(value, 'operationId'), /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u), kind, stage,
@@ -53,9 +53,9 @@ export function parseRecoveryCheckpoint(input: unknown): RecoveryCheckpoint {
   if (Object.hasOwn(value, 'requestRef')) result.requestRef = evidenceRef(field(value, 'requestRef'));
   if (Object.hasOwn(value, 'resultRef')) result.resultRef = evidenceRef(field(value, 'resultRef'));
   requireValue(stage === 'index-staged' || result.requestRef !== undefined, 'Worker/verification checkpoints require the exact execution request');
-  requireValue(!['worker-ended', 'verification-passed'].includes(stage) || result.resultRef !== undefined, 'Completed checkpoints require the exact result');
+  requireValue(!['worker-ended', 'verification-passed', 'commit-ready'].includes(stage) || result.resultRef !== undefined, 'Completed checkpoints require the exact result');
   requireValue(new Set(result.evidenceRefs.map((ref) => ref.path.toLowerCase())).size === result.evidenceRefs.length, 'Checkpoint evidence references must be unique');
-  requireValue(stage !== 'execute-intent' || sameRecord(result.beforeSnapshotRef, result.afterSnapshotRef), 'New execution intent cannot claim a performed transition');
+  requireValue(!['execute-intent', 'commit-ready'].includes(stage) || sameRecord(result.beforeSnapshotRef, result.afterSnapshotRef), 'Prepared intent cannot claim a performed transition');
   return result;
 }
 

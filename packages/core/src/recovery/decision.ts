@@ -28,6 +28,6 @@ export function decideRecovery(state: RunState, facts: RecoveryFacts): RecoveryD
   }
   if (facts.commitVerified) return { action: 'adopt-commit' };
   if (!facts.commitAbsent) return stop('DRIFT_DETECTED', 'Current HEAD is neither the recorded parent nor the verified intended commit');
-  if (checkpoint && (!facts.checkpointVerified || checkpoint.stage !== 'index-staged')) return stop('RECOVERY_EVIDENCE_REQUIRED', 'Staged commit checkpoint is missing or untrusted');
+  if (checkpoint && (!facts.checkpointVerified || !['commit-ready', 'index-staged'].includes(checkpoint.stage))) return stop('RECOVERY_EVIDENCE_REQUIRED', 'Commit preparation checkpoint is missing or untrusted');
   return facts.currentMatchesBefore || facts.checkpointVerified ? { action: 'resume-commit' } : stop('DRIFT_DETECTED', 'Index does not match the recorded commit checkpoint');
 }

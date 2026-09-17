@@ -23,7 +23,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 
 ## 已确认命令（人工维护）
 
-工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md)、[K3-L 验证记录](docs/verification/K3-L.md)、[K3-R 验证记录](docs/verification/K3-R.md) 与 `package.json`。
+工作目录均为仓库根；前提为固定工具链已安装、`pnpm install --frozen-lockfile --ignore-scripts` 成功。下列记录适用于 WSL2 / development，设备要求为 none，不需要宿主、模型凭据或用户插件。证据见 [V0 验证记录](docs/verification/V0.md)、[K1 验证记录](docs/verification/K1.md)、[K2 验证记录](docs/verification/K2.md)、[K3 验证记录](docs/verification/K3.md)、[K3-L 验证记录](docs/verification/K3-L.md)、[K3-R 验证记录](docs/verification/K3-R.md)、[K4-V 验证记录](docs/verification/K4-V.md) 与 `package.json`。
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
@@ -58,6 +58,12 @@ TypeScript / Node.js ESM workspace；统一 Runtime 的 V0 工程骨架。
 - Windows / Ubuntu CI 已配置，尚无远端运行结果。
 
 ## 需人工确认
-- 当前无数据库、业务授权执行器或网络客户端；恢复有确定证据重试，宿主执行能力由后续任务验证。
+- 当前无数据库或宿主 Executor；Core 已有独立验收和受控提交，实际 Agent 执行能力由后续任务验证。
 - 分发许可材料尚需落实，本轮仅本地私有产物。
 - 原生 Windows / Linux、真实插件安装和模型 Session 本轮未运行。
+
+## K4-V 实际隔离专项
+
+Linux 验证 provider 需要可用的 user / PID / mount / network / IPC / UTS / cgroup namespace、pidfd、原生 bubblewrap 与 Python。当前 WSL2 Linux 6.6.87.2 已使用 bubblewrap 0.9.0（Ubuntu 包 0.9.0-1ubuntu0.1）、Python 3.12 和 `/usr/bin/git` 2.43.0 实测。bubblewrap 本轮仅解包到临时目录，没有安装进系统或列为 npm 依赖。
+
+调用者必须显式提供 canonical bubblewrap 路径及只读工具链目录。专项使用 `DHR_TEST_BWRAP=/absolute/path/to/bwrap`；未提供时相关测试会标记跳过，不能据此宣称隔离或提交链已验证。命令与边界见 [K4-V](docs/verification/K4-V.md)。常规 full 不自动下载 bubblewrap，也不隐式安装宿主插件。

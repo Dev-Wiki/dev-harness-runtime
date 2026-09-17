@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { discoverProject } from '../../dist/discovery/index.js';
 import { captureSnapshot } from '../../dist/snapshot/capture.js';
+import { loadRecoverySnapshot } from '../../dist/recovery/evidence.js';
 import { acquireLock, releaseLock } from '../../dist/lock/index.js';
 import { compareAndSwapRun, createAttempt, initializeRun, writeRunEvidence } from '../../dist/state/index.js';
 
@@ -67,14 +68,17 @@ export async function installExecute(context, { status = 'INTERRUPTED', checkpoi
 }
 export async function installCheckpoint(context, stage, { candidate = false, after, request = context.request, result, evidenceRefs } = {}) {
   const run = context.run; const prefix = `fixture-${++context.sequence}`;
-  after ??= await captureSnapshot(context.options);
+  after ??= stage === 'commit-ready'
+    ? await loadRecoverySnapshot(context.handle, run, run.pendingOperation.beforeSnapshotRef)
+    : await captureSnapshot(context.options);
+  if (stage === 'commit-ready') assert.equal(after.hash, run.pendingOperation.beforeSnapshotHash, 'Prepared commit fixture must reuse its exact before boundary');
   const put = (name, value) => writeRunEvidence(context.handle, run.runId, run.revision, `${prefix}-${name}`, value);
-  const afterRef = await put('after', after.snapshot);
+  const afterRef = stage === 'commit-ready' ? run.pendingOperation.beforeSnapshotRef : await put('after', after.snapshot);
   const requestRef = await put('request', request);
   const proofRef = await put('proof', { schemaVersion: 1, runId: run.runId, kind: 'test-only-controlled-proof', operationId: run.pendingOperation.operationId, endingHash: after.hash });
   const checkpoint = { schemaVersion: 1, operationId: run.pendingOperation.operationId, kind: run.pendingOperation.kind, identity: run.pendingOperation.identity, stage,
     beforeSnapshotRef: run.pendingOperation.beforeSnapshotRef, afterSnapshotRef: afterRef, requestRef, evidenceRefs: evidenceRefs ?? [proofRef] };
-  if (['worker-ended', 'verification-passed', 'index-staged'].includes(stage)) {
+  if (['worker-ended', 'verification-passed', 'commit-ready', 'index-staged'].includes(stage)) {
     result ??= fixture('execution/result-completed');
     result.snapshotHash = request.snapshotHash;
     for (const record of result.verification) { record.beforeSnapshotHash = request.snapshotHash; record.afterSnapshotHash = after.hash; }

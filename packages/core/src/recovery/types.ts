@@ -11,7 +11,7 @@ export interface RecoveryCheckpoint {
   operationId: string;
   kind: PendingOperation['kind'];
   identity: AttemptIdentity;
-  stage: 'execute-intent' | 'worker-checkpoint' | 'worker-ended' | 'verification-passed' | 'index-staged';
+  stage: 'execute-intent' | 'worker-checkpoint' | 'worker-ended' | 'verification-passed' | 'commit-ready' | 'index-staged';
   beforeSnapshotRef: EvidenceRef;
   afterSnapshotRef: EvidenceRef;
   requestRef?: EvidenceRef;

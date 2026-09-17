@@ -102,10 +102,13 @@ test('mismatched checkpoint identity and caller checkpoint cannot be adopted', a
   stopped(await resume(context), 'INVALID_RECOVERY_CHECKPOINT');
 });
 
-async function installVerify(context) {
-  await installExecute(context); await write(context.root, 'src/a.ts', 'owned complete\n'); await installCheckpoint(context, 'worker-ended');
+async function installVerify(context, { writableArtifacts, verificationWrites = [] } = {}) {
+  await installExecute(context);
+  if (writableArtifacts) context.request.verificationPlan.commands[0].writableArtifacts = writableArtifacts;
+  await write(context.root, 'src/a.ts', 'owned complete\n'); await installCheckpoint(context, 'worker-ended');
   const adopted = await resume(context); assert.equal(adopted.decision.action, 'adopt-result', adopted.decision.message); context.run = adopted.state;
   await publish(context, { status: 'INTERRUPTED' });
+  for (const [path, content] of verificationWrites) await write(context.root, path, content);
   await installCheckpoint(context, 'verification-passed');
 }
 
@@ -147,15 +150,16 @@ test('published accepted evidence survives a pre-CAS fault without duplicate tas
   const retry = await resume(context); assert.equal(retry.decision.action, 'finalize-no-commit', retry.decision.message); assert.deepEqual(retry.state.completedTasks, ['K1']);
 });
 
-async function installCommit(context) {
+async function installCommit(context, stage = 'index-staged') {
   await installExecute(context); await write(context.root, 'src/a.ts', 'owned complete\n');
   const before = await captureSnapshot(context.options);
   const beforeRef = await writeRunEvidence(context.handle, 'run-a', context.run.revision, 'commit-before', before.snapshot);
   await git(context.root, 'add', 'src/a.ts'); const tree = await git(context.root, 'write-tree');
+  if (stage === 'commit-ready') await git(context.root, 'reset', '--quiet', 'HEAD', '--', 'src/a.ts');
   await publish(context, { phase: 'FINALIZE', pendingOperation: { schemaVersion: 1, operationId: 'commit-a', kind: 'commit', identity: context.run.pendingOperation.identity,
     scope: context.run.pendingOperation.scope, beforeSnapshotRef: beforeRef, beforeSnapshotHash: beforeRef.sha256, parent: before.snapshot.repoIdentity.head,
     expectedTree: tree, paths: ['src/a.ts'], messageHash: hash('accepted Task\n'), createdAt: context.run.updatedAt } });
-  await installCheckpoint(context, 'index-staged');
+  await installCheckpoint(context, stage);
 }
 
 test('staged but uncommitted recovery returns a Core bridge action without creating a commit', async (t) => {
@@ -222,4 +226,61 @@ test('staged checkpoint cannot hide governance content drift inside an index ope
   const verifier = fixtureVerifier(context);
   const result = await resume(context, { verifier: { ...verifier, async verifyCheckpoint(input) { verified = true; await verifier.verifyCheckpoint(input); } } });
   stopped(result, 'DRIFT_DETECTED'); assert.equal(verified, false);
+});
+
+test('commit-ready recovery preserves an unstaged boundary and returns only the Core bridge action', async (t) => {
+  const context = await setupRecovery(t, { commit: 'task' }); await installCommit(context, 'commit-ready');
+  const parent = await git(context.root, 'rev-parse', 'HEAD');
+  assert.equal(await git(context.root, 'diff', '--cached', '--name-only'), '');
+  assert.deepEqual(context.checkpoint.checkpoint.beforeSnapshotRef, context.checkpoint.checkpoint.afterSnapshotRef);
+  const result = await resume(context);
+  assert.equal(result.decision.action, 'resume-commit', result.decision.message);
+  assert.equal(await git(context.root, 'rev-parse', 'HEAD'), parent);
+  assert.equal(await git(context.root, 'diff', '--cached', '--name-only'), '');
+  assert.deepEqual(result.state.completedTasks, []);
+});
+
+test('commit-ready checkpoint with distinct before and after references fails before trusted callbacks', async (t) => {
+  const context = await setupRecovery(t, { commit: 'task' }); await installCommit(context, 'commit-ready');
+  const bad = { ...context.checkpoint.checkpoint, afterSnapshotRef: context.run.acceptedSnapshotRef };
+  const ref = await writeRunEvidence(context.handle, 'run-a', context.run.revision, 'malformed-commit-ready', bad);
+  await publish(context, { pendingOperation: { ...context.run.pendingOperation, checkpointRef: ref } });
+  let verified = false;
+  stopped(await resume(context, { verifier: { async verifyCheckpoint() { verified = true; } } }), 'INVALID_RECOVERY_CHECKPOINT');
+  assert.equal(verified, false);
+  assert.deepEqual(await readCurrentRun(context.handle, 'run-a'), context.run);
+});
+
+test('verification recovery accepts only explicitly declared untracked artifacts into the accepted boundary', async (t) => {
+  const context = await setupRecovery(t);
+  await installVerify(context, { writableArtifacts: ['build/report.json'], verificationWrites: [['build/report.json', '{"passed":true}\n']] });
+  const result = await resume(context);
+  assert.equal(result.decision.action, 'finalize-no-commit', result.decision.message);
+  assert.equal(await git(context.root, 'ls-files', '--', 'build/report.json'), '');
+  const accepted = JSON.parse(await readEvidence(context.handle, 'run-a', result.state.revision, result.state.acceptedSnapshotRef));
+  assert.ok(accepted.paths.some((entry) => entry.path === 'build/report.json' && entry.type === 'file' && entry.index.length === 0));
+  assert.deepEqual(result.state.completedTasks, ['K1']);
+});
+
+for (const [description, declared, changed] of [
+  ['undeclared output', ['build/report.json'], 'build/other.json'],
+  ['tracked output', ['src/other.ts'], 'src/other.ts'],
+]) {
+  test(`verification recovery rejects ${description} before trusting acceptance`, async (t) => {
+    const context = await setupRecovery(t);
+    await installVerify(context, { writableArtifacts: declared, verificationWrites: [[changed, 'unauthorized verification write\n']] });
+    let accepted = false;
+    const verifier = { ...fixtureVerifier(context), async verifyAcceptance() { accepted = true; } };
+    stopped(await resume(context, { verifier }), 'AUTHORIZATION_VIOLATION');
+    assert.equal(accepted, false);
+    assert.deepEqual(await readCurrentRun(context.handle, 'run-a'), context.run);
+  });
+}
+
+test('verification source-scope overlap is rejected when the frozen request is first recovered', async (t) => {
+  const context = await setupRecovery(t); await installExecute(context);
+  context.request.verificationPlan.commands[0].writableArtifacts = ['src/a.ts'];
+  await write(context.root, 'src/a.ts', 'owned complete\n'); await installCheckpoint(context, 'worker-ended');
+  stopped(await resume(context), 'INVALID_CONTRACT');
+  assert.deepEqual(await readCurrentRun(context.handle, 'run-a'), context.run);
 });

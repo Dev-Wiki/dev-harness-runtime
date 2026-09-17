@@ -5,6 +5,7 @@ import { compareAndSwapRun, createAttempt, readCurrentRun, readEvidence, readRun
 import { recaptureSnapshot } from '../snapshot/capture.js';
 import { assertTaskStart, assertUnchanged, compareSnapshots, verifyOwnedTransition } from '../snapshot/guard.js';
 import { verifyAuthorizedCommit, type CommitIntent } from '../snapshot/commit.js';
+import { assertVerificationTransition } from '../snapshot/verification.js';
 import type { CapturedSnapshot } from '../snapshot/types.js';
 import { decideRecovery } from './decision.js';
 import { copyRecoveryContext, loadRecoveryCheckpoint, loadRecoverySnapshot, sameRecord } from './evidence.js';
@@ -116,8 +117,14 @@ export async function resumeRun(handle: LockHandle, runId: string, options: Resu
       } else {
         requireValue(current.boundaryHash === evidence.after.boundaryHash, 'DRIFT_DETECTED', 'Project no longer matches the checkpoint ending boundary');
         requireValue(pending, 'INVALID_RECOVERY_CHECKPOINT', 'Missing pending operation');
-        await verifyOwnedTransition(before, evidence.after, { initial, scope: pending.scope, authorization: state.authorization,
-          verifyOwnership: async () => { await options.verifier.verifyCheckpoint!(copyRecoveryContext(evidence)); return true; } });
+        if (pending.kind === 'verify') {
+          requireValue(evidence.request, 'INVALID_RECOVERY_CHECKPOINT', 'Verification requires its frozen request');
+          assertVerificationTransition(initial, before, evidence.after, evidence.request);
+          await options.verifier.verifyCheckpoint(copyRecoveryContext(evidence));
+        } else {
+          await verifyOwnedTransition(before, evidence.after, { initial, scope: pending.scope, authorization: state.authorization,
+            verifyOwnership: async () => { await options.verifier.verifyCheckpoint!(copyRecoveryContext(evidence)); return true; } });
+        }
       }
       facts.checkpointVerified = true;
       if (evidence.checkpoint.stage === 'verification-passed' || pending?.kind === 'commit') {

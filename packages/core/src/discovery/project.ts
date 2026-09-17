@@ -68,7 +68,7 @@ function links(text: string): string[] {
     .filter((child) => child.type === 'link_open').map((child) => child.attrGet('href')).filter((href): href is string => typeof href === 'string'));
 }
 
-function harnessCommands(text: string, path: string): { purpose: string; command: string }[] {
+export function readConfirmedVerificationCommands(text: string, path: string): { purpose: string; command: string }[] {
   const tokens = markdown.parse(text, {});
   const commands: { purpose: string; command: string }[] = [];
   let sectionLevel = 0;
@@ -190,7 +190,7 @@ export async function discoverProject(cwd: string, options: DiscoveryOptions = {
       if (!text.trim()) throw new PlanningError('PROJECT_CONTRACT_MISSING', `${name} is empty`, path);
       governance.push(text);
       if (name === 'AGENTS.md') agentsPath = path;
-      else { harnessPath = path; verificationCommands = harnessCommands(text, path); }
+      else { harnessPath = path; verificationCommands = readConfirmedVerificationCommands(text, path); }
     } catch (error) {
       issues.push({ code: 'PROJECT_CONTRACT_MISSING', message: `${name}: ${error instanceof Error ? error.message : 'unreadable project contract'}` });
     }

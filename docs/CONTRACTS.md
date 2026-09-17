@@ -278,7 +278,7 @@ CLI 退出码：0 表示请求模式正常结束；2 表示参数或不支持的
 
 [Core](../packages/core/src/index.ts) 提供 `discoverProject(cwd, options)`、`readPlan(project)`、`selectTask(plan, selection)`。Discovery 使用真实 Git 解析主仓 / linked worktree 的 repoRoot、privateGitDir、HEAD 和 `--git-path dev-harness-runtime`，只读取、不创建状态目录。显式 docsRoot 优先；双根先按治理链接判定归属，再以唯一 Dashboard 归属判定，不能证明时拒绝。doctor 模式可返回缺少 HEAD / 项目契约的 issues，不将该项目升级为可执行状态。
 
-HARNESS 读取“已确认命令（人工维护）”内按列名识别的表格，收集 confirmed 命令，至少包含 test / quick / bugfix / full 之一。重复列、重复用途、嵌套表格和隐藏 HTML 拒绝；候选命令不获得执行资格。此阶段只返回命令文本，argv 构造、进程权限、冻结来源和实际验证由后续任务完成。
+HARNESS 读取“已确认命令（人工维护）”内按列名识别的表格，收集 confirmed 命令，至少包含 test / quick / bugfix / full 之一。重复列、重复用途、嵌套表格和隐藏 HTML 拒绝；候选命令不获得执行资格。读取层只返回命令文本；K4-V 复用该解析器冻结来源、核对 literal argv 并在受控进程中独立验证。
 
 Planning 使用 [markdown-it 的结构 token](https://markdown-it.github.io/markdown-it/documents/Architecture.html)，固定依赖 15.0.2。仅在目标段落中读取表格与顶层有序列表，按表头映射字段；转义管道保留为单元格内容，代码块和普通段落中的任务示例不形成工作顺序。原始表格行另校验列数，避免解析器自动补齐 / 截断掩盖坏输入。单份 Planning Markdown 限 2 MB，超限明确拒绝，不截断后继续选择。
 
@@ -298,7 +298,7 @@ Snapshot 增加必填 indexFingerprint、indexFlags、dirtyPaths、stagedPaths�
 
 文件 rawContentHash 始终按原始字节计算。判断工作树是否有修改时，Core 将捕获字节、有效属性与原 index blob 送入隔离临时 Git 仓库，由 Git 自身处理 text / eol / autocrlf / ident / working-tree-encoding；不改写项目，不运行外部 filter。项目配置了外部内容 filter 时返回 UNSUPPORTED_PROJECT_FILTER。转换行为依据 [Git hash-object](https://git-scm.com/docs/git-hash-object) 与 [Git v2.43.0 convert.c](https://github.com/git/git/blob/v2.43.0/convert.c)，LF/CRLF 和 UTF-16LE 有实际 Git 正反例。
 
-捕获前后核对 Git 身份、index、路径列表和转换设置，逐文件核对打开前后身份与 stat，完成前再次检查全部观察值。遇到读取期间变化返回 DRIFT_DETECTED；这不是文件系统原子快照，也不保证检测两次观察之间被完全恢复的瞬时改动。执行期隔离和持锁仍由后续任务完成。
+捕获前后核对 Git 身份、index、路径列表和转换设置，逐文件核对打开前后身份与 stat，完成前再次检查全部观察值。遇到读取期间变化返回 DRIFT_DETECTED；这不是文件系统原子快照，也不保证检测两次观察之间被完全恢复的瞬时改动。执行期持锁见 §12，独立验证进程的隔离见 §14；实际宿主 Worker 的隔离由对应 Adapter 证明。
 
 `assertUnchanged` 比较完整边界；`assertTaskStart` 阻止任何预存暂存内容、scope 与初始用户修改重叠及初始修改漂移。`verifyOwnedTransition` 限制代码 scope 和当前 Task 的四个 Planning 收口路径，保护初始用户内容，禁止未授权 HEAD / index / branch 变化。新 symlink 逐段解析，不能指向仓库外或 Git 私有目录。允许的路径仍必须通过 Core 提供的 `verifyOwnership`，该回调核验可信操作记录绑定的 runId / taskId / beforeHash / afterHash / 实际路径集合；Worker 的 changedFiles 或自行生成的摘要不构成证据。K4-V 接通持久操作证据和独立验证，K3 的回调测试只验证此接口的门禁。
 
@@ -328,4 +328,22 @@ Linux 使用 boot ID 与 `/proc/<pid>/stat` 的启动 ticks 区分进程身份�
 
 `reconcileRun` 验证显式 resolution 和当前 Planning / 内容；保留归档须重新独立验收。它只记录对齐，保留原失败状态、pending 历史和 completedTasks，不修改 Planning。`assertNewRunAllowed` 阻止未决操作、未接受归档、未知初始化窗口和未消费的对齐记录。`createReconciledSuccessor` 先 CAS 预留唯一 successor，再补建该 ID；验证双向绑定及无环，并使已完成历史不永久约束后续正常提交。
 
-这些接口尚未接入 CLI、实际宿主或执行隔离；可信验证器的测试实现只证明接口门禁，不能作为宿主能力证据。操作说明见 [RECOVERY](RECOVERY.md)。
+这些接口尚未接入 CLI 或实际宿主；K4-V 已实现独立验收证据链的恢复验证，Adapter 仍须证明 Worker 来源与静止。fixture 回调不能作为宿主能力证据。操作说明见 [RECOVERY](RECOVERY.md)。
+
+## 14. K4-V 独立验收与受控提交实现
+
+`freezeAcceptanceInputs` 在派发前固定原始 Task 验收文本、HARNESS 确认命令、Git Workflow、Planning 和 verificationPlan.sources 的字节与摘要。验收 ID 必须覆盖所有原始标准；literal argv 不接受 shell 展开。仓库内直接文件入口、package-manager 的 package.json 及其可识别的直接 script 入口必须纳入 sources。动态导入、复杂 shell、递归脚本及测试配置依赖由可信 Core 编排器显式列入完整验证基线，当前实现不自动推断这些依赖；不能把 Worker 声明当作该清单的来源。
+
+`verifyTaskAcceptance` 重新验证结果身份、完整文件变化、初始用户内容、当前边界和 Planning 生命周期。`validatePlanningDelta` 只允许当前 Task 收口、等价链接搬迁、归档索引追加与最近五项摘要更新；其他任务的状态、优先级、依赖、执行顺序及原始验收文本保持一致，包括附加说明表。Worker control verifier 必须核验绑定本次身份、前后边界的实际宿主控制证据；未提供或无法证明权限与静止时拒绝验收。
+
+验证命令通过 Linux provider 在独立 user / PID / mount / network / IPC / UTS / cgroup namespace 内执行。项目复制为只读镜像，完整内容与快照匹配后覆盖冻结验证源；不暴露宿主 HOME、Git 私有目录、凭据环境或 WSL 入口。仅显式声明的既有产物目录可写，初始用户修改、源码、Planning、验证源和已跟踪文件不能作为产物。产物纳入后续接受快照，但不计入本次 Task 提交集合。此能力目前只在 WSL2 实测；子模块、外链或特殊文件等不支持输入明确拒绝。
+
+provider 使用固定原生 bubblewrap 和 Python 可执行文件摘要、绑定 namespace init 的 pidfd、两道执行门禁和 monitor 等待来确认结束。取消、超时及后代进程无法证明静止时拒绝成功；控制进程退出或管道 EOF 不释放项目命令。挂载使用固定目录描述符，执行命令前关闭这些描述符。实现依据 [Bubblewrap](https://github.com/containers/bubblewrap) 与固定 [v0.9.0 源码](https://github.com/containers/bubblewrap/blob/v0.9.0/bubblewrap.c)，不是对任意参数或其他宿主的隔离承诺。
+
+Core 记录实际命令的 stdout / stderr、退出码、身份、时间、前后快照和隔离证据。必需人工验收只能来自外部用户确认服务，Worker 的确认文本无效。全部通过后签发与当前 lock handle / revision 绑定、仅可消费一次的进程内 capability；序列化对象不能获得提交权限。`finalizeWithoutCommit` 再次校验边界后推进 Run；授权为 task 时必须使用提交桥接。
+
+`commitAcceptedTask` 由可信项目策略读取冻结的 Git Workflow 并给出精确 message / paths，不替项目补默认策略。桥接先检查原生 Git、有效配置、hook、签名与外部 helper；需要执行不受控 hook / filter / signing 的项目拒绝，不能静默关闭规则。临时 index / 对象目录先预测 tree，保存 `commit-ready` 意图后逐文件暂存，核对暂存集合和 tree，保存 `index-staged` 后创建一次真实 commit，并核验 parent / tree / message / 内容 / HEAD。失败保留现场；不执行 push / PR / tag / release / deploy。
+
+`createAcceptanceRecoveryVerifier` 按 pending 的精确引用重建冻结输入、Worker control、Planning、各命令输出与快照链，再独立接受恢复。Core 私有证据存储与 Adapter 的可信控制验证仍是信任边界；文件存在或 hash 格式本身不授予权限。提交和 no-commit 的 accepted 证据使用同一确定名称及稳定时间，CAS 前中断后可精确复用；不会重复 commit 或重复完成 Task。准备提交但尚未暂存的 `commit-ready` 必须前后引用相同。
+
+本任务验证 Linux 验证进程、真实本地 Git 和 Core 接口；Worker control / 人工确认采用明确标记的接口 fixture。Codex / DSH 的真实 Worker 权限、Session 与凭据边界由 K5 / K6 实测，不因本任务通过而标记为可用。详情见 [K4-V 验证记录](verification/K4-V.md)。

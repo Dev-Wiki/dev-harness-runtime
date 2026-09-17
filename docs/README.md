@@ -14,6 +14,7 @@
 - [K3 验证记录](verification/K3.md)：内容快照、漂移保护与真实 Git 提交校验。
 - [K3-L 验证记录](verification/K3-L.md)：私有状态、CAS、多进程锁与崩溃验证。
 - [K3-R 验证记录](verification/K3-R.md)：恢复、中断重入、显式对齐及受影响回归。
+- [K4-V 验证记录](verification/K4-V.md)：独立验收、实际隔离、精确提交及证据恢复。
 - [恢复与人工对齐](RECOVERY.md)：Core 恢复接口、可信证据与唯一 successor。
 - [开发看板](plan/Dashboard.md)：唯一活跃计划、任务顺序与跨任务状态。
 - [资料完整性评估](plan/Readiness.md)：设计输入、缺项与官网初查证据。
