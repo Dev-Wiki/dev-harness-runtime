@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { CodexEventDecoder } from '../dist/executor/events.js';
@@ -50,4 +51,27 @@ test('Codex event decoder rejects missing, repeated, failed, malformed and trail
   incomplete.consume(event('item.completed', { item: { type: 'agent_message', text: 'not json' } }));
   incomplete.consume(event('turn.completed'));
   assert.throws(() => incomplete.finish(request), { code: 'INVALID_RESULT' });
+});
+
+test('Codex proposal receipts must match one completed MCP call before staging', () => {
+  const proposal = { id: 'item_3', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_propose_text',
+    arguments: { path: 'src/a.ts', content: 'HELLO' } };
+  const receipt = { content: [{ type: 'text', text: `PROPOSED ${createHash('sha256').update('HELLO').digest('hex')}` }] };
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId }));
+  decoder.consume(event('turn.started'));
+  decoder.consume(event('item.started', { item: { ...proposal, result: null, error: null, status: 'in_progress' } }));
+  decoder.consume(event('item.completed', { item: { ...proposal, result: receipt, error: null, status: 'completed' } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.deepEqual(decoder.finish(request).result, blocked);
+  assert.deepEqual(decoder.proposals(), [{ path: 'src/a.ts', content: 'HELLO' }]);
+
+  const bad = new CodexEventDecoder();
+  bad.consume(event('thread.started', { thread_id: threadId })); bad.consume(event('turn.started'));
+  bad.consume(event('item.started', { item: proposal }));
+  assert.throws(() => bad.consume(event('item.completed', { item: { ...proposal, result: { content: [{ type: 'text', text: 'PROPOSED wrong' }] }, error: null, status: 'completed' } })), { code: 'INVALID_RESULT' });
+  const foreign = new CodexEventDecoder();
+  foreign.consume(event('thread.started', { thread_id: threadId })); foreign.consume(event('turn.started'));
+  assert.throws(() => foreign.consume(event('item.started', { item: { ...proposal, server: 'other' } })), { code: 'AUTHORIZATION_VIOLATION' });
 });
