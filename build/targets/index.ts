@@ -6,3 +6,4 @@ export { CodexPackager, codexStaticSpec, createCodexBuildPipeline } from './code
 export { repositoryBuildInput } from './source.js';
 export { DshPackager, dshStaticSpec, dshHostDependencies, createDshBuildPipeline } from './dsh.js';
 export { CursorPackager, cursorStaticSpec, createCursorBuildPipeline } from './cursor.js';
+export { OpenCodePackager, opencodeStaticSpec, createOpenCodeBuildPipeline } from './opencode.js';

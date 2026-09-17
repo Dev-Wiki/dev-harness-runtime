@@ -61,6 +61,8 @@ K7 已生成含 Native manifest、三个 Skill、一个非全局 rule、一个 c
 
 OpenCode local 从 `.opencode/plugins/` 发现；npm 由 `opencode.json.plugin` 指定，宿主负责依赖安装。样例包名仅示意，未发布；Node 导入成功不等于 OpenCode 加载成功。官方没有保证 npm 包内 skills 自动发现，因此技能单独放 `.opencode/skills/<name>/SKILL.md`。来源：[Plugins](https://opencode.ai/docs/plugins/)、[Skills](https://opencode.ai/docs/skills/)。[SDK](https://opencode.ai/docs/sdk/) 有 session.create/prompt/abort 候选入口，尚无本项目 Session 生命周期证明。
 
+K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。当前 PATH 无 OpenCode 宿主，因此原生加载 / Skill 调用未验，见 [K8 验证记录](../verification/K8.md)。
+
 ### Antigravity 与 Portable
 
 Google Plugin 教程加 `?hl=en` 后可读，补上初查缺口；文档给出 `agy plugin install` 和全局 `~/.gemini/config/plugins/<name>/`。独立 Skills 项目路径为 `.agents/skills/`，全局为 `~/.gemini/config/skills/`，插件内仍为 `skills/`。未证明项目级 plugin 安装路径或最低客户端版本。[Plugin 教程](https://codelabs.developers.google.com/cloud-dev-plugin-agy?hl=en)、[Skills 教程](https://codelabs.developers.google.com/getting-started-with-antigravity-skills)。
