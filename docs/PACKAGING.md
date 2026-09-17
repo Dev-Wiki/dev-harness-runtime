@@ -43,6 +43,8 @@ Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，�
 
 DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `package.json`、`cordis.patch.yml`、已编译 Cordis plugin / CLI、三个 Skill 和本地声明，最终打为 `dist/dsh/dev-harness-dsh-v<version>.tgz`。`package.json.dsh.bundle.patch` 指向相对包根的 YAML，peer 精确标注本机 rc.1 启动器实际解析的 Cordis 4.0.2 与 dsh-commands rc.2。插件只注册可读 `/dhr-status`，Executor 继续关闭；安装、公开 CommandRuntime 调用与卸载见 [K6-P 验证记录](verification/K6-P.md)。DSH 的两个已锁定 JS bundle 同样走 SHA-256 绑定例外，其余文本继续接受公共 lint。
 
+Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生成 Native `.cursor-plugin/plugin.json`、三个共享 Skill、一个可请求 rule、一个只读状态 command 与包内 CLI，输出 `dist/cursor/dev-harness-cursor-v<version>.zip`。ZIP 顶层为 `dev-harness/`，按 Cursor 官方本地插件目录放置并重新加载。当前只完成离线内容和包内 CLI 验证；宿主 `--plugin-dir` 调用被自动审批拒绝，不能记为安装 smoke 或 Executor 能力。见 [K7 验证记录](verification/K7.md)。
+
 ## 验证入口
 
 项目构建和测试命令以 [HARNESS](../HARNESS.md) 为准。K10-B 的可复现专项见 [验证记录](verification/K10-B.md)：`pnpm build`、`pnpm harness:quick`、`node --test tests/packaging/*.test.mjs packages/cli/tests/build.test.mjs`、`pnpm schemas:check` 和 `pnpm test:cli-package`。只在里程碑收口时运行全量 `pnpm verify`，除非后续变更扩大影响范围。

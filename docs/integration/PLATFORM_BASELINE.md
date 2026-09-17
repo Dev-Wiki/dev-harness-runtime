@@ -57,6 +57,8 @@ K6-P 已从统一源码生成十文件 tgz，并在隔离 DSH `0.1.5-rc.1` headl
 
 Cursor Native 使用 `skills/` 默认目录，显式 skills 字段替代默认发现；本地插件测试位置为 `~/.cursor/plugins/local/<name>/`。技能 frontmatter 使用 name/description，名称与目录匹配。见 [Native reference](https://cursor.com/docs/reference/plugins)、[Skills](https://cursor.com/docs/skills)、[本地测试](https://cursor.com/docs/plugins)。
 
+K7 已生成含 Native manifest、三个 Skill、一个非全局 rule、一个 command 和包内 `dhr` 的 ZIP；离线静态、golden 与 CLI 调用通过。Cursor 编辑器在本机 WSL 因 Vsock 错误不可用；本地 Agent CLI 虽提供 `--plugin-dir`，其临时调用被自动审批拒绝，故原生安装、发现和调用仍无通过证据。见 [K7 验证记录](../verification/K7.md)。
+
 OpenCode local 从 `.opencode/plugins/` 发现；npm 由 `opencode.json.plugin` 指定，宿主负责依赖安装。样例包名仅示意，未发布；Node 导入成功不等于 OpenCode 加载成功。官方没有保证 npm 包内 skills 自动发现，因此技能单独放 `.opencode/skills/<name>/SKILL.md`。来源：[Plugins](https://opencode.ai/docs/plugins/)、[Skills](https://opencode.ai/docs/skills/)。[SDK](https://opencode.ai/docs/sdk/) 有 session.create/prompt/abort 候选入口，尚无本项目 Session 生命周期证明。
 
 ### Antigravity 与 Portable
