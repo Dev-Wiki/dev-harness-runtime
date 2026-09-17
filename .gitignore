@@ -1,0 +1,15 @@
+# Node.js dependencies and generated artifacts
+node_modules/
+.generated/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
