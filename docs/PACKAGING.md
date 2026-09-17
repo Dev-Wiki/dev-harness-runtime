@@ -53,4 +53,4 @@ Portable 对应入口为 `createAgentPluginBuildPipeline(root, protocolCheckout)
 
 ## 验证入口
 
-项目构建和测试命令以 [HARNESS](../HARNESS.md) 为准。K10-B 的可复现专项见 [验证记录](verification/K10-B.md)：`pnpm build`、`pnpm harness:quick`、`node --test tests/packaging/*.test.mjs packages/cli/tests/build.test.mjs`、`pnpm schemas:check` 和 `pnpm test:cli-package`。只在里程碑收口时运行全量 `pnpm verify`，除非后续变更扩大影响范围。
+项目构建和测试命令以 [HARNESS](../HARNESS.md) 为准。六平台可信入口为 `createRepositoryBuildPipeline(root, protocolCheckout)`；仓库脚本 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack` 与 `pnpm dhr release --dry-run` 都需显式 `--protocol-checkout`，详见 [本地产物说明](RELEASE.md)。`pnpm pack` 是 pnpm 自身命令，不能代替本项目 pack 脚本。K10-B 的可复现专项见 [验证记录](verification/K10-B.md)。只在剩余开发收口时运行全量 `pnpm verify`，除非后续变更扩大影响范围。

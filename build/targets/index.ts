@@ -9,3 +9,5 @@ export { CursorPackager, cursorStaticSpec, createCursorBuildPipeline } from './c
 export { OpenCodePackager, opencodeStaticSpec, createOpenCodeBuildPipeline } from './opencode.js';
 export { AntigravityPackager, antigravityStaticSpec, createAntigravityBuildPipeline } from './antigravity.js';
 export { AgentPluginPackager, agentPluginStaticSpec, createAgentPluginBuildPipeline } from './agent-plugin.js';
+export { createRepositoryBuildPipeline, distributionPlatforms } from './repository.js';
+export type { DistributionPlatform } from './repository.js';

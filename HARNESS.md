@@ -5,7 +5,7 @@
 
 ## 项目类型
 
-TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI，共享打包流水线通过 Fake Packager 验证，Codex / DSH Packager 已通过本地生成与隔离宿主安装链，Cursor Packager 已通过离线生成，其他平台仍为元数据骨架。
+TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。自动 Executor 均未启用。
 
 ## 编译与启动问题排查
 
@@ -35,7 +35,9 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
 | full | `pnpm verify` | 类型、lint、测试、Schema 一致性、R1 fixture 和独立 CLI 包检查 | confirmed |
 
-`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。Codex / DSH / Cursor Packager 分别可由可信工厂注入；默认独立 CLI 尚未装配平台 Packager，且没有宿主 Executor，相应命令返回 CAPABILITY_MISSING。
+`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。六平台 Packager 可由仓库可信工厂注入；默认独立 CLI 尚未装配平台 Packager，且没有宿主 Executor，相应命令返回 CAPABILITY_MISSING。
+
+仓库级 `pnpm dhr` 使用固定源码中的可信 Packager；`pnpm dhr release --dry-run --protocol-checkout <path>` 已在 WSL2 为六平台生成九个本地产物并重复验证摘要一致。逐阶段入口为 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack`，均需 `--protocol-checkout <path>`；`pnpm pack` 属于 pnpm 内建命令。`pnpm matrix:check` 核对实际摘要与 [能力矩阵](docs/PLATFORM_MATRIX.md)。这些命令不安装模型宿主，也不发布，详见 [RELEASE](docs/RELEASE.md)。独立 CLI tarball 仍无默认 Packager 和 Executor。
 
 - Node `24.15.0`，包 engines 为 `>=24.15.0 <25`；pnpm `11.1.0`。
 - TypeScript `6.0.3`、Oxlint `1.76.0`、esbuild `0.28.0`、`@types/node 24.12.2`，精确依赖见锁文件。
@@ -46,7 +48,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
 - Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
-- 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；Codex 与 DSH Packager 有真实宿主安装证据，Cursor Packager 仅有离线验证，见 [K5-P](docs/verification/K5-P.md)、[K6-P](docs/verification/K6-P.md)、[K7](docs/verification/K7.md)。仓库级 `pnpm generate`、`pnpm validate:plugins`、`pnpm pack` 及 `dhr release --dry-run` 留给平台接入与收口任务，不属于当前已确认命令；没有以空脚本代替验收。
+- 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录
 

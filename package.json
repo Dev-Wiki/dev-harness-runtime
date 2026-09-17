@@ -18,14 +18,20 @@
     "verify:protocol": "node scripts/check-protocol.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm schemas:check && pnpm test:fixtures && pnpm test:cli-package",
     "clean": "node scripts/clean.mjs",
-    "dhr": "node packages/cli/bin/dhr.mjs",
+    "dhr": "node scripts/dhr-repository.mjs",
     "harness:build": "pnpm build",
     "harness:test": "pnpm test",
     "harness:quick": "pnpm typecheck && pnpm lint",
     "harness:bugfix": "pnpm test",
     "harness:full": "pnpm verify",
     "schemas:write": "pnpm build && node scripts/contracts-schema.mjs --write",
-    "schemas:check": "node scripts/contracts-schema.mjs --check"
+    "schemas:check": "node scripts/contracts-schema.mjs --check",
+    "generate": "node scripts/package-all.mjs generate",
+    "validate:plugins": "node scripts/package-all.mjs validate",
+    "pack": "node scripts/package-all.mjs pack",
+    "matrix:write": "node scripts/platform-matrix.mjs",
+    "matrix:check": "node scripts/platform-matrix.mjs --check",
+    "artifacts:clean": "node scripts/clean-artifacts.mjs"
   },
   "devDependencies": {
     "@types/node": "24.12.2",

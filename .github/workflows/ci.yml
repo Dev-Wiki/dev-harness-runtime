@@ -1,4 +1,4 @@
-name: 验证工程基线
+name: Runtime 离线验证
 
 on:
   push:
@@ -42,3 +42,35 @@ jobs:
       - name: 类型、lint、单元、fixture 与 CLI 安装包验证
         working-directory: runtime
         run: pnpm verify
+  package-dry-run:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 保留协议与 Skill 的原始 LF 字节
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+        with:
+          path: runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: Dev-Wiki/dev-harness
+          ref: 1ed830aa0d696b52dbd666118ced475f4d6e8f79
+          path: protocol-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - name: 安装固定版本 pnpm
+        run: npm install --global pnpm@11.1.0
+      - name: 安装锁定依赖
+        working-directory: runtime
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: 编译并执行本地无凭据六平台 dry-run
+        working-directory: runtime
+        run: |
+          pnpm build
+          pnpm dhr release --dry-run --protocol-checkout ../protocol-source
+          pnpm matrix:check
