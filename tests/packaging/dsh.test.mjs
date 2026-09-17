@@ -91,17 +91,22 @@ test('DSH manifest, Cordis patch, paths, Skill identity and source-locked bundle
   assert.ok(errors((await value.packager.validate(value.generated, value.input)).checks).includes('DSH_PATCH'));
 });
 
-test('DSH Cordis plugin registers only a read-only status command and disposes it', () => {
+test('DSH Cordis plugin registers a read-only status command and Worker tool guard, then disposes both', () => {
   assert.equal(name, 'dev-harness-runtime');
-  assert.deepEqual(inject, ['commands']);
+  assert.deepEqual(inject, ['commands', 'tools']);
   let command;
-  let disposed = false;
-  const ctx = { commands: { register(definition) { command = definition; return () => { disposed = true; }; } },
-    effect(register, label) { assert.equal(label, 'dev-harness-runtime: dhr-status'); this.dispose = register(); } };
+  let guard;
+  const disposed = [];
+  const effects = [];
+  const ctx = { commands: { register(definition) { command = definition; return () => disposed.push('command'); } },
+    tools: { guard(check) { guard = check; return () => disposed.push('guard'); } },
+    effect(register, label) { effects.push({ label, dispose: register() }); } };
   apply(ctx);
   assert.equal(command.name, 'dhr-status');
   assert.equal(command.handler().kind, 'success');
   assert.match(command.handler().text, /Executor is not enabled/u);
-  ctx.dispose();
-  assert.equal(disposed, true);
+  assert.equal(typeof guard, 'function');
+  assert.deepEqual(effects.map(({ label }) => label), ['dev-harness-runtime: worker tool gate', 'dev-harness-runtime: dhr-status']);
+  for (const { dispose } of effects) dispose();
+  assert.deepEqual(disposed, ['guard', 'command']);
 });

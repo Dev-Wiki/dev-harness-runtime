@@ -21,6 +21,7 @@ const text = { type: 'string', minLength: 1 } as const;
 export const dshHostDependencies = Object.freeze({
   '@deepseek-ai/cordis': '4.0.2',
   '@deepseek-ai/dsh-commands': '0.1.5-rc.2',
+  '@deepseek-ai/dsh-tools': '0.1.5-rc.2',
 });
 
 export const dshStaticSpec: StaticSpec = {
@@ -43,9 +44,10 @@ export const dshStaticSpec: StaticSpec = {
         } },
       } },
       peerDependencies: { type: 'object', additionalProperties: false,
-        required: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-commands'], properties: {
+        required: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-commands', '@deepseek-ai/dsh-tools'], properties: {
           '@deepseek-ai/cordis': { type: 'string', const: '4.0.2' },
           '@deepseek-ai/dsh-commands': { type: 'string', const: '0.1.5-rc.2' },
+          '@deepseek-ai/dsh-tools': { type: 'string', const: '0.1.5-rc.2' },
         } },
     } }, versionFields: { version: 'releaseVersion' }, referenceFields: ['main'] }],
 };

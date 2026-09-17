@@ -53,6 +53,8 @@ K5-P 已在 Codex 0.154.0 的隔离配置中测试兼容包和根 Portable fixtu
 
 K6-P 已从统一源码生成十文件 tgz，并在隔离 DSH `0.1.5-rc.1` headless profile 中安装、组合和卸载；从实际安装包调用启动器所解析 rc.2 的 `CommandRuntime.execute`，只读 `/dhr-status` 返回 success，dispose 后命令消失。profile pnpm 报 peer warning，已记录。K6 随后在同版本启动器上完成两次无工具合成 headless Agent 调用，观察到不同真实 Session；这仍不等于逐 Task 授权或 Executor 通过。证据见 [K6-P](../verification/K6-P.md) 与 [K6](../verification/K6.md)。
 
+后续 DSH plugin 增加 Worker 标记下的全工具拒绝 guard，并将实际使用的 `dsh-tools@0.1.5-rc.2` 加入精确 peer 列表。新本地 tgz 在隔离 headless profile 安装后，一次合成 bash 网络调用被 guard 拒绝；这仅是桥接建成前的封闭状态，见 [K6](../verification/K6.md)。
+
 ### Cursor 与 OpenCode
 
 Cursor Native 使用 `skills/` 默认目录，显式 skills 字段替代默认发现；本地插件测试位置为 `~/.cursor/plugins/local/<name>/`。技能 frontmatter 使用 name/description，名称与目录匹配。见 [Native reference](https://cursor.com/docs/reference/plugins)、[Skills](https://cursor.com/docs/skills)、[本地测试](https://cursor.com/docs/plugins)。
