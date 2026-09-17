@@ -10,6 +10,7 @@ export class CodexEventError extends Error {
 export class CodexEventDecoder {
   private threadId: string | undefined;
   private finalText: string | undefined;
+  private turnStarted = false;
   private completed = false;
   private failed = false;
   private eventCount = 0;
@@ -34,7 +35,11 @@ export class CodexEventDecoder {
           throw new CodexEventError('INVALID_RESULT', 'Codex did not provide one fresh thread identity');
         }
         this.threadId = event.thread_id;
+      } else if (event.type === 'turn.started') {
+        if (this.turnStarted) throw new CodexEventError('INVALID_RESULT', 'Codex started more than one turn');
+        this.turnStarted = true;
       } else if (event.type === 'item.completed') {
+        if (!this.turnStarted) throw new CodexEventError('INVALID_RESULT', 'Codex item preceded the turn');
         if (!('item' in event) || event.item === null || typeof event.item !== 'object'
           || !('type' in event.item) || event.item.type !== 'agent_message') return;
         if (!('text' in event.item) || typeof event.item.text !== 'string') {
@@ -42,7 +47,7 @@ export class CodexEventDecoder {
         }
         this.finalText = event.item.text;
       } else if (event.type === 'turn.completed') {
-        if (this.finalText === undefined) {
+        if (!this.turnStarted || this.finalText === undefined) {
           throw new CodexEventError('INVALID_RESULT', 'Codex turn completed without a structured final message');
         }
         this.completed = true;
