@@ -1,6 +1,6 @@
 # Runtime 公共契约
 
-本文是 Core、Worker、Executor 和 Packager 的接口与行为语义权威。协议初始版本为 `1`，由 K1 落地为 TypeScript 类型、JSON Schema 和 fixtures；本文不声称已有实现。选择理由与来源见 [公共契约决策](decisions/runtime-contracts.md)，跨任务状态见 [Dashboard](plan/Dashboard.md)。
+本文是 Core、Worker、Executor 和 Packager 的接口与行为语义权威。协议初始版本为 `1`，K1 已落地类型、JSON Schema 与 fixtures，K2 已实现项目与 Planning 读取；其余目标语义的完成状态见看板。选择理由与来源见 [公共契约决策](decisions/runtime-contracts.md)，跨任务状态见 [Dashboard](plan/Dashboard.md)。
 
 ## 1. 通用数据规则
 
@@ -273,3 +273,19 @@ CLI 退出码：0 表示请求模式正常结束；2 表示参数或不支持的
 这些 API 校验的是声明。证据引用的 SHA-256、受控验证是否真实运行、命令前后内容边界、symlink / realpath、用户原有修改、实际 HEAD / index 和 Planning delta 仍须 Core 独立核实；通过解析不会自动授予提交或自动启用 Executor。`AcceptedTaskExecutionResult` 也是数据类型，调用解析器不能产生可信接受资格。
 
 [interfaces.ts](../packages/contracts/src/interfaces.ts) 固定 TaskExecutor / PluginPackager / PlatformAdapter / Registry 接口。Executor 的取消使用 AbortSignal，只有执行树静止后才允许以 AbortError 拒绝；共享 [Executor Contract Tests](../tests/contract/executor-contract.mjs) 通过可注入 harness 复用场景，当前只有 Fake Executor 的接口证据。Packager 的 validate / pack 同时显式接收原构建 input，便于保持输入摘要绑定；pack 必须使用已成功验证且未漂移的目录，实际摘要与产物校验由 K10-B 实现。
+
+## 10. K2 项目与 Planning 读取实现
+
+[Core](../packages/core/src/index.ts) 提供 `discoverProject(cwd, options)`、`readPlan(project)`、`selectTask(plan, selection)`。Discovery 使用真实 Git 解析主仓 / linked worktree 的 repoRoot、privateGitDir、HEAD 和 `--git-path dev-harness-runtime`，只读取、不创建状态目录。显式 docsRoot 优先；双根先按治理链接判定归属，再以唯一 Dashboard 归属判定，不能证明时拒绝。doctor 模式可返回缺少 HEAD / 项目契约的 issues，不将该项目升级为可执行状态。
+
+HARNESS 读取“已确认命令（人工维护）”内按列名识别的表格，收集 confirmed 命令，至少包含 test / quick / bugfix / full 之一。重复列、重复用途、嵌套表格和隐藏 HTML 拒绝；候选命令不获得执行资格。此阶段只返回命令文本，argv 构造、进程权限、冻结来源和实际验证由后续任务完成。
+
+Planning 使用 [markdown-it 的结构 token](https://markdown-it.github.io/markdown-it/documents/Architecture.html)，固定依赖 15.0.2。仅在目标段落中读取表格与顶层有序列表，按表头映射字段；转义管道保留为单元格内容，代码块和普通段落中的任务示例不形成工作顺序。原始表格行另校验列数，避免解析器自动补齐 / 截断掩盖坏输入。单份 Planning Markdown 限 2 MB，超限明确拒绝，不截断后继续选择。
+
+`readPlan` 返回 `order`、`tasks` 和本次读取的 `references[{path,sha256}]`。Task Packet 的标题须与 ID 一致，并检查背景、执行上下文的四类输入、范围、影响文件、验收 checkbox、验证方法和停止条件章节；缺项标为 contextComplete=false，选择时阻止执行。该结构检查不等于证明需求内容正确或所有执行条件已经满足。
+
+归档查询只读索引与被依赖 ID 的快照 / 证据引用；不会预读其他任务的历史正文。首次闭合使用 ID.md，后续要求索引 `关闭次数` 连续且日期不倒退、`前次` 列链接紧邻前次快照，正文也链接前次快照。多个里程碑对同一 ID 的闭合仍属歧义，需要项目消除歧义。依赖仍在活跃表时始终未完成，旧归档不能使其通过。索引、相关闭合记录和证据文件的原始字节摘要进入 references。
+
+选择返回 selected / blocked / completed(queueExhausted)。不存在的 explicit Task 抛 `PlanningError` / TASK_NOT_FOUND；结构损坏、缺文件、空白 blocker、未知状态、缺失 ready 顺序项等抛带 code、path、可用行号的错误。非空且不符合“无”规则的 blocker 返回 blocked。all-ready 每次只选一个 Task，调用方须在接受结果后重新读取，不能缓存整批任务直接执行。
+
+相对 Markdown 引用与 K1 的持久路径字段不同：链接允许 `../`，但规范化及 realpath 后须留在真实仓库内；禁止 URL、query、fragment、反斜杠、控制字符和路径大小写别名。已存在的 symlink 逐段检查，避免越界读取。上述检查是读取时检查；启动前的并发漂移和全内容快照由 K3 负责，未接受的 Run 归档与 pendingOperation 门禁由 K3-R / K4 联合完成。

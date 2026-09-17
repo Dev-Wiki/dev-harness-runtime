@@ -10,6 +10,7 @@
 - [R1 验证记录](verification/R1.md)：格式校验、版本盘点与归档检查。
 - [V0 验证记录](verification/V0.md)：工程骨架、协议锁与 CLI 安装包验收。
 - [K1 验证记录](verification/K1.md)：公共 Schema、正反例、共享 Executor 工厂与完整回归。
+- [K2 验证记录](verification/K2.md)：Git/worktree、Planning 结构读取、归档与选择门禁。
 - [开发看板](plan/Dashboard.md)：唯一活跃计划、任务顺序与跨任务状态。
 - [资料完整性评估](plan/Readiness.md)：设计输入、缺项与官网初查证据。
 - [Git 工作流](GIT_WORKFLOW.md)：分支、提交身份、Conventional Commits、tag 与发布说明规范。

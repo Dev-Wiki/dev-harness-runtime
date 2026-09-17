@@ -38,7 +38,7 @@
 ## 验收标准
 
 - [ ] 并发启动最多一个 owner；CAS 冲突不会覆盖较新状态。
-- [ ] 每个 Run 仅以 <run-id>/run.json 为权威状态文件；同级 attempts/ 保存日志、results/ 保存执行结果、summary.json 保存派生摘要，不形成第二份 Run 状态。
+- [ ] 每个 Run 仅以 `<run-id>/run.json` 为权威状态文件；同级 attempts/ 保存日志、results/ 保存执行结果、summary.json 保存派生摘要，不形成第二份 Run 状态。
 - [ ] 主仓与 linked worktree 独立；Windows / Linux / WSL 的差异被实测或明确报告。
 - [ ] 中断后可识别完整状态或可恢复旧状态；stale lock 处理遵循明确 owner 校验。
 
