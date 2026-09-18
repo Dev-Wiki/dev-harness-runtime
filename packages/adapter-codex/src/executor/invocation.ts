@@ -36,11 +36,12 @@ export function createCodexInvocation(input: CodexInvocationInput): readonly str
     ...config('mcp_servers.dhr_proposal.command', JSON.stringify(input.nodeBinary)),
     ...config('mcp_servers.dhr_proposal.args', JSON.stringify([input.proposalServer, input.bridgePolicy])),
     ...config('mcp_servers.dhr_proposal.required', 'true'),
-    ...config('mcp_servers.dhr_proposal.enabled_tools', '["dhr_propose_text","dhr_propose_delete","dhr_list_paths","dhr_read_text"]'),
+    ...config('mcp_servers.dhr_proposal.enabled_tools', '["dhr_propose_text","dhr_propose_delete","dhr_list_paths","dhr_read_text","dhr_search_text"]'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_propose_text.approval_mode', '"approve"'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_propose_delete.approval_mode', '"approve"'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_list_paths.approval_mode', '"approve"'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_read_text.approval_mode', '"approve"'),
+    ...config('mcp_servers.dhr_proposal.tools.dhr_search_text.approval_mode', '"approve"'),
     `${input.prompt}\n\n## Codex 结构化结果\n最终只返回一个 JSON 对象，顶层仅含 result；result 是本次 TaskExecutionResult。按输出 Schema 给所有可选属性填 null，Core 会重新核对请求身份、结果与实际文件。不要使用 Markdown 代码块。`,
   ];
 }

@@ -8,6 +8,10 @@ export class CodexEventError extends Error {
   }
 }
 
+type ReadCall = { id: string; tool: 'dhr_list_paths'; prefix: string; after: string }
+  | { id: string; tool: 'dhr_read_text'; path: string; offset: number }
+  | { id: string; tool: 'dhr_search_text'; query: string; prefix: string; after: string };
+
 /** Decode one fresh Codex exec turn. Raw JSONL must be persisted separately by the controller. */
 export class CodexEventDecoder {
   private static safeReadPath(value: string): boolean {
@@ -20,8 +24,7 @@ export class CodexEventDecoder {
   private failed = false;
   private eventCount = 0;
   private pendingProposals = new Map<string, { path: string; content: string | null }>();
-  private pendingReads = new Map<string, { id: string; tool: 'dhr_list_paths'; prefix: string; after: string }
-    | { id: string; tool: 'dhr_read_text'; path: string; offset: number }>();
+  private pendingReads = new Map<string, ReadCall>();
   private acceptedProposals: { path: string; content: string | null }[] = [];
 
   private proposalItem(item: object): { id: string; path: string; content: string | null } {
@@ -41,10 +44,10 @@ export class CodexEventDecoder {
       content: item.tool === 'dhr_propose_text' ? (args as Record<string, unknown>).content as string : null };
   }
 
-  private readItem(item: object): { id: string; tool: 'dhr_list_paths'; prefix: string; after: string }
-    | { id: string; tool: 'dhr_read_text'; path: string; offset: number } {
+  private readItem(item: object): ReadCall {
     if (!('id' in item) || typeof item.id !== 'string' || !('server' in item) || item.server !== 'dhr_proposal'
-      || !('tool' in item) || (item.tool !== 'dhr_list_paths' && item.tool !== 'dhr_read_text')
+      || !('tool' in item) || (item.tool !== 'dhr_list_paths' && item.tool !== 'dhr_read_text'
+        && item.tool !== 'dhr_search_text')
       || !('arguments' in item) || item.arguments === null || typeof item.arguments !== 'object'
       || Array.isArray(item.arguments)) throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex called an unregistered MCP tool');
     const args = item.arguments as Record<string, unknown>;
@@ -55,6 +58,17 @@ export class CodexEventDecoder {
         throw new CodexEventError('INVALID_RESULT', 'Codex list arguments are malformed');
       }
       return { id: item.id, tool: 'dhr_list_paths', prefix: args.prefix, after: args.after };
+    }
+    if (item.tool === 'dhr_search_text') {
+      if (Object.keys(args).sort().join(',') !== 'after,prefix,query' || typeof args.query !== 'string'
+        || args.query.length < 1 || args.query.length > 128
+        || [...args.query].some((character) => { const code = character.codePointAt(0)!; return code < 32 || code === 127; })
+        || typeof args.prefix !== 'string' || typeof args.after !== 'string'
+        || (args.prefix !== '' && !CodexEventDecoder.safeReadPath(args.prefix))
+        || (args.after !== '' && !CodexEventDecoder.safeReadPath(args.after))) {
+        throw new CodexEventError('INVALID_RESULT', 'Codex search arguments are malformed');
+      }
+      return { id: item.id, tool: 'dhr_search_text', query: args.query, prefix: args.prefix, after: args.after };
     }
     if (Object.keys(args).sort().join(',') !== 'offset,path' || typeof args.path !== 'string'
       || !CodexEventDecoder.safeReadPath(args.path) || !Number.isSafeInteger(args.offset) || (args.offset as number) < 0) {
@@ -91,7 +105,7 @@ export class CodexEventDecoder {
             || data.nextOffset <= read.offset || data.nextOffset - read.offset !== data.content.length))) {
         throw new CodexEventError('INVALID_RESULT', 'Codex read receipt differs from the requested page');
       }
-    } else {
+    } else if (read.tool === 'dhr_list_paths') {
       const paths = 'paths' in data ? data.paths : undefined;
       if (!Array.isArray(paths) || paths.length > 100
       || paths.some((path) => typeof path !== 'string' || !CodexEventDecoder.safeReadPath(path)
@@ -102,6 +116,40 @@ export class CodexEventDecoder {
       || !('next' in data)
       || (data.next !== null && (typeof data.next !== 'string' || data.next !== paths.at(-1)))) {
         throw new CodexEventError('INVALID_RESULT', 'Codex list receipt is malformed');
+      }
+    } else {
+      const matches = 'matches' in data ? data.matches : undefined;
+      const skipped = 'skipped' in data ? data.skipped : undefined;
+      const next = 'next' in data ? data.next : undefined;
+      const validPath = (path: unknown): path is string => typeof path === 'string'
+        && CodexEventDecoder.safeReadPath(path)
+        && (read.prefix === '' || path === read.prefix || path.startsWith(`${read.prefix}/`))
+        && (read.after === '' || Buffer.compare(Buffer.from(path), Buffer.from(read.after)) > 0);
+      if (Object.keys(data).sort().join(',') !== 'matches,next,skipped'
+        || !Array.isArray(matches) || matches.length > 80
+        || !Array.isArray(skipped) || skipped.length > 16
+        || skipped.some((path) => !validPath(path))
+        || skipped.some((path, index) => index > 0
+          && Buffer.compare(Buffer.from(skipped[index - 1]), Buffer.from(path)) >= 0)
+        || (next !== null && !validPath(next))
+        || matches.some((match) => match === null || typeof match !== 'object' || Array.isArray(match)
+          || Object.keys(match).sort().join(',') !== 'column,excerpt,line,path'
+          || !('path' in match) || !validPath(match.path)
+          || !('line' in match) || !Number.isSafeInteger(match.line) || match.line < 1
+          || !('column' in match) || !Number.isSafeInteger(match.column) || match.column < 1
+          || !('excerpt' in match) || typeof match.excerpt !== 'string'
+          || match.excerpt.length > 200 || !match.excerpt.includes(read.query))
+        || matches.some((match, index) => index > 0 && (
+          Buffer.compare(Buffer.from(matches[index - 1].path), Buffer.from(match.path)) > 0
+          || (matches[index - 1].path === match.path && matches[index - 1].line >= match.line)))) {
+        throw new CodexEventError('INVALID_RESULT', 'Codex search receipt is malformed');
+      }
+      const counts = new Map<string, number>();
+      for (const match of matches) counts.set(match.path, (counts.get(match.path) ?? 0) + 1);
+      if (counts.size > 16 || [...counts.values()].some((count) => count > 5)
+        || skipped.some((path) => counts.has(path))
+        || (next !== null && [...counts.keys(), ...skipped].some((path) => Buffer.compare(Buffer.from(path), Buffer.from(next)) > 0))) {
+        throw new CodexEventError('INVALID_RESULT', 'Codex search receipt exceeds its page');
       }
     }
     this.pendingReads.delete(read.id);
@@ -138,7 +186,8 @@ export class CodexEventDecoder {
           throw new CodexEventError('INVALID_RESULT', 'Codex started an item without a type');
         }
         if (event.item.type === 'mcp_tool_call') {
-          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text')) {
+          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text'
+            || event.item.tool === 'dhr_search_text')) {
             const read = this.readItem(event.item);
             if (this.pendingReads.has(read.id) || this.pendingProposals.has(read.id)) throw new CodexEventError('INVALID_RESULT', 'Duplicate Codex MCP call');
             this.pendingReads.set(read.id, read);
@@ -156,7 +205,8 @@ export class CodexEventDecoder {
           throw new CodexEventError('INVALID_RESULT', 'Codex completed a malformed item');
         }
         if (event.item.type === 'mcp_tool_call') {
-          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text')) {
+          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text'
+            || event.item.tool === 'dhr_search_text')) {
             this.completeRead(event.item);
             return;
           }

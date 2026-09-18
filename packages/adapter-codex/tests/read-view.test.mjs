@@ -71,6 +71,30 @@ test('Codex read view paginates a frozen catalog without reading arbitrary direc
   assert.deepEqual(view.list('src', first.next), { paths: ['src/100.ts'], next: null });
 });
 
+test('Codex literal search is snapshot-bound, paginated and bounded per file', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-search-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'src'));
+  const files = [];
+  for (let index = 0; index < 17; index++) {
+    const path = `src/${String(index).padStart(3, '0')}.ts`;
+    const content = index === 15 ? Buffer.from([0xff])
+      : index === 0 || index === 16 ? 'first\nneedle here\nlast' : 'nothing';
+    await writeFile(join(root, path), content);
+    files.push({ path, sha256: digest(content) });
+  }
+  const view = await CodexReadView.create(policy(root, files));
+  const first = await view.search('needle', 'src');
+  assert.deepEqual(first, { matches: [{ path: 'src/000.ts', line: 2, column: 1, excerpt: 'needle here' }],
+    skipped: ['src/015.ts'], next: 'src/015.ts' });
+  assert.deepEqual(await view.search('needle', 'src', first.next), {
+    matches: [{ path: 'src/016.ts', line: 2, column: 1, excerpt: 'needle here' }], skipped: [], next: null });
+  await assert.rejects(view.search(''), { code: 'UNSAFE_PATH' });
+  await assert.rejects(view.search('needle', '../outside'), { code: 'UNSAFE_PATH' });
+  await writeFile(join(root, 'src/000.ts'), 'changed');
+  await assert.rejects(view.search('needle', 'src'), { code: 'DRIFT_DETECTED' });
+});
+
 test('Codex read policy file is private and removed after one invocation', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
   t.after(() => rm(root, { recursive: true, force: true }));

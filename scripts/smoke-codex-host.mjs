@@ -44,7 +44,7 @@ try {
     attempt: request.attempt, requestId: request.requestId, snapshotHash: request.snapshotHash,
     summary: 'Synthetic bridge smoke.', verification: [], changedFiles: ['src/a.ts'],
     rawResultRef: null, outcome: 'blocked', needsPlanning: false, reason: 'Synthetic smoke only.', closure: null } };
-  const prompt = `This is a synthetic bridge test in an isolated temporary directory. First call dhr_list_paths with {"prefix":"src","after":""}. Then call dhr_read_text with {"path":"src/a.ts","offset":0}. Then call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"}. Do not use any other tools. Finally return exactly this JSON object: ${JSON.stringify(expected)}`;
+  const prompt = `This is a synthetic bridge test in an isolated temporary directory. First call dhr_list_paths with {"prefix":"src","after":""}. Then call dhr_search_text with {"query":"ELL","prefix":"src","after":""}. Then call dhr_read_text with {"path":"src/a.ts","offset":0}. Then call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"}. Do not use any other tools. Finally return exactly this JSON object: ${JSON.stringify(expected)}`;
   const logs = { events: [], stderr: [] };
   const result = await withCodexBridgePolicy(policy, (bridgePolicy) => withCodexResultSchema(async (outputSchema) => {
     const argv = createCodexInvocation({ request, prompt, nodeBinary: process.execPath,
@@ -61,7 +61,7 @@ try {
   const events = Buffer.concat(logs.events).toString('utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const tools = events.filter((event) => event.type === 'item.completed' && event.item?.type === 'mcp_tool_call')
     .map((event) => event.item.tool);
-  assert.deepEqual(tools, ['dhr_list_paths', 'dhr_read_text', 'dhr_propose_text']);
+  assert.deepEqual(tools, ['dhr_list_paths', 'dhr_search_text', 'dhr_read_text', 'dhr_propose_text']);
   assert.deepEqual(result.proposals, [{ path: 'src/a.ts', content: 'UPDATED' }]);
   assert.equal(result.result.outcome, 'blocked');
   assert.deepEqual(result.result.changedFiles, ['src/a.ts']);

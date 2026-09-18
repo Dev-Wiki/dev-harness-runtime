@@ -77,9 +77,10 @@ export class CodexReadView {
       if (!info?.isDirectory() || info.isSymbolicLink()) throw new CodexReadError('UNSAFE_PATH', 'Read path traverses a symlink or missing directory');
     }
     const before = await lstat(target, { bigint: true }).catch(() => null);
-    if (!before?.isFile() || before.isSymbolicLink() || before.nlink !== 1n || before.size > 4n * 1024n * 1024n) {
-      throw new CodexReadError('UNSAFE_PATH', 'Read target is not a bounded single-link regular file');
+    if (!before?.isFile() || before.isSymbolicLink() || before.nlink !== 1n) {
+      throw new CodexReadError('UNSAFE_PATH', 'Read target is not a single-link regular file');
     }
+    if (before.size > 4n * 1024n * 1024n) throw new CodexReadError('OUTPUT_LIMIT', 'Read target exceeds 4 MiB');
     const file = await open(target, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
     try {
       if (stamp(await file.stat({ bigint: true })) !== stamp(before)) {
@@ -109,6 +110,48 @@ export class CodexReadView {
     if (end < file.content.length && /[\uD800-\uDBFF]/u.test(file.content[end - 1]!)) end--;
     return { path, content: file.content.slice(offset, end), sha256: file.sha256,
       offset, nextOffset: end < file.content.length ? end : null };
+  }
+
+  /** Literal search over at most 16 frozen files; each file returns at most five bounded hits. */
+  async search(query: string, prefix = '', after = ''): Promise<{ matches: readonly {
+    path: string; line: number; column: number; excerpt: string }[]; skipped: readonly string[]; next: string | null }> {
+    if (typeof query !== 'string' || query.length < 1 || query.length > 128
+      || [...query].some((character) => { const code = character.codePointAt(0)!; return code < 32 || code === 127; })
+      || (prefix && !allowedPath(prefix)) || (after && !allowedPath(after))) {
+      throw new CodexReadError('UNSAFE_PATH', 'Search requires a bounded literal and safe path cursors');
+    }
+    const candidates = this.paths.filter((path) => (!prefix || path === prefix || path.startsWith(`${prefix}/`))
+      && (!after || Buffer.compare(Buffer.from(path), Buffer.from(after)) > 0)).slice(0, 17);
+    const page = candidates.slice(0, 16);
+    const matches: { path: string; line: number; column: number; excerpt: string }[] = [];
+    const skipped: string[] = [];
+    for (const path of page) {
+      let content: string;
+      try { content = (await this.read(path)).content; }
+      catch (error) {
+        if (error instanceof CodexReadError && error.code === 'OUTPUT_LIMIT') { skipped.push(path); continue; }
+        throw error;
+      }
+      let hits = 0;
+      let lineNumber = 1;
+      let startOfLine = 0;
+      while (startOfLine <= content.length && hits < 5) {
+        const newline = content.indexOf('\n', startOfLine);
+        const endOfLine = newline === -1 ? content.length : newline;
+        const raw = content.slice(startOfLine, endOfLine);
+        const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
+        const column = line.indexOf(query);
+        if (column !== -1) {
+          const start = Math.max(0, column - 48);
+          matches.push({ path, line: lineNumber, column: column + 1, excerpt: line.slice(start, start + 200) });
+          hits++;
+        }
+        if (newline === -1) break;
+        startOfLine = newline + 1;
+        lineNumber++;
+      }
+    }
+    return { matches, skipped, next: candidates.length > 16 ? page.at(-1)! : null };
   }
 }
 

@@ -31,6 +31,12 @@ const readTool = {
   inputSchema: { type: 'object', properties: { path: { type: 'string' }, offset: { type: 'integer', minimum: 0 } },
     required: ['path', 'offset'], additionalProperties: false },
 };
+const searchTool = {
+  name: 'dhr_search_text',
+  description: 'Search a bounded page of frozen UTF-8 files for a literal string; no shell or regular expressions.',
+  inputSchema: { type: 'object', properties: { query: { type: 'string' }, prefix: { type: 'string' }, after: { type: 'string' } },
+    required: ['query', 'prefix', 'after'], additionalProperties: false },
+};
 const failure = (message: string) => ({ isError: true, content: [{ type: 'text', text: message }] });
 
 /** Pure stdio MCP endpoint: it never writes the project or persists a proposal. */
@@ -81,10 +87,10 @@ export async function handleCodexBridgeMcp(value: unknown, bridge: CodexBridgeVi
   if (!Object.hasOwn(input, 'id') || (typeof input.id !== 'string' && typeof input.id !== 'number')
     || input.jsonrpc !== '2.0' || typeof input.method !== 'string') return handleCodexProposalMcp(value, bridge.allowsProposal);
   if (input.method === 'tools/list') return { jsonrpc: '2.0', id: input.id,
-    result: { tools: [textTool, deleteTool, listTool, readTool] } };
+    result: { tools: [textTool, deleteTool, listTool, readTool, searchTool] } };
   if (input.method !== 'tools/call' || input.params === null || typeof input.params !== 'object'
     || Array.isArray(input.params) || !('name' in input.params)
-    || (input.params.name !== listTool.name && input.params.name !== readTool.name)) {
+    || (input.params.name !== listTool.name && input.params.name !== readTool.name && input.params.name !== searchTool.name)) {
     return handleCodexProposalMcp(value, bridge.allowsProposal);
   }
   const params = input.params;
@@ -98,6 +104,14 @@ export async function handleCodexBridgeMcp(value: unknown, bridge: CodexBridgeVi
       }
       return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
         text: JSON.stringify(bridge.read.list(args.prefix, args.after)) }] } };
+    }
+    if (params.name === searchTool.name) {
+      if (Object.keys(args).sort().join(',') !== 'after,prefix,query' || typeof args.query !== 'string'
+        || typeof args.prefix !== 'string' || typeof args.after !== 'string') {
+        return { jsonrpc: '2.0', id: input.id, result: failure('Search requires query, prefix and after strings') };
+      }
+      return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
+        text: JSON.stringify(await bridge.read.search(args.query, args.prefix, args.after)) }] } };
     }
     if (Object.keys(args).sort().join(',') !== 'offset,path' || typeof args.path !== 'string'
       || !Number.isSafeInteger(args.offset) || (args.offset as number) < 0) {

@@ -55,12 +55,15 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
     params: { name, arguments: args } }, bridge);
   const listed = await handleCodexBridgeMcp({ jsonrpc: '2.0', id: 7, method: 'tools/list' }, bridge);
   assert.deepEqual(listed.result.tools.map((tool) => tool.name),
-    ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text']);
+    ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
   assert.deepEqual(JSON.parse((await rpc('dhr_list_paths', { prefix: 'src', after: '' })).result.content[0].text),
     { paths: ['src/a.ts'], next: null });
   assert.deepEqual(JSON.parse((await rpc('dhr_read_text', { path: 'src/a.ts', offset: 0 })).result.content[0].text),
     { path: 'src/a.ts', content: 'HELLO', sha256: createHash('sha256').update('HELLO').digest('hex'), offset: 0, nextOffset: null });
   assert.equal((await rpc('dhr_read_text', { path: '.git/config', offset: 0 })).result.isError, true);
+  assert.deepEqual(JSON.parse((await rpc('dhr_search_text', { query: 'ELL', prefix: 'src', after: '' })).result.content[0].text),
+    { matches: [{ path: 'src/a.ts', line: 1, column: 2, excerpt: 'HELLO' }], skipped: [], next: null });
+  assert.equal((await rpc('dhr_search_text', { query: '', prefix: 'src', after: '' })).result.isError, true);
   assert.equal((await rpc('dhr_propose_text', { path: 'src/outside.ts', content: 'x' })).result.isError, true);
   assert.equal((await rpc('dhr_propose_delete', { path: 'docs/plan/tasks/other.md' })).result.isError, true);
   assert.equal((await rpc('dhr_propose_text', { path: 'src/generated/new.ts', content: 'x' })).result.isError, undefined);
@@ -77,6 +80,7 @@ test('stdio MCP process loads one private bridge policy and gates proposal calls
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'dhr_read_text', arguments: { path: 'src/a.ts', offset: 0 } } },
       { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'dhr_propose_text', arguments: { path: 'other.ts', content: 'x' } } },
+      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'dhr_search_text', arguments: { query: 'ELL', prefix: 'src', after: '' } } },
     ];
     const result = spawnSync(process.execPath, [fileURLToPath(new URL('../dist/executor/mcp-server.js', import.meta.url)), path],
       { input: messages.map((message) => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', timeout: 5000 });
@@ -84,8 +88,9 @@ test('stdio MCP process loads one private bridge policy and gates proposal calls
     assert.equal(result.status, 0, result.stderr);
     const lines = result.stdout.trim().split('\n').map((line) => JSON.parse(line));
     assert.deepEqual(lines[0].result.tools.map((tool) => tool.name),
-      ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text']);
+      ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
     assert.equal(JSON.parse(lines[1].result.content[0].text).content, 'HELLO');
     assert.equal(lines[2].result.isError, true);
+    assert.equal(JSON.parse(lines[3].result.content[0].text).matches[0].column, 2);
   });
 });

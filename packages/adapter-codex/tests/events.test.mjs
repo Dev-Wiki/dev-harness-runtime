@@ -132,3 +132,24 @@ test('Codex read and list calls require paired bounded receipts', () => {
     result: { content: [{ type: 'text', text: JSON.stringify({ path: '../outside', content: 'NO',
       sha256: 'a'.repeat(64), offset: 0, nextOffset: null }) }] } } })), { code: 'INVALID_RESULT' });
 });
+
+test('Codex literal search requires a paired bounded receipt', () => {
+  const call = { id: 'item_7', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_search_text',
+    arguments: { query: 'ELL', prefix: 'src', after: '' } };
+  const data = { matches: [{ path: 'src/a.ts', line: 1, column: 2, excerpt: 'HELLO' }], skipped: [], next: null };
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+  decoder.consume(event('item.started', { item: call }));
+  decoder.consume(event('item.completed', { item: { ...call, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify(data) }] } } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.equal(decoder.finish(request).result.outcome, 'blocked');
+
+  const bad = new CodexEventDecoder();
+  bad.consume(event('thread.started', { thread_id: threadId })); bad.consume(event('turn.started'));
+  bad.consume(event('item.started', { item: call }));
+  assert.throws(() => bad.consume(event('item.completed', { item: { ...call, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify({ ...data,
+      matches: [{ ...data.matches[0], excerpt: 'unrelated' }] }) }] } } })), { code: 'INVALID_RESULT' });
+});
