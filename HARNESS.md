@@ -52,7 +52,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `DHR_TEST_BWRAP=<absolute> DHR_TEST_CODEX_HOST=1 pnpm smoke:codex-host` 在上述合成输入上将 Codex 宿主放入受监控的独立 PID / 网络命名空间，模型请求经独立网络内的 loopback Relay、私有 Unix socket 和宿主侧精确目的地主机代理转发；MCP bridge 位于嵌套的无网络命名空间。`pnpm smoke:codex-host-namespace` 只使用合成空目录检查宿主 PID 1 会话；两者都不属于常规 full，也不证明生产 Adapter 的完整授权。
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-runtime` 以临时 Git 项目和合成 Worker Skill 显式验证 Codex 能力探测、Core 派发、受控提案应用与宿主回执；需要本机 Codex CLI 登录，不进入常规 `pnpm verify`。该用例返回合成 `blocked`，不代表真实 Planning Task 或多任务验收。
 - `DHR_TEST_BWRAP=<absolute> DHR_TEST_CANCEL_RESUME=1 pnpm smoke:codex-runtime` 在同一合成项目中取消已启动 thread 的 Codex 会话，由 Core 标为 `INTERRUPTED`，再经 `resumeRuntimeRun` 创建新 attempt；脚本核对不同 thread ID、工作树在取消后未改及恢复后由 Core 应用提案。该显式 smoke 不进入常规 full。
-- `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-planning` 在临时合成 Git 项目中，让真实 Codex 连续为 A、B、C 三个 Planning Task 返回五项精确提案和 `completed` 候选；Core 逐项受控应用并独立运行冻结验收命令。脚本核对 Run `COMPLETED`、三条不同 thread、无隐式提交与独立验证输出。测试使用合成 Worker Skill 和测试控制器提供的预期文件内容，不代表模型自主完成真实项目任务；需要本机 Codex 登录，不进入常规 full。
+- `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-planning` 在临时合成 Git 项目中，让真实 Codex 连续为 A、B、C 三个 Planning Task 返回五项精确提案和不含 Worker 验证声明的 `completed` 候选；Core 逐项受控应用并独立运行冻结验收命令。脚本核对 Run `COMPLETED`、三条不同 thread、无隐式提交与独立验证输出。测试使用合成 Worker Skill 和测试控制器提供的预期文件内容，不代表模型自主完成真实项目任务；需要本机 Codex 登录，不进入常规 full。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

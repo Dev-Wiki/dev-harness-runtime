@@ -46,10 +46,5 @@
         "afterHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       }
     ]
-  },
-  "rawResultRef": {
-    "schemaVersion": 1,
-    "path": "attempts/K1-1/raw-result.json",
-    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   }
 }

@@ -45,12 +45,33 @@ test('independent verification writes controlled evidence and no-commit finalize
   await rejectsCode(finalizeWithoutCommit(f.handle, capability, completed.revision), 'ACCEPTANCE_REQUIRED');
 });
 
+test('a completion candidate without Worker verification claims is accepted only after Core checks pass', realSandbox, async (t) => {
+  const f = await setupAcceptance(t);
+  const ending = await f.finishWorker({ mutateResult: (result) => { result.verification = []; } });
+  assert.deepEqual(ending.result.verification, []);
+  const capability = await verifyTaskAcceptance(f.handle, input(f, ending), await services(ending));
+  const current = await f.readRun();
+  const completed = await finalizeWithoutCommit(f.handle, capability, current.revision);
+  assert.equal(completed.status, 'COMPLETED');
+  const accepted = JSON.parse(await readEvidence(f.handle, completed.runId, completed.revision, completed.resultRefs[0].ref));
+  assert.equal(accepted.verification.length, 1);
+  const stdout = JSON.parse(await readEvidence(f.handle, completed.runId, completed.revision, accepted.verification[0].stdout));
+  assert.equal(Buffer.from(stdout.bytes, 'base64').toString(), 'verified');
+});
+
 test('completed Worker text cannot override a failing independent command', realSandbox, async (t) => {
   const f = await setupAcceptance(t, { command: [process.execPath, '-e', 'process.stderr.write("failed");process.exit(7)'] });
   const ending = await f.finishWorker(); assert.equal(ending.result.verification[0].result, 'passed');
   await rejectsCode(verifyTaskAcceptance(f.handle, input(f, ending), await services(ending)), 'VERIFICATION_FAILED');
   const run = await f.readRun(); assert.deepEqual(run.completedTasks, []); assert.equal(run.pendingOperation.kind, 'verify');
   assert.deepEqual(await readFile(join(f.project.stateRoot, f.run.runId, ending.resultRef.path)), await readEvidence(f.handle, run.runId, run.revision, ending.resultRef));
+});
+
+test('a claim-free completion candidate cannot bypass a failing Core command', realSandbox, async (t) => {
+  const f = await setupAcceptance(t, { command: [process.execPath, '-e', 'process.exit(7)'] });
+  const ending = await f.finishWorker({ mutateResult: (result) => { result.verification = []; } });
+  await rejectsCode(verifyTaskAcceptance(f.handle, input(f, ending), await services(ending)), 'VERIFICATION_FAILED');
+  assert.deepEqual((await f.readRun()).completedTasks, []);
 });
 
 test('changedFiles, result identity and missing evidence are independently rejected', async (t) => {

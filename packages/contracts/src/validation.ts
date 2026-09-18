@@ -4,7 +4,7 @@ import * as common from './common.js';
 import * as execution from './execution.js';
 import * as state from './state.js';
 import * as packaging from './packaging.js';
-import { validateRequest, validateResult, validateEvidence, validateCapabilities, validatePlan, validateScope, validateProtocolSource } from './semantics.js';
+import { validateRequest, validateResult, validateAcceptedResult, validateEvidence, validateCapabilities, validatePlan, validateScope, validateProtocolSource } from './semantics.js';
 
 export const contractSchemas = {
   taskExecutionRequest: execution.TaskExecutionRequestSchema,
@@ -77,7 +77,7 @@ function parser<S extends TSchema>(schema: S, semantic?: (value: Static<S>) => v
 const parsers = {
   taskExecutionRequest: parser(contractSchemas.taskExecutionRequest, validateRequest),
   taskExecutionResult: parser(contractSchemas.taskExecutionResult, validateResult),
-  acceptedTaskExecutionResult: parser(contractSchemas.acceptedTaskExecutionResult, validateResult),
+  acceptedTaskExecutionResult: parser(contractSchemas.acceptedTaskExecutionResult, validateAcceptedResult),
   verificationEvidence: parser(contractSchemas.verificationEvidence, validateEvidence),
   verificationPlan: parser(contractSchemas.verificationPlan, validatePlan),
   executorCapabilities: parser(contractSchemas.executorCapabilities, validateCapabilities),

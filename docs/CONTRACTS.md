@@ -76,7 +76,7 @@ next / all-ready 按权威顺序找第一个满足资格的任务；较早但尚
 | schemaVersion、runId、taskId、attempt、requestId、snapshotHash | 绑定本次请求，任一不符即拒绝 |
 | outcome | completed / blocked / failed / partial；Worker completed 是待 Core 接受的声明 |
 | summary、reason | 紧凑结论；非 completed 必须给 reason |
-| verification | VerificationEvidence 列表；completed 不允许缺少必需验收项 |
+| verification | Worker 已实际取得的 VerificationEvidence 声明列表；仅有提案工具的宿主可对 completed 候选返回空列表，Core 独立补齐全部必需验收项。非空时必须完整覆盖计划，不接受部分声明 |
 | changedFiles | Worker 声明的变更集，用于与实际快照比较，不能充当授权白名单 |
 | closure | 当前任务归档路径、索引与 Dashboard 变更说明及摘要；completed 必须提供 |
 | commitIntent | 可选提交信息与精确文件集合，依据项目 Git Workflow 生成；不是授权 |
@@ -84,7 +84,7 @@ next / all-ready 按权威顺序找第一个满足资格的任务；较早但尚
 | rawResultRef | 可选私有原始输出引用，必须位于当前 Run 并有摘要 |
 | commitSha | Worker 结果中必须缺省；仅 Core 在提交后生成的已接受结果可包含 |
 
-VerificationEvidence 必须包含 `id`、`kind`（command/manual）、验收条目关联、请求身份、验证前后 snapshotHash、时间、结果与证据引用。command 类型包含 argv、仓库内 cwd、exitCode、stdout/stderr 私有引用和内容摘要；manual 类型包含明确验收者与持久确认记录。Worker 自写日志只能作为声明，不能成为 trusted command 记录。
+VerificationEvidence 必须包含 `id`、`kind`（command/manual）、验收条目关联、请求身份、验证前后 snapshotHash、时间、结果与证据引用。command 类型包含 argv、仓库内 cwd、exitCode、stdout/stderr 私有引用和内容摘要；manual 类型包含明确验收者与持久确认记录。Worker 自写日志只能作为声明，不能成为 trusted command 记录。`TaskExecutionResult` 的 completed 只是完成候选，可不携带 Worker 验证声明；`AcceptedTaskExecutionResult` 仍必须有 Core 独立生成的通过证据与验收引用，且每项必需检查在接受前均已覆盖。
 
 Core 使用受控验证进程执行 HARNESS / Task 的必需命令并生成可信证据；人工验收项没有用户确认时为 blocked。验证可写哪些构建产物必须预先声明；源码、计划、原有 dirty 文件、index 或 HEAD 在验证阶段被改变均拒绝。不能简单忽略整个 .gitignore 范围。
 
@@ -237,7 +237,7 @@ CLI 退出码：0 表示请求模式正常结束；2 表示参数或不支持的
 | 工作顺序为空，但远期任务仍存在 | 当前 Run 正常队列耗尽，不宣称整个项目完成 |
 | 工作顺序有任务，但依赖未完成 | BLOCKED，不写 completedTasks |
 | 状态文本相同但某 dirty 文件内容改变 | DRIFT_DETECTED |
-| Worker 返回 completed 但 verification 缺失、needsPlanning=true 或未收口 | 拒绝 completed，不提交、不选下一任务 |
+| Worker 返回 completed 且 verification 为部分声明、needsPlanning=true 或未收口 | 拒绝 completed，不提交、不选下一任务；空声明候选仍须由 Core 独立完成全部检查 |
 | Worker 在当前任务归档时修改另一个任务优先级 | 拒绝 Planning delta |
 | no-commit 时 HEAD 前进或 Worker 返回 commitSha | AUTHORIZATION_VIOLATION |
 | 请求身份相同但结果的 attempt / snapshotHash 不同 | INVALID_RESULT |

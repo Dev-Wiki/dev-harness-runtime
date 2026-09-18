@@ -28,7 +28,8 @@ export function validateResultForRequest(requestInput: unknown, resultInput: unk
     for (const key of ['taskId', 'taskPath', 'archivePath', 'dashboardPath', 'archiveIndexPath'] as const) check(result.closure[key] === planning[key], 'Closure does not match authorized Planning paths');
   }
   if (result.outcome === 'completed') {
-    check(result.verification.length === plan.commands.length + plan.manual.length, 'Incomplete verification coverage');
+    check(result.verification.length === 0 || result.verification.length === plan.commands.length + plan.manual.length,
+      'Incomplete verification coverage');
 
     if (result.commitIntent) check(JSON.stringify([...result.commitIntent.paths].sort()) === JSON.stringify([...result.changedFiles].sort()), 'Commit intent paths must match declared changes', 'AUTHORIZATION_VIOLATION');
   }

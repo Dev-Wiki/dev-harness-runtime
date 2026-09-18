@@ -1,6 +1,6 @@
 import { posix, win32 } from 'node:path';
 import type { Scope, ProtocolSource } from './common.js';
-import { CAPABILITY_NAMES, type TaskExecutionRequest, type TaskExecutionResult, type VerificationEvidence, type VerificationPlan, type ExecutorCapabilities } from './execution.js';
+import { CAPABILITY_NAMES, type AcceptedTaskExecutionResult, type TaskExecutionRequest, type TaskExecutionResult, type VerificationEvidence, type VerificationPlan, type ExecutorCapabilities } from './execution.js';
 
 function invariant(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -63,7 +63,9 @@ export function validateResult(value: TaskExecutionResult): void {
   }
   if (value.closure !== undefined) invariant(value.closure.taskId === value.taskId, 'Closure Task mismatch');
   if (value.outcome === 'completed') {
-    invariant(value.verification.length > 0 && value.verification.every((evidence) => evidence.result === 'passed'), 'Completed result requires passed verification');
+    // A host with proposal-only tools may return a completion candidate without
+    // pretending it ran Core's controlled checks. Acceptance must fill these in.
+    invariant(value.verification.every((evidence) => evidence.result === 'passed'), 'Completed result cannot claim failed verification');
     invariant(value.closure.taskId === value.taskId, 'Closure Task mismatch');
     unique(value.closure.changes.map((change) => change.path));
     const closurePaths = [value.closure.taskPath, value.closure.archivePath, value.closure.archiveIndexPath, value.closure.dashboardPath];
@@ -76,6 +78,12 @@ export function validateResult(value: TaskExecutionResult): void {
       else invariant(change.afterHash !== null, 'Dashboard/index must remain present');
     }
   }
+}
+export function validateAcceptedResult(value: AcceptedTaskExecutionResult): void {
+  validateResult(value);
+  invariant(value.outcome === 'completed' && value.verification.length > 0
+    && value.verification.every((evidence) => evidence.result === 'passed')
+    && value.verifiedEvidenceRefs.length > 0, 'Accepted result requires independent passed verification');
 }
 export function validateCapabilities(value: ExecutorCapabilities): void {
   for (const name of CAPABILITY_NAMES) invariant(!value[name] || value.evidence.some((item) => item.capability === name), `Capability ${name} requires evidence`);

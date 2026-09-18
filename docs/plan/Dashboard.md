@@ -35,7 +35,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K5 — Codex fresh-session Executor** | 🔴 P0 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：合成真实宿主能力探测、Core 受控提案与回执、取消后新 attempt / thread 恢复、合成 Planning A→B→C 三任务闭环均通过；包内 Adapter 已改为自包含 bundle 并通过离仓导入 / MCP 运行。分发 CLI 的可信服务装配、真实项目 Task、跨进程恢复与插件会话内 Skill 验收仍缺，默认自动运行关闭，见[证据](../verification/K5.md) | [执行包](tasks/K5.md) |
+| **K5 — Codex fresh-session Executor** | 🔴 P0 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K5-P](archive/M3/K5-P.md) | G6 / G8：合成真实宿主能力探测、Core 受控提案与回执、取消后新 attempt / thread 恢复、合成 Planning A→B→C 三任务闭环均通过；包内 Adapter 已自包含。完成候选可不伪造 Worker 验证引用，Core 独立验收专项通过。分发 CLI 的可信服务装配、真实项目 Task、跨进程恢复与插件会话内 Skill 验收仍缺，默认自动运行关闭，见[证据](../verification/K5.md) | [执行包](tasks/K5.md) |
 | **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：旧 36 项、新 Core 216 项无跳过；真实新 Session 的提议与合成 `blocked` 结果可解码。前置门禁能跳过随后监听器；更早监听器、受控编辑和宿主隔离未验，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；已授权的宿主 smoke 在 headless 认证门禁处停止，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证、npm 临时安装及 OpenCode 1.18.31 双变体入口发现通过；本地变体移除通过，模型调用与按包名安装未验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |

@@ -86,10 +86,9 @@ test('verification plan freezes authoritative sources and check identities', () 
   }
 });
 
-test('completed requires passed evidence, closure and no planning expansion', () => {
-  rejects('taskExecutionResult', fixture('invalid-result-no-evidence'));
+test('completed candidate may omit claims but requires closure and no planning expansion', () => {
+  assert.equal(parseContract('taskExecutionResult', fixture('result-completed-candidate')).outcome, 'completed');
   for (const mutate of [
-    (value) => { value.verification = []; },
     (value) => { delete value.closure; },
     (value) => { value.needsPlanning = true; },
     (value) => { value.verification[0].result = 'blocked'; value.verification[0].exitCode = null; },
@@ -102,6 +101,9 @@ test('completed requires passed evidence, closure and no planning expansion', ()
     mutate(result);
     rejects('taskExecutionResult', result);
   }
+  const candidate = fixture('result-completed-candidate');
+  assert.equal(parseContract('taskExecutionResult', candidate).outcome, 'completed');
+  assert.equal(validateResultForRequest(fixture('request'), candidate).outcome, 'completed');
 });
 
 test('noncompleted results require a reason and cannot introduce commit intent', () => {
@@ -211,4 +213,5 @@ test('accepted result is distinct from the Worker result and requires Core accep
   assert.equal(parseContract('acceptedTaskExecutionResult', accepted).commitSha, accepted.commitSha);
   rejects('taskExecutionResult', accepted);
   rejects('acceptedTaskExecutionResult', { ...accepted, verifiedEvidenceRefs: [] });
+  rejects('acceptedTaskExecutionResult', { ...accepted, verification: [] });
 });

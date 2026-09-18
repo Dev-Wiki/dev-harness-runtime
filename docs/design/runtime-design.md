@@ -777,6 +777,8 @@ export interface TaskExecutionResult {
 
 Core 不知道 Adapter 如何执行。
 
+`completed` 在 Worker 侧只是待验收候选。只有提案工具的宿主无法取得 Core 私有验证日志时，可返回空 `verification`，由 Core 在宿主静止并核对变更后独立执行冻结验证计划；非空 Worker 声明必须完整且可核验。最终接受结果必须包含 Core 产生的通过证据，不允许用空列表直接推进任务。
+
 ---
 
 # 14. Executor Capability Probe

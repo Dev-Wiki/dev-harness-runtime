@@ -30,7 +30,7 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 
 ## 验收与当前 Task 收口
 
-按原验收标准和冻结 verificationPlan 执行获准检查。验证只允许写预先声明的构建产物；不能借验证修改源码、计划、原有用户内容、HEAD 或 index。未获得的人工确认必须如实报告为阻断，不能用 Worker 自写声明代替。
+按原验收标准和冻结 verificationPlan 执行宿主实际提供的受控检查。验证只允许写预先声明的构建产物；不能借验证修改源码、计划、原有用户内容、HEAD 或 index。若宿主只有只读与提案工具，无法取得私有日志引用，就在完成候选中使用空 `verification` 列表，交由 Core 独立运行冻结检查；绝不编造通过记录。未获得的人工确认必须如实报告为阻断，不能用 Worker 自写声明代替。
 
 只有当前 Task 达到成功候选条件时，按锁定的 Planning 流程记录证据、将当前执行包移至授权 archivePath、向 archiveIndexPath 追加本次记录，并从 Dashboard 活跃表和工作顺序移除当前 Task；近期完成摘要最多五项。只调整当前任务依赖链接的等价归档位置，保留其他任务语义和原始验收文本。不要重排整个 backlog、重写历史索引或自行选择其他归档里程碑。
 
@@ -40,6 +40,6 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 
 通过 Adapter 提供的结构化结果通道返回符合当前 TaskExecutionResult 契约的记录，绑定原 runId / taskId / attempt / requestId / snapshotHash。报告 outcome、紧凑 summary、verification、实际 changedFiles 和 needsPlanning；非 completed 必须给 reason，completed 必须覆盖全部验收并提供精确四路径 closure。可提供 commitIntent；Worker 结果不得包含 commitSha。
 
-验证记录需绑定验收 ID、请求身份、前后快照和真实证据；不要编造摘要、退出码、人工确认或日志引用。私有 stdout/stderr、快照和原始结果引用由受控 Core / Adapter 捕获并提供，缺失时如实阻断。Worker 自报日志不能成为 Core 独立验收证明。
+已有的验证记录需绑定验收 ID、请求身份、前后快照和真实证据；不要编造摘要、退出码、人工确认或日志引用。私有 stdout/stderr、快照和原始结果引用由受控 Core / Adapter 捕获并提供。仅缺少 Worker 自身的验证记录时可以返回空 `verification` 的完成候选，Core 会独立验收；缺少受控工具、scope 或其他必需能力时仍须阻断。Worker 自报日志不能成为 Core 独立验收证明。
 
 完整输出交由受控捕获通道持久化到唯一 Run 私有状态根，不授予 Worker 私有 Git 写权限，也不直接写 run.json、results、日志文件或另一份状态树。父上下文只接收 Core 投影的 runId、taskId、status、summary、verification summary、commitSha、nextTask、logRef；结构化候选记录和完整执行日志不作为父对话续接上下文。

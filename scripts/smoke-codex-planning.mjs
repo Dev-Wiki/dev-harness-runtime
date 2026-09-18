@@ -10,8 +10,6 @@ import { startRuntimeRun } from '../packages/core/dist/orchestrator/runtime.js';
 import { git, setupRuntimeFixture } from '../tests/fixtures/fake-executor/fixture.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
-const emptyRef = (request) => ({ schemaVersion: 1,
-  path: `attempts/${request.taskId}-${request.attempt}/stdout.log`, sha256: digest(Buffer.alloc(0)) });
 async function executable() {
   if (process.env.DHR_CODEX_BINARY) {
     assert.ok(isAbsolute(process.env.DHR_CODEX_BINARY));
@@ -61,17 +59,10 @@ async function taskPlan(root, request) {
     changes.push({ path, beforeHash: await beforeHash(path),
       afterHash: operation.content === null ? null : digest(Buffer.from(operation.content)) });
   }
-  const now = new Date().toISOString();
-  const verification = request.verificationPlan.commands.map((command) => ({ schemaVersion: 1,
-    runId: request.runId, taskId: request.taskId, attempt: request.attempt, requestId: request.requestId,
-    id: command.id, acceptanceIds: command.acceptanceIds, kind: 'command',
-    argv: command.argv, cwd: command.cwd, exitCode: 0, result: 'passed',
-    startedAt: now, finishedAt: now, beforeSnapshotHash: request.snapshotHash,
-    afterSnapshotHash: request.snapshotHash, stdout: emptyRef(request), stderr: emptyRef(request) }));
   const result = { schemaVersion: 1, runId: request.runId, taskId: request.taskId,
     attempt: request.attempt, requestId: request.requestId, snapshotHash: request.snapshotHash,
     summary: `Synthetic Planning closure for ${request.taskId}; Core must independently verify.`,
-    verification, changedFiles: operations.map((operation) => operation.path).sort(),
+    verification: [], changedFiles: operations.map((operation) => operation.path).sort(),
     rawResultRef: null, outcome: 'completed', needsPlanning: false, reason: null, commitIntent: null,
     closure: { schemaVersion: 1, ...p, summary: 'Current Task only', changes } };
   return { operations, result };
@@ -109,7 +100,7 @@ try {
         + 'Call dhr_propose_text once for each operation with non-null content, and dhr_propose_delete once for each null operation. '
         + 'Pass the exact path and content; do not edit the working tree yourself. '
         + 'After all five proposal receipts, return exactly the JSON object below. '
-        + 'The verification entry is a fixture claim; Core will independently run its frozen command.\n'
+        + 'The empty verification array is intentional: do not invent private log references. Core will independently run its frozen command.\n'
         + `${JSON.stringify({ operations: plan.operations })}\n`
         + `FINAL_JSON=${JSON.stringify({ result: plan.result })}\n`;
       return real.prepareInvocation({ ...input,
