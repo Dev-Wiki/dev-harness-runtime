@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { validateResultForRequest, type TaskExecutionRequest, type TaskExecutionResult } from '@dev-harness-runtime/contracts';
+import { decodeCodexResultEnvelope } from './result-schema.js';
 
 export class CodexEventError extends Error {
   constructor(readonly code: 'INVALID_RESULT' | 'CAPABILITY_MISSING' | 'AUTHORIZATION_VIOLATION', message: string) {
@@ -115,12 +116,19 @@ export class CodexEventDecoder {
     } catch (error) { this.failed = true; throw error; }
   }
 
-  finish(request: TaskExecutionRequest): { threadId: string; result: TaskExecutionResult } {
+  finish(request: TaskExecutionRequest, format: 'contract' | 'codex' = 'contract'): { threadId: string; result: TaskExecutionResult } {
     if (this.failed || !this.completed || this.threadId === undefined || this.finalText === undefined) {
       throw new CodexEventError('INVALID_RESULT', 'Codex stream ended before a complete turn');
     }
     let raw: unknown;
     try { raw = JSON.parse(this.finalText); } catch { throw new CodexEventError('INVALID_RESULT', 'Codex final message is not JSON'); }
+    if (format === 'codex') {
+      try { return { threadId: this.threadId, result: decodeCodexResultEnvelope(raw, request) }; }
+      catch (error) {
+        if (error instanceof Error && 'code' in error) throw error;
+        throw new CodexEventError('INVALID_RESULT', 'Codex final message does not match the structured result envelope');
+      }
+    }
     return { threadId: this.threadId, result: validateResultForRequest(request, raw) };
   }
 

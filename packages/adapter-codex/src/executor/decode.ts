@@ -5,6 +5,7 @@ import { CodexEventDecoder, CodexEventError } from './events.js';
 export async function decodeCodexExecution(input: {
   events: AsyncIterable<Uint8Array>;
   request: TaskExecutionRequest;
+  format?: 'contract' | 'codex';
   log(bytes: Uint8Array): Promise<void>;
 }): Promise<{ threadId: string; result: TaskExecutionResult; proposals: readonly { path: string; content: string }[] }> {
   const decoder = new CodexEventDecoder();
@@ -36,6 +37,6 @@ export async function decodeCodexExecution(input: {
   catch { throw new CodexEventError('INVALID_RESULT', 'Codex stdout ends inside UTF-8'); }
   consumeLines();
   if (pending.length > 0) decoder.consume(pending);
-  const bound = decoder.finish(input.request);
+  const bound = decoder.finish(input.request, input.format);
   return { ...bound, proposals: decoder.proposals() };
 }

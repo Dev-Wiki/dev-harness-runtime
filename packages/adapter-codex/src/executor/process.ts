@@ -56,7 +56,7 @@ export async function runCodexProcess(input: CodexProcessInput): Promise<CodexPr
     child.once('error', reject);
     child.once('close', (code, signal) => resolve({ code, signal }));
   });
-  const decoded = decodeCodexExecution({ events: stdout, request: input.request,
+  const decoded = decodeCodexExecution({ events: stdout, request: input.request, format: 'codex',
     log: (bytes) => input.log('events', bytes) });
   const loggedStderr = (async () => {
     let total = 0;

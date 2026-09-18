@@ -13,7 +13,8 @@ test('Codex Worker invocation requests isolated configuration and a required pro
   assert.ok(argv.includes('read-only'));
   assert.ok(!argv.includes('workspace-write'));
   assert.ok(!argv.includes('resume'));
-  assert.equal(argv.at(-1), 'one task');
+  assert.ok(argv.at(-1).startsWith('one task\n\n## Codex 结构化结果'));
+  assert.match(argv.at(-1), /顶层仅含 result/u);
   assert.ok(argv.includes('mcp_servers.dhr_proposal.enabled_tools=["dhr_propose_text"]'));
   assert.ok(argv.includes('mcp_servers.dhr_proposal.required=true'));
   assert.ok(argv.includes('web_search="disabled"'));
