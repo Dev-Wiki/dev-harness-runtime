@@ -25,4 +25,4 @@
 
 当前已落地 `createWorkerWritePolicy` 这一纯路径判定，并让 Core 的最终快照所有权检查复用它；专项 17/17 通过。`WorkerProposalCollector` 进一步把请求和执行前快照绑定，按同一判定暂存文件写入/删除提议，复制字节并限制大小，拒绝 symlink/gitlink；恢复原始内容会消去无效提议，最终提议路径必须与结构化结果的 `changedFiles` 完全一致。Core 专项 3/3、Codex / DSH 跨包合成暂存各 1/1 通过。它不写工作树，也不提供持久审计、文件系统竞态防护、进程隔离或宿主工具目录证明，不能单独作为桥接权限证据。
 
-Codex 侧已有只返回哈希的 `dhr_propose_text` MCP 入口和与宿主 JSONL 事件配对的提议解码；一次真实空目录调用通过且未写文件。它还未绑定 Core 的提议暂存或实际文件应用。DSH 侧 Worker guard 仅放行插件自身注册的无写入 `dhr_propose_text` 定义，真实 rc.1 headless Session 已返回提议哈希，另一次 bash 写入调用被拒绝。DSH v3 Session 事件解码器已从一次真实会话还原提议；只读 reader 及解码入口能拒绝非新会话或多会话 store，并在交付结果前要求私有日志回调成功。结构化最终结果只有合成持久 Session 契约测试。两个 Adapter 到 Core 的受控应用尚未连接。这些组件保持生产 Executor 关闭。
+Codex 侧已有只返回哈希的 `dhr_propose_text` MCP 入口和与宿主 JSONL 事件配对的提议解码；一次真实空目录调用通过且未写文件。JSONL 流入口在交付结果前保留原始字节并处理任意分块，但未连接真实进程、Core 的提议暂存或文件应用。DSH 侧 Worker guard 仅放行插件自身注册的无写入 `dhr_propose_text` 定义，真实 rc.1 headless Session 已返回提议哈希，另一次 bash 写入调用被拒绝。DSH v3 Session 事件解码器已从一次真实会话还原提议；只读 reader 及解码入口能拒绝非新会话或多会话 store，并在交付结果前要求私有日志回调成功。结构化最终结果只有合成持久 Session 契约测试。两个 Adapter 到 Core 的受控应用尚未连接。这些组件保持生产 Executor 关闭。
