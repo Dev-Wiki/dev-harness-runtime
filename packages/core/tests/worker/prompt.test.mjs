@@ -13,10 +13,22 @@ const payload = (prompt) => JSON.parse(prompt.slice(prompt.lastIndexOf('```json\
 test('shared Worker source and exact request produce four explicit environment markers without inherited secrets', () => {
   const input = request(); const invocation = prepareWorkerInvocation(input, source);
   assert.ok(invocation.prompt.startsWith(bytes.toString().trimEnd())); assert.equal(invocation.skillSha256, source.sha256);
-  const data = payload(invocation.prompt); const { readFirst, ...bound } = data;
+  const data = payload(invocation.prompt); const { readFirst, commitCandidate, ...bound } = data;
   assert.deepEqual(bound, input); assert.deepEqual(readFirst, ['/workspace/project/AGENTS.md', '/workspace/project/HARNESS.md', input.dashboardPath, input.taskPath]);
+  assert.deepEqual(commitCandidate, { allowed: false });
   assert.deepEqual(invocation.env, input.env); assert.equal(Object.keys(invocation.env).length, 4);
   input.env.DEV_HARNESS_TASK_ID = 'other'; assert.equal(invocation.env.DEV_HARNESS_TASK_ID, 'K1');
+});
+
+test('Core commit authority provides only a frozen workflow candidate to the Worker', () => {
+  const input = request(); const workflow = { path: 'docs/GIT_WORKFLOW.md', sha256: 'a'.repeat(64) };
+  const candidate = payload(prepareWorkerInvocation(input, source,
+    { commit: 'task', gitWorkflowRef: workflow }).prompt);
+  assert.deepEqual(candidate.commitCandidate, { allowed: true, workflow });
+  assert.equal(candidate.authorization.commit, 'deny');
+  assert.equal(candidate.readFirst.at(-1), '/workspace/project/docs/GIT_WORKFLOW.md');
+  assert.throws(() => prepareWorkerInvocation(input, source,
+    { commit: 'task', gitWorkflowRef: { ...workflow, path: '../outside' } }), { code: 'INVALID_CONTRACT' });
 });
 
 test('a fresh Task/request does not inherit the preceding task payload', () => {

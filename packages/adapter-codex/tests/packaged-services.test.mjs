@@ -46,5 +46,6 @@ test('installed Codex package assembles trusted services without starting a mode
     assert.deepEqual(services.protocolSource, fixture.source.protocolSource);
     assert.match(services.adapterConfigHash, /^[a-f0-9]{64}$/u);
     assert.equal(services.adapters.get('codex').id, 'codex');
-    assert.equal(services.git, undefined);
+    assert.equal(services.git?.gitBinary, '/usr/bin/git');
+    assert.equal(typeof services.git?.policy.evaluate, 'function');
   });

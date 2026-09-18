@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { parseContract, type ProtocolSource } from '@dev-harness-runtime/contracts';
 import { createLinuxSandbox, prepareDeclaredPlanningTask, Registry, type RuntimeAdapter, type RuntimeServices } from '@dev-harness-runtime/core';
 import { CodexRuntimeError, createCodexRuntimeAdapter } from './runtime-adapter.js';
+import { codexConventionalCommitPolicy } from './commit-policy.js';
 
 const execute = promisify(execFile);
 const digest = (bytes: Uint8Array | string): string => createHash('sha256').update(bytes).digest('hex');
@@ -132,6 +133,7 @@ export async function createPackagedCodexServices(options: PackagedCodexOptions)
     const adapters = new Registry<RuntimeAdapter>(); adapters.register(adapter);
     return { protocolSource: source.protocolSource, adapterConfigHash: configHash,
       workerSkill: source.workerSkill, adapters, acceptance: { sandbox },
+      git: { gitBinary, policy: codexConventionalCommitPolicy },
       async prepareTask(input) {
         const prepared = await prepareDeclaredPlanningTask(input);
         if (prepared.verificationPlan.manual.length > 0) {

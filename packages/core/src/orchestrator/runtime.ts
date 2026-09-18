@@ -60,7 +60,8 @@ const refOf = (request: TaskExecutionRequest): EvidenceRef => ({ schemaVersion: 
 export async function dispatchTask(handle: LockHandle, project: ProjectContext, state: RunState, request: TaskExecutionRequest,
   requestRef: EvidenceRef, frozenInputsRef: EvidenceRef, services: RuntimeServices, adapter: Readonly<RuntimeAdapter>, signal?: AbortSignal): Promise<RunState> {
   const before = await loadRecoverySnapshot(handle, state, refOf(request));
-  const invocation = prepareWorkerInvocation(request, services.workerSkill);
+  const invocation = prepareWorkerInvocation(request, services.workerSkill,
+    { commit: state.authorization.commit, gitWorkflowRef: before.snapshot.gitWorkflowRef });
   await ensureRunEvidence(handle, state.runId, state.revision, recordName('dispatch', request.requestId),
     { schemaVersion: 1, ...identity(request), requestRef, frozenInputsRef });
   const intent = { schemaVersion: 1, operationId: state.pendingOperation!.operationId, kind: 'execute', stage: 'execute-intent',

@@ -148,6 +148,8 @@ RunAuthorization 为 commit=deny 或 task，push / pullRequest / tag / release /
 
 Worker 权限始终缩窄为不能提交。Core 的 Git 桥接读取已冻结的项目 Git Workflow、接受的 commitIntent 和独立验证结论，精确逐个 `git add -- <file>`，比较实际暂存集合，再提交。范围必须包括获准的本任务代码、验收与收口文件，排除原有用户修改。提交格式以项目规范为准，Runtime 不为项目补默认分支或 message 策略。
 
+Codex 包的可信 Git 策略当前只解释已冻结 `GIT_WORKFLOW.md` 中 `dev-harness-git-workflow` 默认的中文 Conventional Commits 提交规范。Core 向 Worker 提供 Run 层提交候选标记和原始 Workflow 摘要；Worker 仍是 `commit=deny`，仅在完成候选中返回消息、文件集与该摘要。策略先从 Workflow 读取允许的 type，再校验一行 LF 结尾的中文提交标题；Core 的既有 Git 桥接继续核对精确变更集、已接受快照和授权后才提交。不符合这一封闭模板的项目在提交阶段明确拒绝，不能把 Worker 自报消息直接当作 Git 授权。
+
 桥接不执行任意 Worker 提供的 shell 字符串；argv、路径和允许动作由受控实现构造。仓库 hooks 或项目提交机制会改变文件、要求额外外部动作，或权限无法约束时停下，不能静默禁用规则绕过。
 
 Git 桥接只获本次已授权提交所需能力；hooks 及其派生进程不得借用该能力创建额外提交、push、tag、发布或部署，也不得访问不需要的凭据。无法隔离和证明该边界时 commit-each 被阻止，不能以桥接来自 Core 为由绕过 RunAuthorization。

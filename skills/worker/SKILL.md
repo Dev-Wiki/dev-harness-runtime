@@ -26,6 +26,7 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 - 发现需要扩大 scope、修改验收要求、Planning / Git 外部漂移、缺失上下文或权限冲突时停止。需要规划调整时置 needsPlanning=true，不自行扩大请求或继续其他任务。
 - 不递归调用任何 `dhr run` 模式、resume 或 reconcile，不另启调度器或领取下一 Task。完成、阻断、失败或取消后都结束本次 Worker。
 - Worker 永远 commit=deny，也不暂存、改写 HEAD / index、修改 Git 元数据或私有状态。可依据冻结的 Git Workflow 提交 commitIntent 候选；只有 Core 能在独立验收及 Run 授权通过后提交。
+- 若 Core 提供 `commitCandidate.allowed=true`，完成候选须先通过只读工具读取指定 Git Workflow，并按其格式返回 `commitIntent`：`workflow` 使用请求中的精确 path / sha256，`paths` 等于 `changedFiles`，`message` 为一条以 LF 结尾的提交标题。`allowed=false` 时不返回 `commitIntent`。此字段不改变 Worker 的 `authorization.commit=deny`。
 - 禁止 push、PR、tag、release、deploy；不得通过脚本、hooks 或后代进程间接执行。验证命令同样服从权限边界；需要缺失能力时停止。
 
 ## 验收与当前 Task 收口

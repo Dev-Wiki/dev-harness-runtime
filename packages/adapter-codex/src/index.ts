@@ -9,6 +9,7 @@ export { createCodexRuntimeAdapter, CodexRuntimeError } from './runtime-adapter.
 export type { CodexRuntimeOptions } from './runtime-adapter.js';
 export { createPackagedCodexServices, loadCodexPackageSource } from './runtime-services.js';
 export type { CodexPackageSource, PackagedCodexOptions } from './runtime-services.js';
+export { codexConventionalCommitPolicy } from './commit-policy.js';
 
 /** Descriptor metadata only; the RuntimeAdapter above requires explicit trusted injection. */
 export const adapter = Object.freeze({
