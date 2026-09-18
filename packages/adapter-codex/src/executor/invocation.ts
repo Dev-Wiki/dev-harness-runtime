@@ -7,13 +7,13 @@ export interface CodexInvocationInput {
   readonly prompt: string;
   readonly nodeBinary: string;
   readonly proposalServer: string;
-  readonly readPolicy: string;
+  readonly bridgePolicy: string;
   readonly outputSchema: string;
 }
 
 /** Fixed host entry. It narrows configuration but does not itself enforce a tool boundary. */
 export function createCodexInvocation(input: CodexInvocationInput): readonly string[] {
-  for (const path of [input.request.repoRoot, input.nodeBinary, input.proposalServer, input.readPolicy, input.outputSchema]) {
+  for (const path of [input.request.repoRoot, input.nodeBinary, input.proposalServer, input.bridgePolicy, input.outputSchema]) {
     if (!isAbsolute(path) || normalize(path) !== path || path.includes('\0')) {
       throw new CodexProcessError('INVALID_ARGUMENT', 'Codex invocation paths must be normalized and absolute');
     }
@@ -34,7 +34,7 @@ export function createCodexInvocation(input: CodexInvocationInput): readonly str
     '--output-schema', input.outputSchema, '-C', input.request.repoRoot,
     ...config('web_search', '"disabled"'),
     ...config('mcp_servers.dhr_proposal.command', JSON.stringify(input.nodeBinary)),
-    ...config('mcp_servers.dhr_proposal.args', JSON.stringify([input.proposalServer, input.readPolicy])),
+    ...config('mcp_servers.dhr_proposal.args', JSON.stringify([input.proposalServer, input.bridgePolicy])),
     ...config('mcp_servers.dhr_proposal.required', 'true'),
     ...config('mcp_servers.dhr_proposal.enabled_tools', '["dhr_propose_text","dhr_propose_delete","dhr_list_paths","dhr_read_text"]'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_propose_text.approval_mode', '"approve"'),

@@ -7,7 +7,16 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { handleCodexProposalMcp, handleCodexBridgeMcp } from '../dist/executor/mcp-server.js';
-import { CodexReadView, withCodexReadPolicy } from '../dist/executor/read-view.js';
+import { createCodexBridgeView, withCodexBridgePolicy } from '../dist/executor/bridge-policy.js';
+
+const scope = { schemaVersion: 1, files: ['src/a.ts'], directories: ['src/generated'],
+  planning: { taskId: 'K1', taskPath: 'docs/plan/tasks/K1.md', archivePath: 'docs/plan/archive/V1/K1.md',
+    dashboardPath: 'docs/plan/Dashboard.md', archiveIndexPath: 'docs/plan/archive/V1/README.md' } };
+const policy = (root) => ({ schemaVersion: 1,
+  identity: { runId: 'run-a', taskId: 'K1', attempt: 1, requestId: 'request-a', snapshotHash: 'a'.repeat(64) },
+  read: { repoRoot: root, runId: 'run-a', requestId: 'request-a', snapshotHash: 'a'.repeat(64),
+    files: [{ path: 'src/a.ts', sha256: createHash('sha256').update('HELLO').digest('hex') }] },
+  scope });
 
 const call = (args, name = 'dhr_propose_text') => handleCodexProposalMcp({ jsonrpc: '2.0', id: 3,
   method: 'tools/call', params: { name, arguments: args } });
@@ -41,11 +50,10 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'HELLO');
-  const view = await CodexReadView.create({ repoRoot: root, runId: 'run-a', requestId: 'request-a',
-    snapshotHash: 'a'.repeat(64), files: [{ path: 'src/a.ts', sha256: createHash('sha256').update('HELLO').digest('hex') }] });
+  const bridge = await createCodexBridgeView(policy(root));
   const rpc = (name, args) => handleCodexBridgeMcp({ jsonrpc: '2.0', id: 7, method: 'tools/call',
-    params: { name, arguments: args } }, view);
-  const listed = await handleCodexBridgeMcp({ jsonrpc: '2.0', id: 7, method: 'tools/list' }, view);
+    params: { name, arguments: args } }, bridge);
+  const listed = await handleCodexBridgeMcp({ jsonrpc: '2.0', id: 7, method: 'tools/list' }, bridge);
   assert.deepEqual(listed.result.tools.map((tool) => tool.name),
     ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text']);
   assert.deepEqual(JSON.parse((await rpc('dhr_list_paths', { prefix: 'src', after: '' })).result.content[0].text),
@@ -53,19 +61,22 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
   assert.deepEqual(JSON.parse((await rpc('dhr_read_text', { path: 'src/a.ts', offset: 0 })).result.content[0].text),
     { path: 'src/a.ts', content: 'HELLO', sha256: createHash('sha256').update('HELLO').digest('hex'), offset: 0, nextOffset: null });
   assert.equal((await rpc('dhr_read_text', { path: '.git/config', offset: 0 })).result.isError, true);
+  assert.equal((await rpc('dhr_propose_text', { path: 'src/outside.ts', content: 'x' })).result.isError, true);
+  assert.equal((await rpc('dhr_propose_delete', { path: 'docs/plan/tasks/other.md' })).result.isError, true);
+  assert.equal((await rpc('dhr_propose_text', { path: 'src/generated/new.ts', content: 'x' })).result.isError, undefined);
+  assert.equal((await rpc('dhr_propose_delete', { path: 'docs/plan/tasks/K1.md' })).result.isError, undefined);
 });
 
-test('stdio MCP process loads one private read policy and serves bounded calls', async (t) => {
+test('stdio MCP process loads one private bridge policy and gates proposal calls', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'dhr-codex-mcp-read-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'HELLO');
-  const policy = { repoRoot: root, runId: 'run-a', requestId: 'request-a', snapshotHash: 'a'.repeat(64),
-    files: [{ path: 'src/a.ts', sha256: createHash('sha256').update('HELLO').digest('hex') }] };
-  await withCodexReadPolicy(policy, async (path) => {
+  await withCodexBridgePolicy(policy(root), async (path) => {
     const messages = [
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'dhr_read_text', arguments: { path: 'src/a.ts', offset: 0 } } },
+      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'dhr_propose_text', arguments: { path: 'other.ts', content: 'x' } } },
     ];
     const result = spawnSync(process.execPath, [fileURLToPath(new URL('../dist/executor/mcp-server.js', import.meta.url)), path],
       { input: messages.map((message) => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', timeout: 5000 });
@@ -75,5 +86,6 @@ test('stdio MCP process loads one private read policy and serves bounded calls',
     assert.deepEqual(lines[0].result.tools.map((tool) => tool.name),
       ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text']);
     assert.equal(JSON.parse(lines[1].result.content[0].text).content, 'HELLO');
+    assert.equal(lines[2].result.isError, true);
   });
 });

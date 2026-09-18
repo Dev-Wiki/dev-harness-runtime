@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isRepoPath } from '@dev-harness-runtime/contracts';
-import { CodexReadView } from './read-view.js';
+import { createCodexBridgeView, type CodexBridgeView } from './bridge-policy.js';
 
 type RpcId = string | number;
 interface RpcRequest { jsonrpc: '2.0'; id?: RpcId; method: string; params?: unknown }
@@ -34,7 +34,7 @@ const readTool = {
 const failure = (message: string) => ({ isError: true, content: [{ type: 'text', text: message }] });
 
 /** Pure stdio MCP endpoint: it never writes the project or persists a proposal. */
-export function handleCodexProposalMcp(value: unknown): RpcResponse | null {
+export function handleCodexProposalMcp(value: unknown, allowsProposal: (path: string) => boolean = () => true): RpcResponse | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   const input = value as Partial<RpcRequest>;
   if (!Object.hasOwn(input, 'id')) return null;
@@ -60,6 +60,7 @@ export function handleCodexProposalMcp(value: unknown): RpcResponse | null {
     || args.path.split('/').some((part) => part.toLowerCase() === '.git')) {
     return { jsonrpc: '2.0', id, result: failure('Proposal requires a repository-relative path') };
   }
+  if (!allowsProposal(args.path)) return { jsonrpc: '2.0', id, result: failure('Proposal path is outside this Task scope') };
   if (params.name === deleteTool.name) {
     if (Object.keys(args).join(',') !== 'path') return { jsonrpc: '2.0', id, result: failure('Delete proposal accepts only path') };
     return { jsonrpc: '2.0', id, result: { content: [{ type: 'text',
@@ -74,17 +75,17 @@ export function handleCodexProposalMcp(value: unknown): RpcResponse | null {
 }
 
 /** Read tools are present only when a trusted controller supplies a frozen policy. */
-export async function handleCodexBridgeMcp(value: unknown, view: CodexReadView): Promise<RpcResponse | null> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return handleCodexProposalMcp(value);
+export async function handleCodexBridgeMcp(value: unknown, bridge: CodexBridgeView): Promise<RpcResponse | null> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return handleCodexProposalMcp(value, bridge.allowsProposal);
   const input = value as Partial<RpcRequest>;
   if (!Object.hasOwn(input, 'id') || (typeof input.id !== 'string' && typeof input.id !== 'number')
-    || input.jsonrpc !== '2.0' || typeof input.method !== 'string') return handleCodexProposalMcp(value);
+    || input.jsonrpc !== '2.0' || typeof input.method !== 'string') return handleCodexProposalMcp(value, bridge.allowsProposal);
   if (input.method === 'tools/list') return { jsonrpc: '2.0', id: input.id,
     result: { tools: [textTool, deleteTool, listTool, readTool] } };
   if (input.method !== 'tools/call' || input.params === null || typeof input.params !== 'object'
     || Array.isArray(input.params) || !('name' in input.params)
     || (input.params.name !== listTool.name && input.params.name !== readTool.name)) {
-    return handleCodexProposalMcp(value);
+    return handleCodexProposalMcp(value, bridge.allowsProposal);
   }
   const params = input.params;
   if (!('arguments' in params) || params.arguments === null || typeof params.arguments !== 'object'
@@ -96,25 +97,25 @@ export async function handleCodexBridgeMcp(value: unknown, view: CodexReadView):
         return { jsonrpc: '2.0', id: input.id, result: failure('List requires prefix and after strings') };
       }
       return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
-        text: JSON.stringify(view.list(args.prefix, args.after)) }] } };
+        text: JSON.stringify(bridge.read.list(args.prefix, args.after)) }] } };
     }
     if (Object.keys(args).sort().join(',') !== 'offset,path' || typeof args.path !== 'string'
       || !Number.isSafeInteger(args.offset) || (args.offset as number) < 0) {
       return { jsonrpc: '2.0', id: input.id, result: failure('Read requires path and nonnegative offset') };
     }
     return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
-      text: JSON.stringify(await view.readPage(args.path, args.offset as number)) }] } };
+      text: JSON.stringify(await bridge.read.readPage(args.path, args.offset as number)) }] } };
   } catch {
     return { jsonrpc: '2.0', id: input.id, result: failure('Frozen read failed') };
   }
 }
 
 async function serve(): Promise<void> {
-  let view: CodexReadView | undefined;
+  let bridge: CodexBridgeView | undefined;
   if (process.argv[2]) {
     const bytes = await readFile(process.argv[2]);
     if (bytes.byteLength > 32 * 1024 * 1024) throw new Error('Read policy is too large');
-    view = await CodexReadView.create(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+    bridge = await createCodexBridgeView(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
   }
   const lines = async function* (): AsyncGenerator<string> {
     let parts: Buffer[] = [];
@@ -139,7 +140,7 @@ async function serve(): Promise<void> {
   for await (const line of lines()) {
     let message: unknown;
     try { message = JSON.parse(line); } catch { continue; }
-    const response = view ? await handleCodexBridgeMcp(message, view) : handleCodexProposalMcp(message);
+    const response = bridge ? await handleCodexBridgeMcp(message, bridge) : handleCodexProposalMcp(message);
     if (response !== null) process.stdout.write(`${JSON.stringify(response)}\n`);
   }
 }

@@ -38,12 +38,12 @@ importers:
       '@dev-harness-runtime/adapter-opencode':
         specifier: workspace:*
         version: link:../packages/adapter-opencode
-      '@dev-harness-runtime/core':
-        specifier: workspace:*
-        version: link:../packages/core
       '@dev-harness-runtime/contracts':
         specifier: workspace:*
         version: link:../packages/contracts
+      '@dev-harness-runtime/core':
+        specifier: workspace:*
+        version: link:../packages/core
     devDependencies:
       ajv:
         specifier: 8.17.1
@@ -60,6 +60,9 @@ importers:
       '@dev-harness-runtime/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@dev-harness-runtime/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/adapter-cursor:
     dependencies:
