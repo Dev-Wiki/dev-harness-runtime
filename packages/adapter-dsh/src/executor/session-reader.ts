@@ -25,9 +25,18 @@ export async function readFreshDshSession(input: { dshEntry: string; sessionsRoo
   catch { throw new DshSessionReadError('CAPABILITY_MISSING', 'DSH launcher is unavailable'); }
   let cordisPath: string; let backendPath: string;
   try {
+    const launcher: unknown = requireFromDsh('@deepseek-ai/dsh/package.json');
+    const storage: unknown = requireFromDsh('@deepseek-ai/dsh-session-persistence-jsonl/package.json');
+    if (!launcher || typeof launcher !== 'object' || !('version' in launcher) || launcher.version !== '0.1.5-rc.1'
+      || !storage || typeof storage !== 'object' || !('version' in storage) || storage.version !== '0.1.5-rc.2') {
+      throw new DshSessionReadError('CAPABILITY_MISSING', 'DSH Session package versions differ from the verified target');
+    }
     cordisPath = requireFromDsh.resolve('@deepseek-ai/cordis');
     backendPath = requireFromDsh.resolve('@deepseek-ai/dsh-session-persistence-jsonl');
-  } catch { throw new DshSessionReadError('CAPABILITY_MISSING', 'DSH Session persistence API is unavailable'); }
+  } catch (error) {
+    if (error instanceof DshSessionReadError) throw error;
+    throw new DshSessionReadError('CAPABILITY_MISSING', 'DSH Session persistence API is unavailable');
+  }
   const cordis: unknown = await import(pathToFileURL(cordisPath).href);
   const persistence: unknown = await import(pathToFileURL(backendPath).href);
   if (cordis === null || typeof cordis !== 'object' || !('Context' in cordis) || typeof cordis.Context !== 'function'
