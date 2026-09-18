@@ -25,7 +25,7 @@ test('Codex RuntimeAdapter refuses Core execution when its real host probe fails
   assert.equal(capabilities.authorizationEnforced, false);
   assert.equal(capabilities.available, false);
   await assert.rejects(runtimeAdapter({ ...f.services, adapters: registry }, f.project, 'codex'),
-    { code: 'CAPABILITY_MISSING' });
+    (error) => error.code === 'CAPABILITY_MISSING' && error.message.includes('; probe: '));
 });
 
 test('Codex RuntimeAdapter binds the Core request and frozen catalog before starting a host', async () => {

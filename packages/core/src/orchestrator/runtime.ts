@@ -50,7 +50,15 @@ export async function runtimeAdapter(services: RuntimeServices, project: Project
   }
   const capabilities = parseContract('executorCapabilities', await adapter.executor.probe(environment));
   if (capabilities.adapterId !== id) throw new RuntimeError('CAPABILITY_MISSING', 'Probe belongs to another Adapter');
-  requireExecutionCapabilities(capabilities);
+  try { requireExecutionCapabilities(capabilities); }
+  catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'CAPABILITY_MISSING') {
+      const reason = capabilities.reasons.map((item) => item.replace(/[\r\n\t]/gu, ' ').slice(0, 512))
+        .join('; ').slice(0, 1024);
+      throw new RuntimeError('CAPABILITY_MISSING', `${error.message}${reason ? `; probe: ${reason}` : ''}`);
+    }
+    throw error;
+  }
   return adapter;
 }
 function aborted(signal?: AbortSignal): void { signal?.throwIfAborted(); }
