@@ -4,8 +4,8 @@ import test from 'node:test';
 import { createCodexInvocation } from '../dist/executor/invocation.js';
 
 const request = JSON.parse(readFileSync(new URL('../../contracts/fixtures/execution/request.json', import.meta.url), 'utf8'));
-const input = { request, prompt: 'one task', nodeBinary: '/usr/bin/node',
-  proposalServer: '/opt/dhr/mcp-server.js', bridgePolicy: '/opt/dhr/bridge-policy.json',
+const input = { request, prompt: 'one task', mcpCommand: '/usr/bin/node',
+  mcpArgs: ['/opt/dhr/mcp-server.js', '/opt/dhr/bridge-policy.json'],
   outputSchema: '/opt/dhr/result.schema.json' };
 
 test('Codex Worker invocation requests isolated configuration and a required proposal MCP entry', () => {
@@ -26,8 +26,8 @@ test('Codex Worker invocation requests isolated configuration and a required pro
 });
 
 test('Codex Worker invocation rejects relative paths and oversized prompts', () => {
-  assert.throws(() => createCodexInvocation({ ...input, proposalServer: '../mcp-server.js' }), { code: 'INVALID_ARGUMENT' });
-  assert.throws(() => createCodexInvocation({ ...input, bridgePolicy: '../bridge-policy.json' }), { code: 'INVALID_ARGUMENT' });
+  assert.throws(() => createCodexInvocation({ ...input, mcpCommand: '../node' }), { code: 'INVALID_ARGUMENT' });
+  assert.throws(() => createCodexInvocation({ ...input, mcpArgs: ['only-one'] }), { code: 'INVALID_ARGUMENT' });
   assert.throws(() => createCodexInvocation({ ...input, outputSchema: '/tmp/../schema.json' }), { code: 'INVALID_ARGUMENT' });
   assert.throws(() => createCodexInvocation({ ...input, prompt: 'x'.repeat(256 * 1024 + 1) }), { code: 'INVALID_ARGUMENT' });
 });

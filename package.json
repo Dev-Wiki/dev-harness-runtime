@@ -9,7 +9,7 @@
     "pnpm": "11.1.0"
   },
   "scripts": {
-    "build": "tsc -b && node scripts/bundle-cli.mjs",
+    "build": "tsc -b && node scripts/bundle-cli.mjs && node scripts/bundle-codex-bridge.mjs",
     "typecheck": "tsc -p tsconfig.check.json",
     "lint": "oxlint packages build/targets build/transforms build/validators build/manifests build/tests scripts tests/integration tests/contract tests/packaging",
     "test": "pnpm build && node scripts/test.mjs",

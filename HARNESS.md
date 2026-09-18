@@ -29,7 +29,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
-| build | `pnpm build` | TypeScript workspace 编译及独立 CLI bundle；不生成平台插件产物 | confirmed |
+| build | `pnpm build` | TypeScript workspace 编译、独立 CLI bundle 与 Codex MCP bridge bundle；不生成平台插件产物 | confirmed |
 | test | `pnpm test` | 编译后执行 node:test，包含 tests/packaging 专项 | confirmed |
 | quick | `pnpm harness:quick` | typecheck + lint | confirmed |
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
@@ -48,7 +48,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
 - Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
-- `pnpm smoke:codex-host` 是显式选用的合成宿主测试：先 `pnpm build`，并要求本机已登录的 Codex CLI；只在临时目录向模型发送合成请求、Schema 和 `HELLO` 文件内容，不在常规 `pnpm verify` 中运行。它验证真实桥接与解码入口，不构成实际 Planning Task 或授权证据，见 [K5 验证记录](docs/verification/K5.md)。
+- `pnpm smoke:codex-host` 是显式选用的合成宿主测试：先 `pnpm build`，并要求本机已登录的 Codex CLI；只在临时目录向模型发送合成请求、Schema 和 `HELLO` 文件内容，不在常规 `pnpm verify` 中运行。可显式设置 `DHR_TEST_BWRAP` 为可信 bubblewrap 的绝对路径，改由隔离 MCP 子进程处理桥接；未设置时运行直接子进程模式。它验证真实桥接与解码入口，不构成实际 Planning Task 或整个宿主进程树的授权证据，见 [K5 验证记录](docs/verification/K5.md)。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

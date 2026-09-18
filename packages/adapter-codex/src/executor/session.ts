@@ -9,6 +9,10 @@ export interface CodexSessionInput {
   readonly binary: string;
   readonly nodeBinary: string;
   readonly proposalServer: string;
+  /** A trusted controller may replace the direct MCP process with a confined launcher. */
+  readonly bridgeProcess?: (policyPath: string) => Promise<{
+    command: string; args: readonly string[]; close?: () => Promise<void>;
+  }>;
   readonly request: TaskExecutionRequest;
   readonly readCatalog: WorkerReadCatalog;
   readonly prompt: string;
@@ -21,9 +25,13 @@ export interface CodexSessionInput {
 export async function runCodexSession(input: CodexSessionInput): Promise<CodexProcessOutput> {
   const policy = createCodexBridgePolicy(input.request, input.readCatalog);
   return withCodexBridgePolicy(policy, (bridgePolicy) => withCodexResultSchema(async (outputSchema) => {
-    const argv = createCodexInvocation({ request: input.request, prompt: input.prompt,
-      nodeBinary: input.nodeBinary, proposalServer: input.proposalServer, bridgePolicy, outputSchema });
-    return runCodexProcess({ binary: input.binary, argv, cwd: input.request.repoRoot,
-      env: input.env, request: input.request, signal: input.signal, log: input.log });
+    const mcp = await input.bridgeProcess?.(bridgePolicy)
+      ?? { command: input.nodeBinary, args: [input.proposalServer, bridgePolicy] };
+    try {
+      const argv = createCodexInvocation({ request: input.request, prompt: input.prompt,
+        mcpCommand: mcp.command, mcpArgs: mcp.args, outputSchema });
+      return await runCodexProcess({ binary: input.binary, argv, cwd: input.request.repoRoot,
+        env: input.env, request: input.request, signal: input.signal, log: input.log });
+    } finally { await mcp.close?.(); }
   }));
 }

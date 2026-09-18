@@ -7,10 +7,12 @@ import { homedir, tmpdir } from 'node:os';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCodexSession } from '../packages/adapter-codex/dist/executor/session.js';
+import { createConfinedCodexBridge } from '../packages/adapter-codex/dist/executor/confined-bridge.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const fixture = new URL('../packages/contracts/fixtures/execution/request.json', import.meta.url);
 const server = fileURLToPath(new URL('../packages/adapter-codex/dist/executor/mcp-server.js', import.meta.url));
+const serverBundle = fileURLToPath(new URL('../packages/adapter-codex/dist/executor/bridge.bundle.mjs', import.meta.url));
 assert.equal(process.argv.length, 2, 'The host smoke does not accept arguments');
 
 async function binary() {
@@ -47,21 +49,37 @@ try {
     ...(process.env.HTTPS_PROXY ? { HTTPS_PROXY: process.env.HTTPS_PROXY } : {}),
     ...(process.env.HTTP_PROXY ? { HTTP_PROXY: process.env.HTTP_PROXY } : {}),
     ...(process.env.NO_PROXY ? { NO_PROXY: process.env.NO_PROXY } : {}) };
-  const result = await runCodexSession({ binary: await binary(), nodeBinary: process.execPath,
-    proposalServer: server, request, readCatalog: catalog, prompt, env,
-    signal: AbortSignal.timeout(120_000),
-    log: async (stream, bytes) => { logs[stream].push(Buffer.from(bytes)); } });
+  const confined = process.env.DHR_TEST_BWRAP;
+  let result;
+  try {
+    result = await runCodexSession({ binary: await binary(), nodeBinary: process.execPath,
+      proposalServer: server, request, readCatalog: catalog, prompt, env,
+      ...(confined ? { bridgeProcess: (policyPath) => createConfinedCodexBridge({
+        bubblewrap: confined, nodeBinary: process.execPath, serverBundle, policyPath, readCatalog: catalog,
+      }) } : {}),
+      signal: AbortSignal.timeout(120_000),
+      log: async (stream, bytes) => { logs[stream].push(Buffer.from(bytes)); } });
+  } catch (error) {
+    const eventLines = Buffer.concat(logs.events).toString('utf8').split('\n').filter(Boolean);
+    const calls = eventLines.map((line) => JSON.parse(line)).filter((event) => event.item?.type === 'mcp_tool_call')
+      .map((event) => ({ event: event.type, tool: event.item.tool, status: event.item.status,
+        error: event.item.error }));
+    process.stderr.write(`${JSON.stringify({ calls,
+      stderr: Buffer.concat(logs.stderr).toString('utf8').slice(-4000) })}\n`);
+    throw error;
+  }
   const events = Buffer.concat(logs.events).toString('utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const tools = events.filter((event) => event.type === 'item.completed' && event.item?.type === 'mcp_tool_call')
     .map((event) => event.item.tool);
-  assert.deepEqual(tools, ['dhr_list_paths', 'dhr_search_text', 'dhr_read_text', 'dhr_propose_text']);
+  assert.deepEqual(tools, ['dhr_list_paths', 'dhr_search_text', 'dhr_read_text', 'dhr_propose_text'],
+    `Codex MCP calls missing; stderr=${Buffer.concat(logs.stderr).toString('utf8').slice(-4000)}`);
   assert.deepEqual(result.proposals, [{ path: 'src/a.ts', content: 'UPDATED' }]);
   assert.equal(result.result.outcome, 'blocked');
   assert.deepEqual(result.result.changedFiles, ['src/a.ts']);
   assert.equal(await readFile(join(root, 'src/a.ts'), 'utf8'), 'HELLO');
   process.stdout.write(`${JSON.stringify({ status: 'passed', threadId: result.threadId,
     tools, outcome: result.result.outcome, proposalCount: result.proposals.length,
-    worktreeUnchanged: true })}\n`);
+    worktreeUnchanged: true, confinedBridge: Boolean(confined) })}\n`);
 } finally {
   await rm(root, { recursive: true, force: true });
 }
