@@ -15,6 +15,7 @@
     "test": "pnpm build && node scripts/test.mjs",
     "test:fixtures": "node scripts/check-fixtures.mjs",
     "test:cli-package": "node scripts/check-cli-package.mjs",
+    "smoke:codex-host": "node scripts/smoke-codex-host.mjs",
     "verify:protocol": "node scripts/check-protocol.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm schemas:check && pnpm test:fixtures && pnpm test:cli-package",
     "clean": "node scripts/clean.mjs",
