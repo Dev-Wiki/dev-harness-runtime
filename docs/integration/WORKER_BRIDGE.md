@@ -40,3 +40,5 @@ Codex 的可选 Linux 隔离启动器现把 Core 只读目录中的普通文件�
 Core 派发现在有可选提案入口：宿主静止后，Core 在原 Run revision 下保存候选和应用意图，逐项核对冻结路径、原始字节、普通文件及父目录，再由持锁的 Core 写入精确字节或删除，重拍完整快照，并保存绑定前后哈希的应用回执。临时 Git 仓专项覆盖现有文件、嵌套新文件、删除、用户插入修改拒绝和派发时序；中途失败留下的变更只会作为漂移等待显式处置，不能作为成功结果。Codex Adapter 尚未接入这个入口或验证对应宿主回执，因此上述 Core 能力不能单独开启 Codex 自动执行。
 
 宿主网络边界随后改为独立 network namespace。受信启动器先在该命名空间内启动只监听 loopback 的 Relay，再执行 Codex；Relay 通过精确只读挂载的私有 Unix socket 与宿主侧模型代理通信。宿主侧代理只允许固定的 HTTPS CONNECT 目的地主机，并可向可信环境配置的上游 HTTP(S) 代理转发；不开放项目提供的网络目的地。合成目标进程专项证明它无法连接宿主 loopback，却能通过 Unix socket 连接许可模型主机；真实 Codex 0.154.0 合成 `HELLO` thread `01a0b44a-67bc-7410-b259-b37105fe7b13` 完成四个桥接工具调用，模型代理记录 `chatgpt.com` 10 次连接和 1 次拒绝，宿主静止与工作树不变。此证据仍限合成会话，生产 Adapter 的回执、真实 Planning Task 和取消恢复需要单独验证。
+
+Codex RuntimeAdapter 已在合成临时 Git 项目中消费上述边界：先做两次真实 Codex 会话和独立取消的能力探测，Core 随后派发合成 Worker Skill，Codex 通过受限 MCP 提议单文件更新；外层宿主静止后，Core 精确应用提案并保存回执，Adapter 对持久化宿主证据、模型代理审计和命名空间 init 静止进行复核。`pnpm smoke:codex-runtime` 输出 `hostProbe:true`、`coreAppliedProposal:true`、`outcome:BLOCKED`。这仍是显式合成用例；分发 CLI 装配、实际 Planning Task 和多任务 / 中断恢复验收未完成。

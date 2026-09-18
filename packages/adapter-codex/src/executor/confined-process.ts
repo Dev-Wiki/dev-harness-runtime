@@ -11,6 +11,9 @@ export interface ConfinedCodexProcessInput extends CodexProcessInput {
   readonly authFile: string;
   readonly outputSchema: string;
   readonly timeoutMs: number;
+  /** Host-only callback after the monitored namespace is gone, including on failed or cancelled Codex turns. */
+  readonly onHostQuiescent?: (evidence: CodexHostNamespaceResult['evidence'],
+    audit: IsolatedModelHostResult['brokerAudit']) => void;
   readonly bridge: {
     readonly command: string;
     readonly args: readonly string[];
@@ -49,7 +52,8 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
   if (!codeModeStat.isFile() || codeModeStat.isSymbolicLink() || (codeModeStat.mode & 0o111) === 0) {
     throw new CodexProcessError('INVALID_ARGUMENT', 'Codex code-mode host must be a native executable');
   }
-  const env: Record<string, string> = { HOME: '/dhr/home', CODEX_HOME: '/dhr/home', PATH: '/usr/bin', LANG: 'C.UTF-8' };
+  const env: Record<string, string> = { HOME: '/dhr/home', CODEX_HOME: '/dhr/home', PATH: '/usr/bin', LANG: 'C.UTF-8',
+    ...input.request.env };
   const sources = [...new Set([...bridge.hostSources, schema])];
   const raw = await runIsolatedModelHost({ bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
     executable: '/dhr/codex', argv: input.argv, cwd: input.cwd, timeoutMs: input.timeoutMs,
@@ -64,6 +68,7 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
       { source: await realpath('/etc/resolv.conf'), destination: '/etc/resolv.conf' },
     ] }, { allowedHosts: ['api.openai.com', 'auth.openai.com', 'chatgpt.com'],
     ...(input.env.HTTPS_PROXY || input.env.HTTP_PROXY ? { upstreamProxy: input.env.HTTPS_PROXY || input.env.HTTP_PROXY } : {}) });
+  input.onHostQuiescent?.(raw.evidence, raw.brokerAudit);
   for (let offset = 0; offset < raw.stderr.byteLength; offset += 1024 * 1024) {
     await input.log('stderr', raw.stderr.subarray(offset, offset + 1024 * 1024));
   }
@@ -72,7 +77,8 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
       await input.log('events', raw.stdout.subarray(offset, offset + 1024 * 1024));
     }
     if (raw.termination === 'aborted' && input.signal.aborted) throw new DOMException('Codex was cancelled after confirmed host quiescence', 'AbortError');
-    throw new CodexProcessError('EXECUTION_FAILED', 'Confined Codex exited unsuccessfully after confirmed host quiescence');
+    throw new CodexProcessError('EXECUTION_FAILED',
+      `Confined Codex exited ${raw.exitCode ?? 'without an exit code'} (${raw.termination}) after confirmed host quiescence`);
   }
   const events = async function* (): AsyncGenerator<Uint8Array> { yield raw.stdout; };
   const decoded = await decodeCodexExecution({ events: events(), request: input.request, format: 'codex',

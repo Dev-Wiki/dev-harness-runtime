@@ -5,8 +5,10 @@ export { runCodexSession } from './executor/session.js';
 export { createConfinedCodexBridge } from './executor/confined-bridge.js';
 export { runConfinedCodexProcess } from './executor/confined-process.js';
 export { persistCodexSessionProposals } from './executor/proposal-evidence.js';
+export { createCodexRuntimeAdapter, CodexRuntimeError } from './runtime-adapter.js';
+export type { CodexRuntimeOptions } from './runtime-adapter.js';
 
-/** Metadata only: no Executor, Packager or doctor claim. */
+/** Descriptor metadata only; the RuntimeAdapter above requires explicit trusted injection. */
 export const adapter = Object.freeze({
   id: 'codex',
   implemented: false,
