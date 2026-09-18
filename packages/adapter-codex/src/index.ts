@@ -3,6 +3,7 @@ export { CodexEventDecoder, CodexEventError } from './executor/events.js';
 export { handleCodexProposalMcp } from './executor/mcp-server.js';
 export { runCodexSession } from './executor/session.js';
 export { createConfinedCodexBridge } from './executor/confined-bridge.js';
+export { runConfinedCodexProcess } from './executor/confined-process.js';
 export { persistCodexSessionProposals } from './executor/proposal-evidence.js';
 
 /** Metadata only: no Executor, Packager or doctor claim. */

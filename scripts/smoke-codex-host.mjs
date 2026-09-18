@@ -8,6 +8,7 @@ import { delimiter, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCodexSession } from '../packages/adapter-codex/dist/executor/session.js';
 import { createConfinedCodexBridge } from '../packages/adapter-codex/dist/executor/confined-bridge.js';
+import { runConfinedCodexProcess } from '../packages/adapter-codex/dist/executor/confined-process.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const fixture = new URL('../packages/contracts/fixtures/execution/request.json', import.meta.url);
@@ -50,12 +51,20 @@ try {
     ...(process.env.HTTP_PROXY ? { HTTP_PROXY: process.env.HTTP_PROXY } : {}),
     ...(process.env.NO_PROXY ? { NO_PROXY: process.env.NO_PROXY } : {}) };
   const confined = process.env.DHR_TEST_BWRAP;
+  const hostNamespace = process.env.DHR_TEST_CODEX_HOST === '1';
+  assert.ok(!hostNamespace || confined, 'DHR_TEST_CODEX_HOST requires DHR_TEST_BWRAP');
+  const authFile = hostNamespace ? await realpath(join(process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'auth.json')) : undefined;
   let result;
   try {
     result = await runCodexSession({ binary: await binary(), nodeBinary: process.execPath,
       proposalServer: server, request, readCatalog: catalog, prompt, env,
       ...(confined ? { bridgeProcess: (policyPath) => createConfinedCodexBridge({
         bubblewrap: confined, nodeBinary: process.execPath, serverBundle, policyPath, readCatalog: catalog,
+        parentContained: hostNamespace,
+      }) } : {}),
+      ...(hostNamespace ? { hostProcess: (processInput, bridge, outputSchema) => runConfinedCodexProcess({
+        ...processInput, bubblewrap: confined, nodeBinary: process.execPath, authFile, outputSchema,
+        timeoutMs: 120_000, bridge,
       }) } : {}),
       signal: AbortSignal.timeout(120_000),
       log: async (stream, bytes) => { logs[stream].push(Buffer.from(bytes)); } });
@@ -79,7 +88,8 @@ try {
   assert.equal(await readFile(join(root, 'src/a.ts'), 'utf8'), 'HELLO');
   process.stdout.write(`${JSON.stringify({ status: 'passed', threadId: result.threadId,
     tools, outcome: result.result.outcome, proposalCount: result.proposals.length,
-    worktreeUnchanged: true, confinedBridge: Boolean(confined) })}\n`);
+    worktreeUnchanged: true, confinedBridge: Boolean(confined), hostNamespace,
+    hostQuiescence: result.namespaceEvidence ? 'confirmed' : 'unproven' })}\n`);
 } finally {
   await rm(root, { recursive: true, force: true });
 }

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { createConfinedCodexBridge } from '../dist/executor/confined-bridge.js';
+import { runCodexHostNamespace } from '../dist/executor/host-namespace.js';
 import { createCodexBridgePolicy, withCodexBridgePolicy } from '../dist/executor/bridge-policy.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
@@ -58,6 +59,22 @@ test('confined MCP reads only the frozen catalog and cannot see sibling files',
           assert.equal(mcp.code, 0, mcp.stderr);
           const response = JSON.parse(mcp.stdout.trim());
           assert.equal(JSON.parse(response.result.content[0].text).content, 'HELLO');
+          assert.ok(launch.args.includes('--die-with-parent'));
+          const nestedLaunch = await createConfinedCodexBridge({ bubblewrap: process.env.DHR_TEST_BWRAP,
+            nodeBinary: process.execPath, serverBundle: bundle, policyPath, readCatalog: catalog, parentContained: true });
+          try {
+            assert.ok(!nestedLaunch.args.includes('--die-with-parent'));
+            const nested = await runCodexHostNamespace({ bubblewrap: process.env.DHR_TEST_BWRAP,
+              nodeBinary: process.execPath, executable: nestedLaunch.command, argv: nestedLaunch.args,
+              cwd: root, timeoutMs: 10_000, tmpfs: [], environment: { HOME: '/tmp', PATH: '/usr/bin' },
+              mounts: [...nestedLaunch.hostSources.map((source) => ({ source, destination: source })),
+                { source: nestedLaunch.repoMirror, destination: root }],
+              stdin: Buffer.from(`${JSON.stringify(message)}\n`) });
+            assert.equal(nested.exitCode, 0, nested.stderr.toString('utf8'));
+            assert.equal(nested.quiescence, 'confirmed');
+            const nestedResponse = JSON.parse(nested.stdout.toString('utf8').trim());
+            assert.equal(JSON.parse(nestedResponse.result.content[0].text).content, 'HELLO');
+          } finally { await nestedLaunch.close(); }
         } finally { await launch.close(); }
       });
       await writeFile(join(root, 'src/a.ts'), 'CHANGED');

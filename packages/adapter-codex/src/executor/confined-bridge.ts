@@ -13,11 +13,16 @@ export interface ConfinedCodexBridgeInput {
   readonly serverBundle: string;
   readonly policyPath: string;
   readonly readCatalog: WorkerReadCatalog;
+  /** The outer Codex host is already a monitored namespace PID 1. */
+  readonly parentContained?: boolean;
 }
 
 export interface ConfinedCodexBridgeLaunch {
   readonly command: string;
   readonly args: readonly string[];
+  /** Exact outer-namespace mount sources needed when Codex itself runs in a private mount namespace. */
+  readonly hostSources: readonly string[];
+  readonly repoMirror: string;
   readonly close: () => Promise<void>;
 }
 
@@ -99,7 +104,8 @@ export async function createConfinedCodexBridge(input: ConfinedCodexBridgeInput)
     }
     const args = [
       '--unshare-user', '--unshare-ipc', '--unshare-pid', '--unshare-net', '--unshare-uts', '--unshare-cgroup',
-      '--disable-userns', '--assert-userns-disabled', '--die-with-parent', '--as-pid-1', '--new-session',
+      '--disable-userns', '--assert-userns-disabled', ...(input.parentContained ? [] : ['--die-with-parent']),
+      '--as-pid-1', '--new-session',
       '--cap-drop', 'ALL', '--clearenv', '--ro-bind', '/usr', '/usr',
       '--symlink', 'usr/bin', '/bin', '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64',
       '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev', '--dir', '/dhr',
@@ -110,7 +116,8 @@ export async function createConfinedCodexBridge(input: ConfinedCodexBridgeInput)
       '--setenv', 'PATH', '/usr/bin', '--setenv', 'LANG', 'C.UTF-8', '--chdir', view.policy.repoRoot,
       '--', '/dhr/node', '/dhr/server.mjs', '/dhr/policy.json',
     ];
-    return { command: binary, args, close: async () => { await rm(stage, { recursive: true, force: true }); } };
+    return { command: binary, args, hostSources: [binary, node, bundle, policy, mirror], repoMirror: mirror,
+      close: async () => { await rm(stage, { recursive: true, force: true }); } };
   } catch (error) {
     await rm(stage, { recursive: true, force: true });
     throw error;

@@ -49,6 +49,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
 - Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
 - `pnpm smoke:codex-host` 是显式选用的合成宿主测试：先 `pnpm build`，并要求本机已登录的 Codex CLI；只在临时目录向模型发送合成请求、Schema 和 `HELLO` 文件内容，不在常规 `pnpm verify` 中运行。可显式设置 `DHR_TEST_BWRAP` 为可信 bubblewrap 的绝对路径，改由隔离 MCP 子进程处理桥接；未设置时运行直接子进程模式。它验证真实桥接与解码入口，不构成实际 Planning Task 或整个宿主进程树的授权证据，见 [K5 验证记录](docs/verification/K5.md)。
+- `DHR_TEST_BWRAP=<absolute> DHR_TEST_CODEX_HOST=1 pnpm smoke:codex-host` 在上述合成输入上再将 Codex 宿主放入受监控的独立 PID 命名空间，MCP bridge 放入嵌套的无网络命名空间。`pnpm smoke:codex-host-namespace` 只使用合成空目录检查宿主 PID 1 会话；两者都不属于常规 full，也不证明生产 Adapter 的完整授权。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

@@ -34,3 +34,5 @@ Codex 本地只读桥接现能从冻结路径 / SHA-256 policy 列目录、分�
 Adapter 的 `persistCodexSessionProposals` 已将传输结果中的文本 / 删除提议交由 Core 在当前 Run revision 下存为不可变候选证据；跨包测试覆盖文件未改动与不一致声明拒绝。仍需 Core 的受控应用、结束快照和宿主控制回执，候选证据本身不能开启自动 Executor。
 
 Codex 的可选 Linux 隔离启动器现把 Core 只读目录中的普通文件逐个校验 SHA-256、大小和单链接身份，复制到单次私有镜像，再将镜像、桥接 policy 和独立 bundle 以只读挂载交给 bubblewrap 子进程。该子进程清空环境、隔离网络与 PID，不挂载工作树其他文件或宿主凭据；单次镜像限 64 MiB、单文件限 16 MiB，超限拒绝。合成 `HELLO` 本地子进程测试证明未入目录的同级文件和宿主 Codex 凭据不可见，快照漂移、symlink / hardlink 均被拒绝；真实 Codex thread `01a0b406-2736-7e00-8cf5-4e7a57e6c5da` 通过该子进程完成 list / search / read / propose 并保持工作树不变。这只证明本次 MCP 子进程的隔离路径可用；没有 Codex 宿主整个进程树静止、原生工具目录封闭、Core 精确应用与生产能力 probe，不能注册自动 Executor。
+
+宿主侧又加入受信的 Linux PID 1 控制器：bubblewrap 在 `info-fd` / `block-fd` 闸门下建立 user、mount、PID、IPC、UTS 和 cgroup 命名空间，宿主控制器核对 init PID、父进程和命名空间身份后才放行固定 bootstrap；bootstrap 确认自身为 PID 1 后执行 Codex。宿主只挂载合成仓库镜像、Codex 主程序及单个辅助程序、只读认证文件、必要系统证书和内层 bridge 的精确来源；Codex 宿主保留网络以调用模型，内层 bridge 仍无网络。宿主退出后控制器等待命名空间 init 消失，取消、控制器被杀和独立后代进程专项通过。嵌套模式不再把内层 bridge 绑定到 Codex 临时辅助进程的生死，而由外层 PID 命名空间收束整棵树；合成真实 Codex 会话连续两次完成四个桥接调用并取得静止回执。此前一次内层传输中断不计为通过。该证据覆盖本机 0.154.0 的合成会话，不等于实际 Planning Task、工具目录完整拒绝、受控应用或生产 Adapter 回执；自动执行继续关闭。
