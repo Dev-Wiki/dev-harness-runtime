@@ -105,3 +105,30 @@ test('Codex delete proposal requires a matching path receipt', () => {
   assert.throws(() => bad.consume(event('item.completed', { item: { ...item, status: 'completed', error: null,
     result: { content: [{ type: 'text', text: 'PROPOSED_DELETE wrong' }] } } })), { code: 'INVALID_RESULT' });
 });
+
+test('Codex read and list calls require paired bounded receipts', () => {
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+  const list = { id: 'item_5', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_list_paths',
+    arguments: { prefix: 'src', after: '' } };
+  decoder.consume(event('item.started', { item: list }));
+  decoder.consume(event('item.completed', { item: { ...list, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify({ paths: ['src/a.ts'], next: null }) }] } } }));
+  const read = { id: 'item_6', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_read_text',
+    arguments: { path: 'src/a.ts', offset: 0 } };
+  decoder.consume(event('item.started', { item: read }));
+  decoder.consume(event('item.completed', { item: { ...read, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify({ path: 'src/a.ts', content: 'HELLO',
+      sha256: createHash('sha256').update('HELLO').digest('hex'), offset: 0, nextOffset: null }) }] } } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.deepEqual(decoder.proposals(), []);
+  assert.equal(decoder.finish(request).result.outcome, 'blocked');
+
+  const bad = new CodexEventDecoder();
+  bad.consume(event('thread.started', { thread_id: threadId })); bad.consume(event('turn.started'));
+  bad.consume(event('item.started', { item: read }));
+  assert.throws(() => bad.consume(event('item.completed', { item: { ...read, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify({ path: '../outside', content: 'NO',
+      sha256: 'a'.repeat(64), offset: 0, nextOffset: null }) }] } } })), { code: 'INVALID_RESULT' });
+});

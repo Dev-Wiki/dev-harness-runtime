@@ -5,7 +5,8 @@ import { createCodexInvocation } from '../dist/executor/invocation.js';
 
 const request = JSON.parse(readFileSync(new URL('../../contracts/fixtures/execution/request.json', import.meta.url), 'utf8'));
 const input = { request, prompt: 'one task', nodeBinary: '/usr/bin/node',
-  proposalServer: '/opt/dhr/mcp-server.js', outputSchema: '/opt/dhr/result.schema.json' };
+  proposalServer: '/opt/dhr/mcp-server.js', readPolicy: '/opt/dhr/read-policy.json',
+  outputSchema: '/opt/dhr/result.schema.json' };
 
 test('Codex Worker invocation requests isolated configuration and a required proposal MCP entry', () => {
   const argv = createCodexInvocation(input);
@@ -15,7 +16,7 @@ test('Codex Worker invocation requests isolated configuration and a required pro
   assert.ok(!argv.includes('resume'));
   assert.ok(argv.at(-1).startsWith('one task\n\n## Codex 结构化结果'));
   assert.match(argv.at(-1), /顶层仅含 result/u);
-  assert.ok(argv.includes('mcp_servers.dhr_proposal.enabled_tools=["dhr_propose_text","dhr_propose_delete"]'));
+  assert.ok(argv.includes('mcp_servers.dhr_proposal.enabled_tools=["dhr_propose_text","dhr_propose_delete","dhr_list_paths","dhr_read_text"]'));
   assert.ok(argv.includes('mcp_servers.dhr_proposal.required=true'));
   assert.ok(argv.includes('web_search="disabled"'));
   for (const tool of ['apps', 'browser_use', 'browser_use_external', 'browser_use_full_cdp_access', 'computer_use', 'plugins', 'shell_tool']) {

@@ -7,12 +7,13 @@ export interface CodexInvocationInput {
   readonly prompt: string;
   readonly nodeBinary: string;
   readonly proposalServer: string;
+  readonly readPolicy: string;
   readonly outputSchema: string;
 }
 
 /** Fixed host entry. It narrows configuration but does not itself enforce a tool boundary. */
 export function createCodexInvocation(input: CodexInvocationInput): readonly string[] {
-  for (const path of [input.request.repoRoot, input.nodeBinary, input.proposalServer, input.outputSchema]) {
+  for (const path of [input.request.repoRoot, input.nodeBinary, input.proposalServer, input.readPolicy, input.outputSchema]) {
     if (!isAbsolute(path) || normalize(path) !== path || path.includes('\0')) {
       throw new CodexProcessError('INVALID_ARGUMENT', 'Codex invocation paths must be normalized and absolute');
     }
@@ -33,11 +34,13 @@ export function createCodexInvocation(input: CodexInvocationInput): readonly str
     '--output-schema', input.outputSchema, '-C', input.request.repoRoot,
     ...config('web_search', '"disabled"'),
     ...config('mcp_servers.dhr_proposal.command', JSON.stringify(input.nodeBinary)),
-    ...config('mcp_servers.dhr_proposal.args', JSON.stringify([input.proposalServer])),
+    ...config('mcp_servers.dhr_proposal.args', JSON.stringify([input.proposalServer, input.readPolicy])),
     ...config('mcp_servers.dhr_proposal.required', 'true'),
-    ...config('mcp_servers.dhr_proposal.enabled_tools', '["dhr_propose_text","dhr_propose_delete"]'),
+    ...config('mcp_servers.dhr_proposal.enabled_tools', '["dhr_propose_text","dhr_propose_delete","dhr_list_paths","dhr_read_text"]'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_propose_text.approval_mode', '"approve"'),
     ...config('mcp_servers.dhr_proposal.tools.dhr_propose_delete.approval_mode', '"approve"'),
+    ...config('mcp_servers.dhr_proposal.tools.dhr_list_paths.approval_mode', '"approve"'),
+    ...config('mcp_servers.dhr_proposal.tools.dhr_read_text.approval_mode', '"approve"'),
     `${input.prompt}\n\n## Codex 结构化结果\n最终只返回一个 JSON 对象，顶层仅含 result；result 是本次 TaskExecutionResult。按输出 Schema 给所有可选属性填 null，Core 会重新核对请求身份、结果与实际文件。不要使用 Markdown 代码块。`,
   ];
 }

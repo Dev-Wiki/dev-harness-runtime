@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
-import { createInterface } from 'node:readline';
+import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isRepoPath } from '@dev-harness-runtime/contracts';
+import { CodexReadView } from './read-view.js';
 
 type RpcId = string | number;
 interface RpcRequest { jsonrpc: '2.0'; id?: RpcId; method: string; params?: unknown }
@@ -17,6 +18,18 @@ const deleteTool = {
   description: 'Propose deletion of one Task-scoped repository file. This records a proposal only; the trusted Runtime decides whether to apply it.',
   inputSchema: { type: 'object', properties: { path: { type: 'string' } },
     required: ['path'], additionalProperties: false },
+};
+const listTool = {
+  name: 'dhr_list_paths',
+  description: 'List only files in the frozen Core snapshot, at most 100 paths per page.',
+  inputSchema: { type: 'object', properties: { prefix: { type: 'string' }, after: { type: 'string' } },
+    required: ['prefix', 'after'], additionalProperties: false },
+};
+const readTool = {
+  name: 'dhr_read_text',
+  description: 'Read a bounded page of one frozen repository text file, verifying its snapshot hash.',
+  inputSchema: { type: 'object', properties: { path: { type: 'string' }, offset: { type: 'integer', minimum: 0 } },
+    required: ['path', 'offset'], additionalProperties: false },
 };
 const failure = (message: string) => ({ isError: true, content: [{ type: 'text', text: message }] });
 
@@ -60,11 +73,73 @@ export function handleCodexProposalMcp(value: unknown): RpcResponse | null {
     text: `PROPOSED ${createHash('sha256').update(args.content, 'utf8').digest('hex')}` }] } };
 }
 
+/** Read tools are present only when a trusted controller supplies a frozen policy. */
+export async function handleCodexBridgeMcp(value: unknown, view: CodexReadView): Promise<RpcResponse | null> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return handleCodexProposalMcp(value);
+  const input = value as Partial<RpcRequest>;
+  if (!Object.hasOwn(input, 'id') || (typeof input.id !== 'string' && typeof input.id !== 'number')
+    || input.jsonrpc !== '2.0' || typeof input.method !== 'string') return handleCodexProposalMcp(value);
+  if (input.method === 'tools/list') return { jsonrpc: '2.0', id: input.id,
+    result: { tools: [textTool, deleteTool, listTool, readTool] } };
+  if (input.method !== 'tools/call' || input.params === null || typeof input.params !== 'object'
+    || Array.isArray(input.params) || !('name' in input.params)
+    || (input.params.name !== listTool.name && input.params.name !== readTool.name)) {
+    return handleCodexProposalMcp(value);
+  }
+  const params = input.params;
+  if (!('arguments' in params) || params.arguments === null || typeof params.arguments !== 'object'
+    || Array.isArray(params.arguments)) return { jsonrpc: '2.0', id: input.id, result: failure('Invalid read arguments') };
+  const args = params.arguments as Record<string, unknown>;
+  try {
+    if (params.name === listTool.name) {
+      if (Object.keys(args).sort().join(',') !== 'after,prefix' || typeof args.prefix !== 'string' || typeof args.after !== 'string') {
+        return { jsonrpc: '2.0', id: input.id, result: failure('List requires prefix and after strings') };
+      }
+      return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
+        text: JSON.stringify(view.list(args.prefix, args.after)) }] } };
+    }
+    if (Object.keys(args).sort().join(',') !== 'offset,path' || typeof args.path !== 'string'
+      || !Number.isSafeInteger(args.offset) || (args.offset as number) < 0) {
+      return { jsonrpc: '2.0', id: input.id, result: failure('Read requires path and nonnegative offset') };
+    }
+    return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
+      text: JSON.stringify(await view.readPage(args.path, args.offset as number)) }] } };
+  } catch {
+    return { jsonrpc: '2.0', id: input.id, result: failure('Frozen read failed') };
+  }
+}
+
 async function serve(): Promise<void> {
-  for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
+  let view: CodexReadView | undefined;
+  if (process.argv[2]) {
+    const bytes = await readFile(process.argv[2]);
+    if (bytes.byteLength > 32 * 1024 * 1024) throw new Error('Read policy is too large');
+    view = await CodexReadView.create(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+  }
+  const lines = async function* (): AsyncGenerator<string> {
+    let parts: Buffer[] = [];
+    let size = 0;
+    const decoder = new TextDecoder('utf-8', { fatal: true });
+    for await (const value of process.stdin) {
+      const chunk = Buffer.from(value);
+      let start = 0;
+      while (start < chunk.length) {
+        const end = chunk.indexOf(10, start);
+        const piece = chunk.subarray(start, end === -1 ? chunk.length : end);
+        size += piece.length;
+        if (size > 32 * 1024 * 1024) throw new Error('MCP request line is too large');
+        parts.push(piece);
+        if (end === -1) break;
+        yield decoder.decode(Buffer.concat(parts, size));
+        parts = []; size = 0; start = end + 1;
+      }
+    }
+    if (size > 0) yield decoder.decode(Buffer.concat(parts, size));
+  };
+  for await (const line of lines()) {
     let message: unknown;
     try { message = JSON.parse(line); } catch { continue; }
-    const response = handleCodexProposalMcp(message);
+    const response = view ? await handleCodexBridgeMcp(message, view) : handleCodexProposalMcp(message);
     if (response !== null) process.stdout.write(`${JSON.stringify(response)}\n`);
   }
 }
