@@ -59,10 +59,15 @@ export class CodexEventDecoder {
         if (!this.turnStarted || !('item' in event) || event.item === null || typeof event.item !== 'object') {
           throw new CodexEventError('INVALID_RESULT', 'Codex started an item outside the turn');
         }
-        if ('type' in event.item && event.item.type === 'mcp_tool_call') {
+        if (!('type' in event.item) || typeof event.item.type !== 'string') {
+          throw new CodexEventError('INVALID_RESULT', 'Codex started an item without a type');
+        }
+        if (event.item.type === 'mcp_tool_call') {
           const proposal = this.proposalItem(event.item);
           if (this.pendingProposals.has(proposal.id)) throw new CodexEventError('INVALID_RESULT', 'Duplicate Codex proposal call');
           this.pendingProposals.set(proposal.id, { path: proposal.path, content: proposal.content });
+        } else if (event.item.type !== 'agent_message' && event.item.type !== 'reasoning') {
+          throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex started a tool outside the proposal bridge');
         }
       } else if (event.type === 'item.completed') {
         if (!this.turnStarted) throw new CodexEventError('INVALID_RESULT', 'Codex item preceded the turn');
@@ -89,7 +94,10 @@ export class CodexEventDecoder {
           this.acceptedProposals.push({ path: proposal.path, content: proposal.content });
           return;
         }
-        if (event.item.type !== 'agent_message') return;
+        if (event.item.type === 'reasoning') return;
+        if (event.item.type !== 'agent_message') {
+          throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex completed a tool outside the proposal bridge');
+        }
         if (!('text' in event.item) || typeof event.item.text !== 'string') {
           throw new CodexEventError('INVALID_RESULT', 'Codex final message is not text');
         }
@@ -101,6 +109,8 @@ export class CodexEventDecoder {
         this.completed = true;
       } else if (event.type === 'turn.failed' || event.type === 'error') {
         throw new CodexEventError('CAPABILITY_MISSING', 'Codex turn failed');
+      } else {
+        throw new CodexEventError('INVALID_RESULT', 'Codex emitted an unsupported event type');
       }
     } catch (error) { this.failed = true; throw error; }
   }

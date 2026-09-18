@@ -75,3 +75,15 @@ test('Codex proposal receipts must match one completed MCP call before staging',
   foreign.consume(event('thread.started', { thread_id: threadId })); foreign.consume(event('turn.started'));
   assert.throws(() => foreign.consume(event('item.started', { item: { ...proposal, server: 'other' } })), { code: 'AUTHORIZATION_VIOLATION' });
 });
+
+test('Codex decoder rejects native tools and unknown event kinds before a result can be accepted', () => {
+  for (const type of ['command_execution', 'file_change', 'web_search']) {
+    const decoder = new CodexEventDecoder();
+    decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+    assert.throws(() => decoder.consume(event('item.started', { item: { id: 'item_2', type } })), { code: 'AUTHORIZATION_VIOLATION' });
+    assert.throws(() => decoder.finish(request), { code: 'INVALID_RESULT' });
+  }
+  const updated = new CodexEventDecoder();
+  updated.consume(event('thread.started', { thread_id: threadId })); updated.consume(event('turn.started'));
+  assert.throws(() => updated.consume(event('item.updated', { item: { id: 'item_2', type: 'command_execution' } })), { code: 'INVALID_RESULT' });
+});
