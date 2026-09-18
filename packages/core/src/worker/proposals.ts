@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
-import { parseContract, validateResultForRequest, type TaskExecutionRequest, type TaskExecutionResult } from '@dev-harness-runtime/contracts';
+import { parseContract, validateResultForRequest, type Snapshot, type TaskExecutionRequest, type TaskExecutionResult } from '@dev-harness-runtime/contracts';
 import type { CapturedSnapshot } from '../snapshot/types.js';
+import { serializeSnapshot, snapshotBoundaryHash } from '../snapshot/capture.js';
+import { compareSnapshots } from '../snapshot/guard.js';
 import { createWorkerWritePolicy } from './bridge-policy.js';
 
 export class WorkerProposalError extends Error {
@@ -34,6 +36,7 @@ export interface WorkerProposalRecord {
 /** Host-owned, in-memory staging only. This never writes the project or proves confinement. */
 export class WorkerProposalCollector {
   private readonly request: TaskExecutionRequest;
+  private readonly beforeSnapshot: Snapshot;
   private readonly allowed: (path: string) => boolean;
   private readonly baseline = new Map<string, { type: string; hash: string | null }>();
   private readonly proposals = new Map<string, WorkerFileProposal>();
@@ -43,11 +46,15 @@ export class WorkerProposalCollector {
   constructor(requestInput: TaskExecutionRequest, before: CapturedSnapshot) {
     const request = parseContract('taskExecutionRequest', requestInput);
     const snapshot = parseContract('snapshot', before.snapshot);
-    if (before.hash !== request.snapshotHash || snapshot.runId !== request.runId
-      || snapshot.repoIdentity.repoRoot !== request.repoRoot) {
+    if (before.hash !== request.snapshotHash || before.hash !== createHash('sha256').update(serializeSnapshot(snapshot)).digest('hex')
+      || before.boundaryHash !== snapshotBoundaryHash(snapshot)
+      || JSON.stringify(before.dirtyPaths) !== JSON.stringify(snapshot.dirtyPaths)
+      || JSON.stringify(before.stagedPaths) !== JSON.stringify(snapshot.stagedPaths)
+      || snapshot.runId !== request.runId || snapshot.repoIdentity.repoRoot !== request.repoRoot) {
       throw new WorkerProposalError('DRIFT_DETECTED', 'Proposal staging does not bind the Core before snapshot');
     }
-    this.request = request;
+    this.request = structuredClone(request);
+    this.beforeSnapshot = structuredClone(snapshot);
     this.allowed = createWorkerWritePolicy(request.scope);
     for (const entry of snapshot.paths) {
       this.baseline.set(entry.path, { type: entry.type, hash: entry.type === 'file' ? entry.rawContentHash : null });
@@ -117,6 +124,51 @@ export class WorkerProposalCollector {
     const declared = [...bound.changedFiles].sort();
     if (proposed.length !== declared.length || proposed.some((path, index) => path !== declared[index])) {
       throw new WorkerProposalError('INVALID_RESULT', 'Worker result changedFiles differs from accepted proposals');
+    }
+  }
+
+  /** Compare a Core-captured ending snapshot to the exact proposed bytes and file operations. */
+  assertAppliedSnapshot(after: CapturedSnapshot): void {
+    const snapshot = parseContract('snapshot', after.snapshot);
+    if (after.hash !== createHash('sha256').update(serializeSnapshot(snapshot)).digest('hex')
+      || after.boundaryHash !== snapshotBoundaryHash(snapshot)
+      || JSON.stringify(after.dirtyPaths) !== JSON.stringify(snapshot.dirtyPaths)
+      || JSON.stringify(after.stagedPaths) !== JSON.stringify(snapshot.stagedPaths)
+      || snapshot.runId !== this.request.runId
+      || snapshot.repoIdentity.repoRoot !== this.request.repoRoot
+      || snapshot.repoIdentity.privateGitDir !== this.beforeSnapshot.repoIdentity.privateGitDir
+      || snapshot.repoIdentity.head !== this.beforeSnapshot.repoIdentity.head
+      || snapshot.repoIdentity.branch !== this.beforeSnapshot.repoIdentity.branch
+      || snapshot.indexFingerprint !== this.beforeSnapshot.indexFingerprint
+      || JSON.stringify(snapshot.protocolSource) !== JSON.stringify(this.beforeSnapshot.protocolSource)
+      || snapshot.adapterConfigHash !== this.beforeSnapshot.adapterConfigHash) {
+      throw new WorkerProposalError('DRIFT_DETECTED', 'Ending snapshot does not bind the unchanged Worker boundary');
+    }
+    const proposed = this.list();
+    const paths = proposed.map((file) => file.path).sort();
+    const delta = compareSnapshots(this.beforeSnapshot, snapshot);
+    if (JSON.stringify(delta.paths) !== JSON.stringify(paths)
+      || JSON.stringify(delta.contentPaths) !== JSON.stringify(paths)) {
+      throw new WorkerProposalError('AUTHORIZATION_VIOLATION', 'Ending snapshot paths differ from accepted proposals');
+    }
+    const afterPaths = new Map(snapshot.paths.map((entry) => [entry.path, entry]));
+    const beforePaths = new Map(this.beforeSnapshot.paths.map((entry) => [entry.path, entry]));
+    for (const file of proposed) {
+      const current = afterPaths.get(file.path);
+      const previous = beforePaths.get(file.path);
+      if (file.content === null) {
+        if ((previous?.index.length ?? 0) > 0 && (current?.type !== 'missing' || current.deleted !== true)) {
+          throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Tracked deletion has no missing entry: ${file.path}`);
+        }
+        if (current !== undefined && (current.type !== 'missing' || current.deleted !== true
+          || JSON.stringify(current.index) !== JSON.stringify(previous?.index ?? []))) {
+          throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Deleted proposal remains present: ${file.path}`);
+        }
+      } else if (current?.type !== 'file' || current.rawContentHash !== file.afterHash || current.deleted !== false
+        || current.mode !== (previous?.type === 'file' ? previous.mode : '100644')
+        || JSON.stringify(current.index) !== JSON.stringify(previous?.index ?? [])) {
+        throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Applied bytes or mode differ from proposal: ${file.path}`);
+      }
     }
   }
 

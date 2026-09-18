@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { CodexEventDecoder } from '../../../packages/adapter-codex/dist/executor/events.js';
-import { serializeSnapshot } from '../../../packages/core/dist/snapshot/capture.js';
+import { serializeSnapshot, snapshotBoundaryHash } from '../../../packages/core/dist/snapshot/capture.js';
 import { WorkerProposalCollector } from '../../../packages/core/dist/worker/proposals.js';
 
 const fixture = (group, name) => JSON.parse(readFileSync(new URL(`../../../packages/contracts/fixtures/${group}/${name}.json`, import.meta.url), 'utf8'));
@@ -11,7 +11,7 @@ const snapshot = fixture('state', 'snapshot');
 const hash = createHash('sha256').update(serializeSnapshot(snapshot)).digest('hex');
 const request = { ...fixture('execution', 'request'), snapshotHash: hash };
 const result = { ...fixture('execution', 'result-blocked'), snapshotHash: hash, changedFiles: ['src/a.ts'] };
-const before = { snapshot, hash, boundaryHash: 'a'.repeat(64), dirtyPaths: snapshot.dirtyPaths, stagedPaths: [] };
+const before = { snapshot, hash, boundaryHash: snapshotBoundaryHash(snapshot), dirtyPaths: snapshot.dirtyPaths, stagedPaths: [] };
 const line = (type, item) => JSON.stringify({ type, ...(item ? { item } : {}) });
 
 test('a Codex MCP receipt crosses into Core staging without modifying the project', () => {
