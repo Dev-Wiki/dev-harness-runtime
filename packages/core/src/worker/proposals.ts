@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { parseContract, type TaskExecutionRequest } from '@dev-harness-runtime/contracts';
+import { parseContract, validateResultForRequest, type TaskExecutionRequest, type TaskExecutionResult } from '@dev-harness-runtime/contracts';
 import type { CapturedSnapshot } from '../snapshot/types.js';
 import { createWorkerWritePolicy } from './bridge-policy.js';
 
@@ -18,6 +18,7 @@ export interface WorkerFileProposal {
 
 /** Host-owned, in-memory staging only. This never writes the project or proves confinement. */
 export class WorkerProposalCollector {
+  private readonly request: TaskExecutionRequest;
   private readonly allowed: (path: string) => boolean;
   private readonly baseline = new Map<string, { type: string; hash: string | null }>();
   private readonly proposals = new Map<string, WorkerFileProposal>();
@@ -30,6 +31,7 @@ export class WorkerProposalCollector {
       || snapshot.repoIdentity.repoRoot !== request.repoRoot) {
       throw new WorkerProposalError('DRIFT_DETECTED', 'Proposal staging does not bind the Core before snapshot');
     }
+    this.request = request;
     this.allowed = createWorkerWritePolicy(request.scope);
     for (const entry of snapshot.paths) {
       this.baseline.set(entry.path, { type: entry.type, hash: entry.type === 'file' ? entry.rawContentHash : null });
@@ -45,17 +47,23 @@ export class WorkerProposalCollector {
     return initial;
   }
 
-  write(path: string, bytes: Uint8Array): WorkerFileProposal {
+  write(path: string, bytes: Uint8Array): WorkerFileProposal | null {
     const initial = this.requirePath(path);
     if (!(bytes instanceof Uint8Array) || bytes.byteLength > 4 * 1024 * 1024) {
       throw new WorkerProposalError('INVALID_RESULT', 'Proposal content must be at most 4 MiB of bytes');
     }
     const content = Uint8Array.from(bytes);
     const previous = this.proposals.get(path);
+    const afterHash = createHash('sha256').update(content).digest('hex');
+    if (initial?.type === 'file' && initial.hash === afterHash) {
+      this.totalBytes -= previous?.content?.byteLength ?? 0;
+      this.proposals.delete(path);
+      return null;
+    }
     const total = this.totalBytes - (previous?.content?.byteLength ?? 0) + content.byteLength;
     if (total > 16 * 1024 * 1024) throw new WorkerProposalError('INVALID_RESULT', 'Proposal set exceeds 16 MiB');
     const value: WorkerFileProposal = { path, beforeHash: initial?.hash ?? null,
-      afterHash: createHash('sha256').update(content).digest('hex'), content };
+      afterHash, content };
     this.proposals.set(path, value); this.totalBytes = total;
     return { ...value, content: Uint8Array.from(content) };
   }
@@ -78,5 +86,15 @@ export class WorkerProposalCollector {
   list(): readonly WorkerFileProposal[] {
     return [...this.proposals.values()].sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)))
       .map((value) => ({ ...value, content: value.content === null ? null : Uint8Array.from(value.content) }));
+  }
+
+  /** A structured result may describe only the file changes accepted by this staging boundary. */
+  assertDeclaredChanges(result: TaskExecutionResult): void {
+    const bound = validateResultForRequest(this.request, result);
+    const proposed = [...this.proposals.keys()].sort();
+    const declared = [...bound.changedFiles].sort();
+    if (proposed.length !== declared.length || proposed.some((path, index) => path !== declared[index])) {
+      throw new WorkerProposalError('INVALID_RESULT', 'Worker result changedFiles differs from accepted proposals');
+    }
   }
 }

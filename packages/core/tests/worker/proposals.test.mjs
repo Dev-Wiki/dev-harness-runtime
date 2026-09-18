@@ -12,6 +12,7 @@ const request = { ...fixture('execution', 'request'), snapshotHash: hash,
   scope: { ...fixture('execution', 'request').scope,
     files: ['src/a.ts', 'src/link'], directories: ['src/generated'] } };
 const before = { snapshot, hash, boundaryHash: 'a'.repeat(64), dirtyPaths: snapshot.dirtyPaths, stagedPaths: [] };
+const blocked = { ...fixture('execution', 'result-blocked'), snapshotHash: hash };
 
 test('staged proposals bind to the Core snapshot, copy bytes and preserve original hashes', () => {
   const collector = new WorkerProposalCollector(request, before);
@@ -29,6 +30,9 @@ test('staged proposals bind to the Core snapshot, copy bytes and preserve origin
   assert.equal(collector.delete('src/generated/new.ts'), null);
   assert.equal(collector.delete('src/a.ts').afterHash, null);
   assert.deepEqual(collector.list().map((entry) => entry.path), ['src/a.ts']);
+  assert.doesNotThrow(() => collector.assertDeclaredChanges({ ...blocked, changedFiles: ['src/a.ts'] }));
+  assert.throws(() => collector.assertDeclaredChanges(blocked), { code: 'INVALID_RESULT' });
+  assert.throws(() => collector.assertDeclaredChanges({ ...blocked, changedFiles: ['src/generated/new.ts'] }), { code: 'INVALID_RESULT' });
 });
 
 test('proposal collector rejects drift, foreign paths, symlinks and oversized content before project writes', () => {
@@ -40,4 +44,17 @@ test('proposal collector rejects drift, foreign paths, symlinks and oversized co
   assert.throws(() => collector.write('src/link', Buffer.from('x')), { code: 'AUTHORIZATION_VIOLATION' });
   assert.throws(() => collector.write('src/a.ts', Buffer.alloc(4 * 1024 * 1024 + 1)), { code: 'INVALID_RESULT' });
   assert.deepEqual(collector.list(), []);
+});
+
+test('a proposal restoring the baseline is a no-op and is not a declared change', () => {
+  const baselineHash = createHash('sha256').update('same').digest('hex');
+  const original = { ...snapshot, paths: snapshot.paths.map((entry) => entry.path === 'src/a.ts'
+    ? { ...entry, rawContentHash: baselineHash } : entry) };
+  const originalHash = createHash('sha256').update(serializeSnapshot(original)).digest('hex');
+  const staged = new WorkerProposalCollector({ ...request, snapshotHash: originalHash },
+    { ...before, snapshot: original, hash: originalHash });
+  staged.write('src/a.ts', Buffer.from('changed'));
+  assert.equal(staged.write('src/a.ts', Buffer.from('same')), null);
+  assert.deepEqual(staged.list(), []);
+  assert.doesNotThrow(() => staged.assertDeclaredChanges({ ...blocked, snapshotHash: originalHash }));
 });

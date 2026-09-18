@@ -10,7 +10,7 @@ const fixture = (group, name) => JSON.parse(readFileSync(new URL(`../../../packa
 const snapshot = fixture('state', 'snapshot');
 const hash = createHash('sha256').update(serializeSnapshot(snapshot)).digest('hex');
 const request = { ...fixture('execution', 'request'), snapshotHash: hash };
-const result = { ...fixture('execution', 'result-blocked'), snapshotHash: hash };
+const result = { ...fixture('execution', 'result-blocked'), snapshotHash: hash, changedFiles: ['src/a.ts'] };
 const before = { snapshot, hash, boundaryHash: 'a'.repeat(64), dirtyPaths: snapshot.dirtyPaths, stagedPaths: [] };
 const line = (type, item) => JSON.stringify({ type, ...(item ? { item } : {}) });
 
@@ -28,6 +28,7 @@ test('a Codex MCP receipt crosses into Core staging without modifying the projec
   assert.equal(decoder.finish(request).result.outcome, 'blocked');
   const collector = new WorkerProposalCollector(request, before);
   for (const proposal of decoder.proposals()) collector.write(proposal.path, Buffer.from(proposal.content, 'utf8'));
+  collector.assertDeclaredChanges(decoder.finish(request).result);
   assert.deepEqual(collector.list().map(({ path }) => path), ['src/a.ts']);
   assert.equal(collector.list()[0].beforeHash, 'a'.repeat(64));
 });
