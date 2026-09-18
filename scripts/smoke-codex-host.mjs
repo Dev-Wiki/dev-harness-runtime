@@ -6,10 +6,7 @@ import { constants } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createCodexBridgePolicy, withCodexBridgePolicy } from '../packages/adapter-codex/dist/executor/bridge-policy.js';
-import { createCodexInvocation } from '../packages/adapter-codex/dist/executor/invocation.js';
-import { runCodexProcess } from '../packages/adapter-codex/dist/executor/process.js';
-import { withCodexResultSchema } from '../packages/adapter-codex/dist/executor/result-schema.js';
+import { runCodexSession } from '../packages/adapter-codex/dist/executor/session.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const fixture = new URL('../packages/contracts/fixtures/execution/request.json', import.meta.url);
@@ -39,25 +36,21 @@ try {
     scope: { ...original.scope, files: ['src/a.ts'] } };
   const catalog = { repoRoot: root, runId: request.runId, requestId: request.requestId,
     snapshotHash: request.snapshotHash, files: [{ path: 'src/a.ts', sha256: hash('HELLO') }] };
-  const policy = createCodexBridgePolicy(request, catalog);
   const expected = { result: { schemaVersion: 1, runId: request.runId, taskId: request.taskId,
     attempt: request.attempt, requestId: request.requestId, snapshotHash: request.snapshotHash,
     summary: 'Synthetic bridge smoke.', verification: [], changedFiles: ['src/a.ts'],
     rawResultRef: null, outcome: 'blocked', needsPlanning: false, reason: 'Synthetic smoke only.', closure: null } };
   const prompt = `This is a synthetic bridge test in an isolated temporary directory. First call dhr_list_paths with {"prefix":"src","after":""}. Then call dhr_search_text with {"query":"ELL","prefix":"src","after":""}. Then call dhr_read_text with {"path":"src/a.ts","offset":0}. Then call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"}. Do not use any other tools. Finally return exactly this JSON object: ${JSON.stringify(expected)}`;
   const logs = { events: [], stderr: [] };
-  const result = await withCodexBridgePolicy(policy, (bridgePolicy) => withCodexResultSchema(async (outputSchema) => {
-    const argv = createCodexInvocation({ request, prompt, nodeBinary: process.execPath,
-      proposalServer: server, bridgePolicy, outputSchema });
-    const env = { HOME: homedir(), PATH: process.platform === 'win32' ? process.env.PATH ?? '' : '/usr/bin:/bin',
-      LANG: 'C.UTF-8', ...(process.env.CODEX_HOME ? { CODEX_HOME: process.env.CODEX_HOME } : {}),
-      ...(process.env.HTTPS_PROXY ? { HTTPS_PROXY: process.env.HTTPS_PROXY } : {}),
-      ...(process.env.HTTP_PROXY ? { HTTP_PROXY: process.env.HTTP_PROXY } : {}),
-      ...(process.env.NO_PROXY ? { NO_PROXY: process.env.NO_PROXY } : {}) };
-    return runCodexProcess({ binary: await binary(), argv, cwd: root, env, request,
-      signal: AbortSignal.timeout(120_000),
-      log: async (stream, bytes) => { logs[stream].push(Buffer.from(bytes)); } });
-  }));
+  const env = { HOME: homedir(), PATH: process.platform === 'win32' ? process.env.PATH ?? '' : '/usr/bin:/bin',
+    LANG: 'C.UTF-8', ...(process.env.CODEX_HOME ? { CODEX_HOME: process.env.CODEX_HOME } : {}),
+    ...(process.env.HTTPS_PROXY ? { HTTPS_PROXY: process.env.HTTPS_PROXY } : {}),
+    ...(process.env.HTTP_PROXY ? { HTTP_PROXY: process.env.HTTP_PROXY } : {}),
+    ...(process.env.NO_PROXY ? { NO_PROXY: process.env.NO_PROXY } : {}) };
+  const result = await runCodexSession({ binary: await binary(), nodeBinary: process.execPath,
+    proposalServer: server, request, readCatalog: catalog, prompt, env,
+    signal: AbortSignal.timeout(120_000),
+    log: async (stream, bytes) => { logs[stream].push(Buffer.from(bytes)); } });
   const events = Buffer.concat(logs.events).toString('utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const tools = events.filter((event) => event.type === 'item.completed' && event.item?.type === 'mcp_tool_call')
     .map((event) => event.item.tool);
