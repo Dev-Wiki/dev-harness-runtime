@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readlink } from 'node:fs/promises';
+import { mkdtemp, readlink, rm } from 'node:fs/promises';
 import { connect, createServer } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
@@ -94,3 +96,38 @@ test('host namespace rejects broad mounts before starting a process', async () =
     mounts: [{ source: '/', destination: '/dhr/host' }],
   })), { code: process.platform === 'linux' ? 'INVALID_ARGUMENT' : 'PROVIDER_UNAVAILABLE' });
 });
+
+test('isolated host namespace cannot reach a host loopback listener but can use its own loopback',
+  { skip: !process.env.DHR_TEST_BWRAP }, async () => {
+    const server = createServer();
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const address = server.address();
+      assert.ok(address && typeof address !== 'string');
+      const script = `const net=require('node:net');let reached=false;const outside=net.connect(${address.port},'127.0.0.1');outside.setTimeout(500);outside.on('connect',()=>{reached=true;outside.destroy();finish()});outside.on('error',()=>finish());outside.on('timeout',()=>{outside.destroy();finish()});function finish(){const local=net.createServer((socket)=>socket.end('INTERNAL'));local.listen(0,'127.0.0.1',()=>{const client=net.connect(local.address().port,'127.0.0.1');let text='';client.on('data',(chunk)=>text+=chunk);client.on('end',()=>{local.close();process.stdout.write(JSON.stringify({reached,text}))});client.on('error',()=>process.exit(15))})}`;
+      const result = await runCodexHostNamespace(input(['-e', script], { network: 'isolated' }));
+      assert.equal(result.exitCode, 0, result.stderr.toString('utf8'));
+      assert.deepEqual(JSON.parse(result.stdout.toString('utf8')), { reached: false, text: 'INTERNAL' });
+      assert.equal(result.evidence.network, 'isolated');
+      const hostNet = Number(/\[(\d+)\]$/u.exec(await readlink('/proc/self/ns/net'))[1]);
+      assert.notEqual(result.evidence.namespaceIds.net, hostNet);
+    } finally { await new Promise((resolve) => server.close(resolve)); }
+  });
+
+test('isolated host namespace reaches only an explicitly mounted host Unix socket',
+  { skip: !process.env.DHR_TEST_BWRAP }, async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'dhr-host-socket-'));
+    const socketPath = join(directory, 'broker.sock');
+    const server = createServer((socket) => socket.end('BROKER_OK'));
+    await new Promise((resolve) => server.listen(socketPath, resolve));
+    try {
+      const script = `const net=require('node:net');const client=net.connect(${JSON.stringify(socketPath)});let text='';client.on('data',(chunk)=>text+=chunk);client.on('end',()=>process.stdout.write(text));client.on('error',(error)=>{process.stderr.write(error.message);process.exit(15)})`;
+      const result = await runCodexHostNamespace(input(['-e', script], { network: 'isolated',
+        mounts: [...input([]).mounts, { source: directory, destination: directory }] }));
+      assert.equal(result.exitCode, 0, result.stderr.toString('utf8'));
+      assert.equal(result.stdout.toString('utf8'), 'BROKER_OK');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      await rm(directory, { recursive: true, force: true });
+    }
+  });

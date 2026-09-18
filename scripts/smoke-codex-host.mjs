@@ -86,10 +86,18 @@ try {
   assert.equal(result.result.outcome, 'blocked');
   assert.deepEqual(result.result.changedFiles, ['src/a.ts']);
   assert.equal(await readFile(join(root, 'src/a.ts'), 'utf8'), 'HELLO');
+  if (hostNamespace) {
+    assert.equal(result.namespaceEvidence?.network, 'isolated');
+    assert.ok(Object.values(result.brokerAudit?.connected ?? {}).some((count) => count > 0),
+      'Isolated Codex did not reach the model through the allowlisted broker');
+    assert.ok(Number.isSafeInteger(result.brokerAudit.denied) && result.brokerAudit.denied >= 0);
+  }
   process.stdout.write(`${JSON.stringify({ status: 'passed', threadId: result.threadId,
     tools, outcome: result.result.outcome, proposalCount: result.proposals.length,
     worktreeUnchanged: true, confinedBridge: Boolean(confined), hostNamespace,
-    hostQuiescence: result.namespaceEvidence ? 'confirmed' : 'unproven' })}\n`);
+    hostQuiescence: result.namespaceEvidence ? 'confirmed' : 'unproven',
+    ...(hostNamespace ? { network: result.namespaceEvidence.network, modelHosts: result.brokerAudit.connected,
+      deniedConnections: result.brokerAudit.denied } : {}) })}\n`);
 } finally {
   await rm(root, { recursive: true, force: true });
 }

@@ -23,6 +23,8 @@ export interface CodexHostNamespaceInput {
   readonly mounts: readonly CodexHostMount[];
   readonly tmpfs: readonly string[];
   readonly environment: Readonly<Record<string, string>>;
+  /** Isolated mode has no host network access; a controlled model proxy must be supplied separately. */
+  readonly network?: 'shared' | 'isolated';
   readonly stdin?: Uint8Array;
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
@@ -39,6 +41,7 @@ export interface CodexHostNamespaceResult {
     readonly initPid: number;
     readonly initStartTime: string;
     readonly namespaceIds: Readonly<Record<string, number>>;
+    readonly network: 'shared' | 'isolated';
     readonly asPid1: true;
     readonly monitorWaited: true;
   };
@@ -113,6 +116,9 @@ function directories(path: string): string[] {
 
 function validate(input: CodexHostNamespaceInput): void {
   absolute(input.cwd); absolute(input.executable);
+  if (input.network !== undefined && input.network !== 'shared' && input.network !== 'isolated') {
+    fail('INVALID_ARGUMENT', 'Namespace network mode is invalid');
+  }
   if (!Array.isArray(input.argv) || input.argv.length > 256 || input.argv.some((arg) =>
     typeof arg !== 'string' || arg.length > 131_000 || arg.includes('\0'))
     || (input.stdin !== undefined && (!(input.stdin instanceof Uint8Array) || input.stdin.byteLength > 32 * 1024 * 1024))
@@ -155,6 +161,7 @@ function buildArgs(input: CodexHostNamespaceInput): string[] {
   const orderedDirs = [...allDirs].filter((dir) => !['/usr', '/proc', '/dev', '/tmp', '/bin', '/lib', '/lib64'].includes(dir))
     .sort((a, b) => a.length - b.length || a.localeCompare(b));
   const args = ['--info-fd', '3', '--block-fd', '4', '--unshare-user', '--unshare-ipc', '--unshare-pid',
+    ...(input.network === 'isolated' ? ['--unshare-net'] : []),
     '--unshare-uts', '--unshare-cgroup', '--die-with-parent', '--as-pid-1', '--new-session', '--cap-drop', 'ALL',
     '--clearenv', '--ro-bind', '/usr', '/usr', '--symlink', 'usr/bin', '/bin', '--symlink', 'usr/lib', '/lib',
     '--symlink', 'usr/lib64', '/lib64', '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp',
@@ -179,7 +186,7 @@ async function namespaceGone(pid: number, expected: number): Promise<boolean> {
   return false;
 }
 
-/** A gated PID 1 host process. Shared network is deliberate; this proves lifecycle only, not tool authorization. */
+/** A gated PID 1 host process. Network mode and lifecycle are verified separately from tool authorization. */
 export async function runCodexHostNamespace(input: CodexHostNamespaceInput): Promise<CodexHostNamespaceResult> {
   if (process.platform !== 'linux') fail('PROVIDER_UNAVAILABLE', 'Host namespaces require Linux');
   validate(input);
@@ -248,7 +255,8 @@ export async function runCodexHostNamespace(input: CodexHostNamespaceInput): Pro
     for (const name of ['pid', 'mnt', 'ipc', 'uts', 'user', 'cgroup', 'net']) {
       const actual = inode(await readlink(`/proc/${initPid}/ns/${name}`));
       const host = inode(await readlink(`/proc/self/ns/${name}`));
-      if ((name === 'net' && actual !== host) || (name !== 'net' && actual === host)
+      if ((name === 'net' && (input.network === 'isolated' ? actual === host : actual !== host))
+        || (name !== 'net' && actual === host)
         || (name !== 'user' && name !== 'net' && actual !== parsed[`${name}-namespace`])) {
         fail('QUIESCENCE_UNKNOWN', `Namespace boundary failed: ${name}`);
       }
@@ -277,7 +285,7 @@ export async function runCodexHostNamespace(input: CodexHostNamespaceInput): Pro
     if (overflow) fail('OUTPUT_LIMIT', 'Host namespace output exceeded 32 MiB');
     return { stdout: Buffer.concat(stdout).subarray(ready.byteLength), stderr: Buffer.concat(stderr), exitCode: exit.code,
       termination, quiescence: 'confirmed', evidence: { providerSha256: binary.sha256, nodeSha256: node.sha256, initPid,
-        initStartTime: startTime, namespaceIds, asPid1: true, monitorWaited: true } };
+        initStartTime: startTime, namespaceIds, network: input.network ?? 'shared', asPid1: true, monitorWaited: true } };
   } catch (error) {
     if (termination === 'exited') stop('aborted');
     await boundedClose.catch(() => undefined);

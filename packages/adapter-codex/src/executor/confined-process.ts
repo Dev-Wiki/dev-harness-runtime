@@ -1,7 +1,8 @@
 import { lstat, realpath } from 'node:fs/promises';
 import { dirname, isAbsolute, join, sep } from 'node:path';
 import { decodeCodexExecution } from './decode.js';
-import { runCodexHostNamespace, type CodexHostNamespaceResult } from './host-namespace.js';
+import type { CodexHostNamespaceResult } from './host-namespace.js';
+import { runIsolatedModelHost, type IsolatedModelHostResult } from './isolated-model-host.js';
 import { CodexProcessError, type CodexProcessInput, type CodexProcessOutput } from './process.js';
 
 export interface ConfinedCodexProcessInput extends CodexProcessInput {
@@ -20,6 +21,7 @@ export interface ConfinedCodexProcessInput extends CodexProcessInput {
 
 export interface ConfinedCodexProcessOutput extends CodexProcessOutput {
   readonly namespaceEvidence: CodexHostNamespaceResult['evidence'];
+  readonly brokerAudit: IsolatedModelHostResult['brokerAudit'];
 }
 
 const inside = (parent: string, child: string): boolean => child === parent || child.startsWith(`${parent}${sep}`);
@@ -48,12 +50,8 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
     throw new CodexProcessError('INVALID_ARGUMENT', 'Codex code-mode host must be a native executable');
   }
   const env: Record<string, string> = { HOME: '/dhr/home', CODEX_HOME: '/dhr/home', PATH: '/usr/bin', LANG: 'C.UTF-8' };
-  for (const key of ['HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY']) {
-    const value = input.env[key];
-    if (value) env[key] = value;
-  }
   const sources = [...new Set([...bridge.hostSources, schema])];
-  const raw = await runCodexHostNamespace({ bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
+  const raw = await runIsolatedModelHost({ bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
     executable: '/dhr/codex', argv: input.argv, cwd: input.cwd, timeoutMs: input.timeoutMs,
     signal: input.signal, environment: env, tmpfs: ['/dhr/home'],
     mounts: [
@@ -64,7 +62,8 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
       { source: bridge.repoMirror, destination: input.cwd },
       { source: await realpath('/etc/ssl/certs'), destination: '/etc/ssl/certs' },
       { source: await realpath('/etc/resolv.conf'), destination: '/etc/resolv.conf' },
-    ] });
+    ] }, { allowedHosts: ['api.openai.com', 'auth.openai.com', 'chatgpt.com'],
+    ...(input.env.HTTPS_PROXY || input.env.HTTP_PROXY ? { upstreamProxy: input.env.HTTPS_PROXY || input.env.HTTP_PROXY } : {}) });
   for (let offset = 0; offset < raw.stderr.byteLength; offset += 1024 * 1024) {
     await input.log('stderr', raw.stderr.subarray(offset, offset + 1024 * 1024));
   }
@@ -78,5 +77,5 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
   const events = async function* (): AsyncGenerator<Uint8Array> { yield raw.stdout; };
   const decoded = await decodeCodexExecution({ events: events(), request: input.request, format: 'codex',
     log: (bytes) => input.log('events', bytes) });
-  return { ...decoded, namespaceEvidence: raw.evidence };
+  return { ...decoded, namespaceEvidence: raw.evidence, brokerAudit: raw.brokerAudit };
 }
