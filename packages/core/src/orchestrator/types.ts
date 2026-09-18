@@ -9,6 +9,7 @@ import type { GitCommitPolicy } from '../authorization/git.js';
 import type { ReconciliationVerifier } from '../recovery/reconcile.js';
 import type { RecoveryEvidenceContext } from '../recovery/types.js';
 import type { prepareWorkerInvocation } from '../worker/prompt.js';
+import type { WorkerReadCatalog } from '../worker/read-catalog.js';
 
 /** Trusted, explicitly registered host integration. Worker output cannot supply these services. */
 export interface RuntimeAdapter {
@@ -19,6 +20,7 @@ export interface RuntimeAdapter {
   prepareInvocation(input: {
     request: TaskExecutionRequest;
     invocation: ReturnType<typeof prepareWorkerInvocation>;
+    readCatalog: WorkerReadCatalog;
     log(stream: 'stdout' | 'stderr' | 'events', bytes: Uint8Array): Promise<void>;
   }): Promise<void>;
   /** Records originate from the host controller after the entire worker tree is quiescent. */

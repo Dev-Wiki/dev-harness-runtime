@@ -96,6 +96,11 @@ export async function setupRuntimeFixture(t, options = {}) {
         signal.throwIfAborted();
         if (behavior.cancelFirst && executions.length === 1) { behavior.cancelController.abort(); signal.throwIfAborted(); }
         const before = await original(request); const startedAt = new Date().toISOString();
+        assert.deepEqual(prepared.readCatalog, { repoRoot: request.repoRoot, runId: request.runId,
+          requestId: request.requestId, snapshotHash: before.hash,
+          files: before.snapshot.paths.filter((entry) => entry.type === 'file')
+            .map((entry) => ({ path: entry.path, sha256: entry.rawContentHash }))
+            .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path))) });
         const outcome = behavior.outcome ?? 'completed';
         if (outcome === 'completed') await closeTask(request);
         const ending = await capture(request.runId);

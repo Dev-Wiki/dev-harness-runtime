@@ -29,4 +29,4 @@ DSH rc.2 的 `tools.guard` 在 `tools/pre-execute` waterfall **之后**运行；
 
 Codex 侧已有只返回哈希的 `dhr_propose_text` / `dhr_propose_delete` MCP 入口和与宿主 JSONL 事件配对的提议解码；真实空目录仅验证过文本提议，未验证删除宿主调用。JSONL 流入口在交付结果前保留原始字节并处理任意分块，另一次真实 Codex 会话已通过该入口返回文本提议及合成 `blocked` 结构化结果。进程传输、固定只读参数和模型面向的结构化结果 Schema 已有本地测试，仍缺宿主工具目录、整个进程树静止和受控应用证据。DSH 侧 Worker guard 仅放行插件自身注册的无写入 `dhr_propose_text` 定义，真实 rc.1 headless Session 已返回提议哈希，另一次 bash 写入调用被拒绝。DSH v3 Session 事件解码器已从真实会话还原提议；只读 reader 及解码入口能拒绝非新会话或多会话 store，并在交付结果前要求日志回调成功；另一真实 DSH 会话已返回提议及合成 `blocked` 结构化结果。两个 Adapter 尚未连接上述 Core 持久化入口和 Core 受控应用。这些组件保持生产 Executor 关闭。
 
-Codex 本地只读桥接现能从冻结路径 / SHA-256 policy 列目录并分页读取文件，实际 stdio 子进程测试通过；读取会复核工作树字节与打开前后身份，拒绝 symlink、hardlink 与 Git 私有路径。Core 尚未从本次 Run 的权威前快照为宿主生成该 policy，真实模型会话的工具目录也未验，不能将本地测试推广为授权证明。
+Codex 本地只读桥接现能从冻结路径 / SHA-256 policy 列目录并分页读取文件，实际 stdio 子进程测试通过；读取会复核工作树字节与打开前后身份，拒绝 symlink、hardlink 与 Git 私有路径。Core 已从本次 Run 的权威前快照生成宿主无关的 `WorkerReadCatalog` 并传入 `prepareInvocation`，跨包测试确认 Codex 只读视图接受目录且拒绝变化的字节。生产 Codex Adapter 尚未消费目录，真实模型会话的工具目录也未验，不能将本地测试推广为授权证明。

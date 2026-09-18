@@ -14,6 +14,7 @@ import { freezeAcceptanceInputs, identity, recordName } from '../result/frozen.j
 import { finalizeWithoutCommit, verifyTaskAcceptance, type VerifyTaskAcceptanceOptions } from '../result/acceptance.js';
 import { commitAcceptedTask } from '../authorization/git.js';
 import { prepareWorkerInvocation } from '../worker/prompt.js';
+import { createWorkerReadCatalog } from '../worker/read-catalog.js';
 import { RuntimeError, type RuntimeAdapter, type RuntimeResult, type RuntimeServices, type StartRunOptions } from './types.js';
 
 export function requireParent(): void {
@@ -67,6 +68,7 @@ export async function dispatchTask(handle: LockHandle, project: ProjectContext, 
   // Capture this revision for the entire stream; never permit late chunks to enter the next attempt.
   const executionRevision = state.revision;
   await adapter.prepareInvocation({ request: structuredClone(request), invocation,
+    readCatalog: createWorkerReadCatalog(request, before),
     log: (stream, bytes) => appendAttemptLog(handle, state.runId, executionRevision, identity(request), stream, bytes) });
   assertUnchanged(before, await recaptureSnapshot(before)); aborted(signal);
   const result = validateResultForRequest(request, await adapter.executor.execute(structuredClone(request), signal ?? new AbortController().signal));
