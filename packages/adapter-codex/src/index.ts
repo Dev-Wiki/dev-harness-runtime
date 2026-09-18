@@ -2,6 +2,7 @@ import { CORE_PROTOCOL_VERSION, type AdapterDescriptor } from '@dev-harness-runt
 export { CodexEventDecoder, CodexEventError } from './executor/events.js';
 export { handleCodexProposalMcp } from './executor/mcp-server.js';
 export { runCodexSession } from './executor/session.js';
+export { persistCodexSessionProposals } from './executor/proposal-evidence.js';
 
 /** Metadata only: no Executor, Packager or doctor claim. */
 export const adapter = Object.freeze({
