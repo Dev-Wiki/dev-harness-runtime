@@ -7,6 +7,8 @@ export { runConfinedCodexProcess } from './executor/confined-process.js';
 export { persistCodexSessionProposals } from './executor/proposal-evidence.js';
 export { createCodexRuntimeAdapter, CodexRuntimeError } from './runtime-adapter.js';
 export type { CodexRuntimeOptions } from './runtime-adapter.js';
+export { createPackagedCodexServices, loadCodexPackageSource } from './runtime-services.js';
+export type { CodexPackageSource, PackagedCodexOptions } from './runtime-services.js';
 
 /** Descriptor metadata only; the RuntimeAdapter above requires explicit trusted injection. */
 export const adapter = Object.freeze({

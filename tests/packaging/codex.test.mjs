@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { CodexPackager, codexStaticSpec } from '../../build/dist/targets/codex.js';
+import { loadCodexPackageSource } from '../../packages/adapter-codex/dist/index.js';
 import { canonicalJson } from '../../build/dist/manifests/input.js';
 import { compareGolden } from '../../build/dist/manifests/golden.js';
 import { validateStatic } from '../../build/dist/validators/static.js';
@@ -107,4 +108,15 @@ test('Codex package identity and marketplace reference are validated independent
   assert.equal(result.valid, false);
   assert.ok(errors(result.checks).includes('MARKETPLACE_SOURCE'));
   assert.equal(value.generated.inputHash, hash(canonicalJson(value.input)));
+});
+
+test('installed Codex source manifest pins protocol, bundles and Worker Skill bytes', async (t) => {
+  const value = await fixture(t);
+  const root = join(value.root, value.generated.root, plugin);
+  const source = await loadCodexPackageSource(root);
+  assert.deepEqual(source.protocolSource, value.input.protocolSource);
+  assert.equal(source.workerSkill.sha256, value.input.skills.find((skill) => skill.name === 'worker').sha256);
+  assert.equal(source.adapterBundlePath, join(root, 'runtime/adapter.js'));
+  await writeFile(join(root, 'skills/worker/SKILL.md'), 'changed\n');
+  await assert.rejects(() => loadCodexPackageSource(root), { code: 'CAPABILITY_MISSING' });
 });

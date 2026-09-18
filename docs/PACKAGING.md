@@ -37,7 +37,7 @@ pnpm build → 可信 BuildPipeline.generate → .generated/<platform>/plugin/
 
 golden 快照在 [tests/packaging/golden](../tests/packaging/golden/)；普通比较只读，漂移时失败。只有维护者明确调用 `compareGolden(path, snapshot, { update: true })` 才写入新 golden，随后需复核输入与 SHA-256。后续平台 Packager 应各自增加格式 fixture、golden 和真实安装 smoke 证据；当前 Fake Packager 不代表六平台可用。
 
-Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，由调用者提供固定的、干净的上游协议 checkout；输入从本仓 Git HEAD、真实 Skill / CLI / Adapter bundle、共享元数据和提交时间构造。`generate` 输出 `.generated/codex/plugin/` 下的 Marketplace 源布局；`validate` 检查封闭 manifest、来源版本、三个 Skill、相对引用和 bundle 摘要；`pack` 输出单一 `dist/codex/dev-harness-codex-v<version>.zip`。ZIP 解包后把 `marketplace/` 路径交给 `codex plugin marketplace add`。包内 `scripts/dhr.mjs` 可运行已编译 CLI；Host Executor 能力仍需 K5 probe。
+Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，由调用者提供固定的、干净的上游协议 checkout；输入从本仓 Git HEAD、真实 Skill / CLI / Adapter bundle、共享元数据和提交时间构造。`generate` 输出 `.generated/codex/plugin/` 下的 Marketplace 源布局；`validate` 检查封闭 manifest、来源版本、三个 Skill、相对引用和 bundle 摘要；`pack` 输出单一 `dist/codex/dev-harness-codex-v<version>.zip`。ZIP 解包后把 `marketplace/` 路径交给 `codex plugin marketplace add`。包内 `runtime/source.json` 锁定协议来源、Worker Skill、CLI 与 Adapter 字节；`scripts/dhr.mjs` 仅对 run / resume / reconcile 由这些字节装配 Codex RuntimeServices，实际 Task 前仍须执行真实宿主能力 probe。Linux 宿主需可用的 Codex 登录、Node、Git 与 bubblewrap；可用 `DHR_BWRAP` 指定可信本机 provider。项目 Task 的声明格式见 [执行契约](CONTRACTS.md#自动执行-task-的冻结声明)。这条包内真实派发链仍未通过完整验收。
 
 编译后的 CLI bundle 包含校验器源码中的占位词正则和依赖库注释，普通文本 lint 会把它们误报为包内容。Codex StaticSpec 仅对与 `PluginBuildInput` SHA-256 完全相同的两个源码锁定 bundle 跳过词法文本 lint；任一字节漂移直接报 `BUNDLE_DIGEST_MISMATCH`。manifest、Skill、README、脚本和声明仍按公共静态规则扫描。这个例外只用于已锁定的代码字节，不授予任意生成文件豁免。
 

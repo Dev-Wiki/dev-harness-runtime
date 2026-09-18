@@ -12,6 +12,7 @@ const id = 'codex';
 const plugin = 'plugins/dev-harness';
 const manifest = `${plugin}/.codex-plugin/plugin.json`;
 const packageManifest = `${plugin}/package.json`;
+const runtimeSource = `${plugin}/runtime/source.json`;
 const catalog = '.agents/plugins/marketplace.json';
 const skills = ['run', 'status', 'worker'] as const;
 const json = (value: unknown): Uint8Array => Buffer.from(`${canonicalJson(value)}\n`, 'utf8');
@@ -20,15 +21,39 @@ const digest = (files: ReadonlyMap<string, Uint8Array>) => [...files]
   .map(([path, bytes]) => ({ path, sha256: sha256(bytes) }));
 
 const string = { type: 'string', minLength: 1 } as const;
+const hashString = { type: 'string', pattern: '^[a-f0-9]{64}$' } as const;
+const sourceFile = (path: string) => ({ type: 'object', additionalProperties: false,
+  required: ['path', 'sha256'], properties: { path: { type: 'string', const: path }, sha256: hashString } });
+const sourceManifest = (input: PluginBuildInput) => {
+  const worker = input.skills.find((skill) => skill.name === 'worker');
+  if (!worker) throw new Error('Codex package needs the locked Worker Skill');
+  return { schemaVersion: 1, protocolSource: input.protocolSource,
+    workerSkill: { path: 'skills/worker/SKILL.md', sha256: worker.sha256 },
+    runtimeBundle: { path: 'runtime/dhr.js', sha256: input.runtimeBundle.sha256 },
+    adapterBundle: { path: 'runtime/adapter.js', sha256: input.adapterBundle.sha256 } };
+};
 export const codexStaticSpec: StaticSpec = {
   requiredFiles: [catalog, manifest, packageManifest, `${plugin}/README.md`, `${plugin}/scripts/dhr.mjs`,
-    `${plugin}/runtime/dhr.js`, `${plugin}/runtime/adapter.js`, `${plugin}/DISTRIBUTION_NOTICE.md`],
+    `${plugin}/runtime/dhr.js`, `${plugin}/runtime/adapter.js`, runtimeSource, `${plugin}/DISTRIBUTION_NOTICE.md`],
   allowedFiles: [catalog, manifest, packageManifest, `${plugin}/README.md`, `${plugin}/scripts/dhr.mjs`,
-    `${plugin}/runtime/dhr.js`, `${plugin}/runtime/adapter.js`, `${plugin}/DISTRIBUTION_NOTICE.md`,
+    `${plugin}/runtime/dhr.js`, `${plugin}/runtime/adapter.js`, runtimeSource, `${plugin}/DISTRIBUTION_NOTICE.md`,
     ...skills.map((name) => `${plugin}/skills/${name}/SKILL.md`)],
   skillFiles: skills.map((name) => `${plugin}/skills/${name}/SKILL.md`),
   lockedBundles: { [`${plugin}/runtime/dhr.js`]: 'runtimeBundle', [`${plugin}/runtime/adapter.js`]: 'adapterBundle' },
   manifests: [
+    { path: runtimeSource, schema: { type: 'object', additionalProperties: false,
+      required: ['schemaVersion', 'protocolSource', 'workerSkill', 'runtimeBundle', 'adapterBundle'], properties: {
+        schemaVersion: { type: 'integer', const: 1 },
+        protocolSource: { type: 'object', additionalProperties: false,
+          required: ['schemaVersion', 'repository', 'version', 'commit', 'files'], properties: {
+            schemaVersion: { type: 'integer', const: 1 }, repository: string, version: string,
+            commit: { type: 'string', pattern: '^(?:[a-f0-9]{40}|[a-f0-9]{64})$' },
+            files: { type: 'array', minItems: 1, items: { type: 'object', additionalProperties: false,
+              required: ['path', 'sha256'], properties: { path: string, sha256: hashString } } },
+          } },
+        workerSkill: sourceFile('skills/worker/SKILL.md'),
+        runtimeBundle: sourceFile('runtime/dhr.js'), adapterBundle: sourceFile('runtime/adapter.js'),
+      } } },
     { path: packageManifest, schema: { type: 'object', additionalProperties: false,
       required: ['name', 'version', 'type', 'private'], properties: {
         name: { type: 'string', const: 'dev-harness' }, version: string,
@@ -65,15 +90,30 @@ export const codexStaticSpec: StaticSpec = {
 
 const launcher = `#!/usr/bin/env node
 import { runCli } from '../runtime/dhr.js';
+import { createPackagedCodexServices } from '../runtime/adapter.js';
+import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 const controller = new AbortController();
 const cancel = () => controller.abort();
 process.on('SIGINT', cancel);
 process.on('SIGTERM', cancel);
 try {
-  process.exitCode = await runCli(process.argv.slice(2), {
+  const args = process.argv.slice(2);
+  const services = ['run', 'resume', 'reconcile'].includes(args[0] ?? '')
+    ? await createPackagedCodexServices({ packageRoot: fileURLToPath(new URL('..', import.meta.url)),
+      ...(process.env.DHR_CODEX_BINARY ? { binaryPath: process.env.DHR_CODEX_BINARY } : {}),
+      ...(process.env.DHR_BWRAP ? { bubblewrapPath: process.env.DHR_BWRAP } : {}),
+      authFile: join(process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'auth.json'),
+      modelProxy: { HTTPS_PROXY: process.env.HTTPS_PROXY, HTTP_PROXY: process.env.HTTP_PROXY } }) : undefined;
+  process.exitCode = await runCli(args, {
     out: (value) => process.stdout.write(value),
     error: (value) => process.stderr.write(value),
-  }, { signal: controller.signal });
+  }, { signal: controller.signal, ...(services ? { services } : {}) });
+} catch (error) {
+  const code = error instanceof Error && 'code' in error ? String(error.code) : 'CAPABILITY_MISSING';
+  process.stderr.write(\`\${code}: \${error instanceof Error ? error.message : String(error)}\\n\`);
+  process.exitCode = code === 'CAPABILITY_MISSING' ? 2 : 5;
 } finally {
   process.off('SIGINT', cancel);
   process.off('SIGTERM', cancel);
@@ -97,10 +137,11 @@ export class CodexPackager implements PluginPackager {
         developerName: input.metadata.author, category: 'Productivity', capabilities: [],
         defaultPrompt: ['Show the current dhr Run status.'] } }));
     files.set(packageManifest, json({ name: input.metadata.name, version: input.releaseVersion, type: 'module', private: true }));
-    files.set(`${plugin}/README.md`, Buffer.from(`# Dev Harness Codex plugin\n\nLocal installation: add the extracted marketplace directory with \`codex plugin marketplace add ./marketplace\`, then install \`dev-harness@dev-harness-local\`. The command wrapper is \`node scripts/dhr.mjs\` from this plugin directory. Run execution requires a probed host Executor; package installation alone does not enable it.\n\nThis is a local build. See DISTRIBUTION_NOTICE.md before any external distribution.\n`));
+    files.set(`${plugin}/README.md`, Buffer.from(`# Dev Harness Codex plugin\n\nLocal installation: add the extracted marketplace directory with \`codex plugin marketplace add ./marketplace\`, then install \`dev-harness@dev-harness-local\`. The command wrapper is \`node scripts/dhr.mjs\` from this plugin directory. On Linux, run execution requires an installed Codex CLI, authenticated Codex home, and a trusted bubblewrap provider; the Runtime probes the real host before starting a Task. Each ready Task also needs a bounded \`dhr-runtime\` declaration in its Planning packet.\n\nThis is a local build. See DISTRIBUTION_NOTICE.md before any external distribution.\n`));
     files.set(`${plugin}/scripts/dhr.mjs`, Buffer.from(launcher));
     files.set(`${plugin}/runtime/dhr.js`, await readPinnedFile(this.#root, input.runtimeBundle.path));
     files.set(`${plugin}/runtime/adapter.js`, await readPinnedFile(this.#root, input.adapterBundle.path));
+    files.set(runtimeSource, json(sourceManifest(input)));
     files.set(`${plugin}/DISTRIBUTION_NOTICE.md`, await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path));
     for (const skill of input.skills) files.set(`${plugin}/${skill.path}`, await readPinnedFile(this.#root, skill.path));
     return files;
@@ -119,6 +160,7 @@ export class CodexPackager implements PluginPackager {
     const root = resolve(this.#root, generated.root);
     const values = JSON.parse(await readFile(resolve(root, manifest), 'utf8')) as { name?: string; skills?: string };
     const marketplace = JSON.parse(await readFile(resolve(root, catalog), 'utf8')) as { plugins?: { name?: string; source?: { path?: string } }[] };
+    const runtime = JSON.parse(await readFile(resolve(root, runtimeSource), 'utf8')) as unknown;
     const checks: ValidationReport['checks'][number][] = [];
     const add = (code: string, path: string, message: string) => checks.push({ code, path, message, severity: 'error' });
     if (values.name !== input.metadata.name || values.skills !== './skills') add('PLUGIN_IDENTITY', manifest, 'Plugin identity or skill directory differs from shared metadata');
@@ -126,6 +168,7 @@ export class CodexPackager implements PluginPackager {
       || marketplace.plugins[0]?.source?.path !== './plugins/dev-harness') add('MARKETPLACE_SOURCE', catalog, 'Marketplace source does not identify the bundled plugin');
     const actual = generated.files.filter((file) => /^plugins\/dev-harness\/skills\/[^/]+\/SKILL\.md$/u.test(file.path));
     if (actual.length !== input.skills.length) add('SKILL_COUNT', manifest, 'Generated Skill count differs from locked input');
+    if (canonicalJson(runtime) !== canonicalJson(sourceManifest(input))) add('RUNTIME_SOURCE', runtimeSource, 'Runtime source differs from locked protocol and bundled bytes');
     if (!checks.length) checks.push({ code: 'CODEX_LAYOUT_VALID', path: manifest,
       message: 'Codex compatibility manifest, marketplace reference and Skill count agree', severity: 'info' });
     return { schemaVersion: 1, valid: !checks.some((check) => check.severity === 'error'), checks,

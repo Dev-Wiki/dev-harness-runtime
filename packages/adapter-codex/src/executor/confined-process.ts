@@ -1,7 +1,7 @@
 import { lstat, realpath } from 'node:fs/promises';
 import { dirname, isAbsolute, join, sep } from 'node:path';
 import { decodeCodexExecution } from './decode.js';
-import type { CodexHostNamespaceResult } from './host-namespace.js';
+import type { CodexHostNamespaceResult, CodexHostStartEvidence } from './host-namespace.js';
 import { runIsolatedModelHost, type IsolatedModelHostResult } from './isolated-model-host.js';
 import { CodexProcessError, type CodexProcessInput, type CodexProcessOutput } from './process.js';
 
@@ -14,6 +14,7 @@ export interface ConfinedCodexProcessInput extends CodexProcessInput {
   /** Host-only callback after the monitored namespace is gone, including on failed or cancelled Codex turns. */
   readonly onHostQuiescent?: (evidence: CodexHostNamespaceResult['evidence'],
     audit: IsolatedModelHostResult['brokerAudit']) => void;
+  readonly onHostStarted?: (evidence: CodexHostStartEvidence) => Promise<void>;
   readonly bridge: {
     readonly command: string;
     readonly args: readonly string[];
@@ -57,7 +58,8 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
   const sources = [...new Set([...bridge.hostSources, schema])];
   const raw = await runIsolatedModelHost({ bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
     executable: '/dhr/codex', argv: input.argv, cwd: input.cwd, timeoutMs: input.timeoutMs,
-    signal: input.signal, environment: env, tmpfs: ['/dhr/home'],
+    signal: input.signal, ...(input.onHostStarted ? { onStarted: input.onHostStarted } : {}),
+    environment: env, tmpfs: ['/dhr/home'],
     mounts: [
       { source: input.binary, destination: '/dhr/codex' },
       { source: codeModeHost, destination: '/dhr/codex-code-mode-host' },

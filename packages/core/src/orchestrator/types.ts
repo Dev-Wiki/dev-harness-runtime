@@ -24,13 +24,17 @@ export interface RuntimeAdapter {
     invocation: ReturnType<typeof prepareWorkerInvocation>;
     readCatalog: WorkerReadCatalog;
     log(stream: 'stdout' | 'stderr' | 'events', bytes: Uint8Array): Promise<void>;
+    /** Persist a trusted host identity before releasing its first execution gate. */
+    recordHostStart(record: { schemaVersion: 1; [key: string]: unknown }): Promise<void>;
   }): Promise<void>;
   /** Optional proposal transport. Core alone persists and applies these operations after host quiescence. */
   collectProposals?(input: { request: TaskExecutionRequest; result: TaskExecutionResult }): Promise<readonly ProposedFileOperation[]>;
   /** Records originate from the host controller after the entire worker tree is quiescent. */
   collectEvidence(input: { request: TaskExecutionRequest; before: CapturedSnapshot; after: CapturedSnapshot;
     application?: AppliedWorkerProposals }): Promise<{ schemaVersion: 1; [key: string]: unknown }[]>;
-  verifyQuiescence(input: { state: RunState }): Promise<void>;
+  verifyQuiescence(input: { state: RunState;
+    /** null means the locked Core lookup found no start record; undefined means no lookup was requested. */
+    hostStart?: { ref: { path: string; sha256: string }; bytes: Buffer } | null }): Promise<void>;
   verifyCheckpoint(input: RecoveryEvidenceContext): Promise<void>;
 }
 

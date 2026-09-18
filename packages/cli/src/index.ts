@@ -188,6 +188,9 @@ export async function runCli(args: readonly string[], output: CliOutput, options
       abort(options.signal); output.out(`${JSON.stringify(summary)}\n`); return 0;
     }
     if (!options.services) throw new CliError('CAPABILITY_MISSING', '未配置可信宿主 Executor 和受控 Runtime 服务；不会启动任务或加载项目提供的代码。');
+    if (parsed.command === 'run' && parsed.commit === 'task' && !options.services.git) {
+      throw new CliError('CAPABILITY_MISSING', '本次 Runtime 没有可信 Git 提交策略，不能启动 commit-each Run。');
+    }
     if (parsed.command === 'run' && platforms.get(parsed.adapter!).runtime === undefined) {
       throw new CliError('CAPABILITY_MISSING', '该平台没有已注册的宿主 Executor。');
     }

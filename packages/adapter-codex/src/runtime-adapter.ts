@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { parseContract, type ExecutorCapabilities, type HostEnvironment, type TaskExecutionRequest } from '@dev-harness-runtime/contracts';
-import type { RuntimeAdapter, WorkerReadCatalog } from '@dev-harness-runtime/core';
+import { recordName, type RuntimeAdapter, type WorkerReadCatalog } from '@dev-harness-runtime/core';
 import { createConfinedCodexBridge } from './executor/confined-bridge.js';
 import { runConfinedCodexProcess, type ConfinedCodexProcessOutput } from './executor/confined-process.js';
-import type { CodexHostNamespaceResult } from './executor/host-namespace.js';
+import type { CodexHostNamespaceResult, CodexHostStartEvidence } from './executor/host-namespace.js';
 import type { IsolatedModelHostResult } from './executor/isolated-model-host.js';
 import { probeCodexRuntime } from './executor/probe.js';
 import { runCodexSession } from './executor/session.js';
@@ -40,6 +40,8 @@ interface PreparedInvocation {
   readonly prompt: string;
   readonly readCatalog: WorkerReadCatalog;
   readonly log: (stream: 'stdout' | 'stderr' | 'events', bytes: Uint8Array) => Promise<void>;
+  readonly recordHostStart: (record: { schemaVersion: 1; [key: string]: unknown }) => Promise<void>;
+  hostStart?: { schemaVersion: 1; kind: 'codex-host-start'; namespace: CodexHostStartEvidence; [key: string]: unknown };
   proof?: HostProof;
   output?: ConfinedCodexProcessOutput;
   hostRecord?: { schemaVersion: 1; [key: string]: unknown };
@@ -49,10 +51,44 @@ const digest = (bytes: Uint8Array): string => createHash('sha256').update(bytes)
 const identity = (request: TaskExecutionRequest): object => ({ runId: request.runId,
   taskId: request.taskId, attempt: request.attempt, requestId: request.requestId });
 const keyOf = (request: TaskExecutionRequest): string => `${request.runId}\0${request.requestId}`;
-const fail = (code: CodexRuntimeError['code'], message: string): never => { throw new CodexRuntimeError(code, message); };
+function fail(code: CodexRuntimeError['code'], message: string): never { throw new CodexRuntimeError(code, message); }
 const allowedHosts = new Set(['api.openai.com', 'auth.openai.com', 'chatgpt.com']);
 const object = (value: unknown): Record<string, unknown> | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+
+async function verifyPersistedHostStart(state: { runId: string; currentTaskId?: string; currentAttempt?: number; currentRequestId?: string },
+  entry: { ref: { path: string; sha256: string }; bytes: Buffer }): Promise<void> {
+  const requestId = state.currentRequestId;
+  if (!requestId || entry.ref.path !== `results/run-evidence/${recordName('host-start', requestId)}.json`
+    || digest(entry.bytes) !== entry.ref.sha256) {
+    fail('QUIESCENCE_UNKNOWN', 'Codex host start record is missing or changed');
+  }
+  let parsed: unknown;
+  try { parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(entry.bytes)); }
+  catch { return fail('QUIESCENCE_UNKNOWN', 'Codex host start record is not JSON'); }
+  const record = object(parsed);
+  const namespace = object(record?.namespace);
+  const nsIds = object(namespace?.namespaceIds);
+  if (!record || record.schemaVersion !== 1 || record.kind !== 'codex-host-start'
+    || record.runId !== state.runId || record.taskId !== state.currentTaskId
+    || record.attempt !== state.currentAttempt || record.requestId !== requestId
+    || !namespace || namespace.network !== 'isolated' || namespace.asPid1 !== true
+    || typeof namespace.providerSha256 !== 'string' || !/^[a-f0-9]{64}$/u.test(namespace.providerSha256)
+    || typeof namespace.nodeSha256 !== 'string' || !/^[a-f0-9]{64}$/u.test(namespace.nodeSha256)
+    || !Number.isSafeInteger(namespace.initPid) || Number(namespace.initPid) < 2
+    || typeof namespace.initStartTime !== 'string' || !/^\d+$/u.test(namespace.initStartTime)
+    || !nsIds || !['user', 'pid', 'mnt', 'net', 'ipc', 'uts', 'cgroup'].every((name) =>
+      Number.isSafeInteger(nsIds[name]) && Number(nsIds[name]) > 0)) {
+    fail('QUIESCENCE_UNKNOWN', 'Codex host start identity is malformed');
+  }
+  const stat = await readFile(`/proc/${namespace.initPid}/stat`, 'utf8').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT' || error.code === 'ESRCH') return null;
+    throw error;
+  });
+  if (stat !== null && stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19] === namespace.initStartTime) {
+    fail('QUIESCENCE_UNKNOWN', 'Recorded Codex namespace PID 1 is still live');
+  }
+}
 
 async function verifyPersistedHost(input: { request: TaskExecutionRequest; beforeHash: string; afterHash: string;
   evidence: readonly { ref: { path: string; sha256: string }; bytes: Buffer }[] }): Promise<{ providerId: string;
@@ -159,7 +195,7 @@ export function createCodexRuntimeAdapter(options: CodexRuntimeOptions): Runtime
         fail('AUTHORIZATION_VIOLATION', 'Codex invocation identity or frozen catalog differs from Core');
       }
       prepared.set(keyOf(request), { request, prompt: input.invocation.prompt,
-        readCatalog: input.readCatalog, log: input.log });
+        readCatalog: input.readCatalog, log: input.log, recordHostStart: input.recordHostStart });
     },
     executor: {
       id: 'codex',
@@ -194,6 +230,12 @@ export function createCodexRuntimeAdapter(options: CodexRuntimeOptions): Runtime
               const hosted = await runConfinedCodexProcess({ ...processInput, bridge, outputSchema,
                 bubblewrap: options.bubblewrap, nodeBinary: options.nodeBinary,
                 authFile: options.authFile, timeoutMs: options.timeoutMs,
+                onHostStarted: async (namespace) => {
+                  const record = { schemaVersion: 1 as const, kind: 'codex-host-start' as const,
+                    ...identity(request), namespace };
+                  await entry.recordHostStart(record);
+                  entry.hostStart = record;
+                },
                 onHostQuiescent: (namespace, broker) => {
                   entry.proof = { namespace, broker }; running.delete(key);
                 } });
@@ -213,8 +255,17 @@ export function createCodexRuntimeAdapter(options: CodexRuntimeOptions): Runtime
         } finally { executing.delete(key); }
       },
     },
-    async verifyQuiescence() {
+    async verifyQuiescence({ state, hostStart }) {
       if (running.size > 0) fail('QUIESCENCE_UNKNOWN', 'A Codex host process has no whole-tree quiescence proof');
+      if (!state.currentRequestId) return;
+      if (hostStart !== undefined) {
+        if (!hostStart) fail('QUIESCENCE_UNKNOWN', 'No durable Codex host start record binds this attempt');
+        await verifyPersistedHostStart(state, hostStart);
+        return;
+      }
+      const entry = [...prepared.values()].find((item) => item.request.runId === state.runId
+        && item.request.requestId === state.currentRequestId);
+      if (!entry?.hostStart || !entry.proof) fail('QUIESCENCE_UNKNOWN', 'Codex host ending is not proven in this process');
     },
     async collectProposals({ request, result }) {
       const entry = recordFor(request);

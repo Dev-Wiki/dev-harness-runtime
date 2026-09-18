@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readlink, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readlink, rm } from 'node:fs/promises';
 import { connect, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,6 +30,25 @@ test('host namespace gates PID 1 launch and waits until its process tree is gone
     assert.equal(result.evidence.namespaceIds.net, hostNet);
     assert.equal(result.evidence.asPid1, true);
     assert.equal(result.evidence.monitorWaited, true);
+  });
+
+test('host namespace records PID 1 while the executable is still gated',
+  { skip: !process.env.DHR_TEST_BWRAP }, async () => {
+    let observed;
+    const result = await runCodexHostNamespace(input(['-e', 'process.stdout.write("TARGET_STARTED")'], {
+      network: 'isolated',
+      async onStarted(evidence) {
+        observed = evidence;
+        const stat = await readFile(`/proc/${evidence.initPid}/stat`, 'utf8');
+        assert.equal(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19], evidence.initStartTime);
+        assert.equal(evidence.network, 'isolated');
+        assert.equal(evidence.asPid1, true);
+      },
+    }));
+    assert.equal(result.stdout.toString('utf8'), 'TARGET_STARTED');
+    assert.equal(result.termination, 'exited');
+    assert.equal(observed.initPid, result.evidence.initPid);
+    assert.equal(observed.initStartTime, result.evidence.initStartTime);
   });
 
 test('host namespace exit kills an escaped detached descendant',

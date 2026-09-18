@@ -71,7 +71,14 @@ export async function dispatchTask(handle: LockHandle, project: ProjectContext, 
   const executionRevision = state.revision;
   await adapter.prepareInvocation({ request: structuredClone(request), invocation,
     readCatalog: createWorkerReadCatalog(request, before),
-    log: (stream, bytes) => appendAttemptLog(handle, state.runId, executionRevision, identity(request), stream, bytes) });
+    log: (stream, bytes) => appendAttemptLog(handle, state.runId, executionRevision, identity(request), stream, bytes),
+    async recordHostStart(record) {
+      if (record.runId !== request.runId || record.taskId !== request.taskId || record.attempt !== request.attempt
+        || record.requestId !== request.requestId) {
+        throw new RuntimeError('AUTHORIZATION_VIOLATION', 'Host start record does not bind the pending request');
+      }
+      await ensureRunEvidence(handle, state.runId, executionRevision, recordName('host-start', request.requestId), record);
+    } });
   assertUnchanged(before, await recaptureSnapshot(before)); aborted(signal);
   const result = validateResultForRequest(request, await adapter.executor.execute(structuredClone(request), signal ?? new AbortController().signal));
   await adapter.verifyQuiescence({ state: structuredClone(state) });

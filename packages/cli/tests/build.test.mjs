@@ -122,3 +122,13 @@ test('explicit platform registration cannot silently discard or replace injected
   }
   assert.equal(f.executions.length, 0); await assert.rejects(readdir(f.project.stateRoot), { code: 'ENOENT' });
 });
+
+test('commit-each is rejected before Run creation when no trusted Git policy is installed', async (t) => {
+  const f = await setupRuntimeFixture(t);
+  const result = await cli(['run', '--adapter', f.adapter.id, '--task', 'A', '--commit-each'],
+    { cwd: f.root, services: f.services });
+  assert.equal(result.code, 2, result.stderr);
+  assert.match(result.stderr, /^CAPABILITY_MISSING:/u);
+  assert.equal(f.executions.length, 0);
+  await assert.rejects(readdir(f.project.stateRoot), { code: 'ENOENT' });
+});

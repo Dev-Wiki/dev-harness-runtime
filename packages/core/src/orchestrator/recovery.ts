@@ -32,7 +32,11 @@ export async function resumeRuntimeRun(options: ContinueRunOptions, services: Ru
     const original = await readCurrentRun(handle, options.runId);
     if (original.revision !== options.expectedRevision) throw new RuntimeError('REVISION_CONFLICT', 'Resume expected revision is stale');
     const verifyQuiescence = async (input: { state: RunState }): Promise<void> => {
-      safeToRelease = false; await adapter.verifyQuiescence(input); safeToRelease = true;
+      safeToRelease = false;
+      const hostStart = input.state.currentRequestId
+        ? await readRunEvidenceCandidate(handle, input.state.runId, input.state.revision,
+          recordName('host-start', input.state.currentRequestId)) ?? null : null;
+      await adapter.verifyQuiescence({ ...input, hostStart }); safeToRelease = true;
     };
     await verifyQuiescence({ state: original });
     const originalCheckpoint = original.pendingOperation?.checkpointRef
@@ -110,7 +114,10 @@ export async function reconcileRuntimeRun(options: ReconcileRuntimeOptions, serv
   let safeToRelease = true;
   try {
     const state: RunState = await readCurrentRun(handle, options.runId);
-    safeToRelease = false; await adapter.verifyQuiescence({ state }); safeToRelease = true;
+    safeToRelease = false;
+    const hostStart = state.currentRequestId
+      ? await readRunEvidenceCandidate(handle, state.runId, state.revision, recordName('host-start', state.currentRequestId)) ?? null : null;
+    await adapter.verifyQuiescence({ state, hostStart }); safeToRelease = true;
     // Read and validate the explicit, already persisted resolution; no directory discovery or inferred approval.
     parseContractJson('reconciliationResolution', (await readEvidence(handle, state.runId, options.expectedRevision, options.resolutionRef)).toString('utf8'));
     return { state: await reconcileRun(handle, state.runId, options.expectedRevision, options.resolutionRef, { project, ...services.reconciliation }), exitCode: 0 };

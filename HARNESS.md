@@ -5,7 +5,7 @@
 
 ## 项目类型
 
-TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。自动 Executor 均未启用。
+TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。Codex 包内服务已可离仓装配，真实 Task 自动执行尚未验收。
 
 ## 编译与启动问题排查
 
@@ -35,7 +35,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |
 | full | `pnpm verify` | 类型、lint、测试、Schema 一致性、R1 fixture 和独立 CLI 包检查 | confirmed |
 
-`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。六平台 Packager 可由仓库可信工厂注入；默认独立 CLI 尚未装配平台 Packager，且没有宿主 Executor，相应命令返回 CAPABILITY_MISSING。
+`harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。六平台 Packager 可由仓库可信工厂注入；默认独立 CLI 尚未装配平台 Packager 或宿主 Executor。Codex 插件的独立 launcher 会校验包内锁定来源并装配服务；目前通过的是无模型装配测试，真实 Task 派发仍待验收。
 
 仓库级 `pnpm dhr` 使用固定源码中的可信 Packager；`pnpm dhr release --dry-run --protocol-checkout <path>` 已在 WSL2 为六平台生成九个本地产物并重复验证摘要一致。逐阶段入口为 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack`，均需 `--protocol-checkout <path>`；`pnpm pack` 属于 pnpm 内建命令。`pnpm matrix:check` 核对实际摘要与 [能力矩阵](docs/PLATFORM_MATRIX.md)。这些命令不安装模型宿主，也不发布，详见 [RELEASE](docs/RELEASE.md)。独立 CLI tarball 仍无默认 Packager 和 Executor。
 
@@ -72,7 +72,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 ## 需人工确认
 
-- 当前分发包没有真实宿主 Executor；已有 Core 编排与受控验收 / Git API，真实 Agent 会话与权限证明由 Adapter 任务验证。
+- 通用独立 CLI 未预装宿主 Executor；Codex 插件已能装配可信服务，但包内真实 Task、跨进程恢复和提交策略尚未验收。
 - 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
 - 原生 Windows / Linux、真实插件安装和模型 Session 尚未取得本轮运行证据。
 

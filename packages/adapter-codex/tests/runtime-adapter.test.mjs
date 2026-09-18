@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createCodexRuntimeAdapter } from '../dist/index.js';
 import { Registry } from '../../../packages/core/dist/registry.js';
+import { recordName } from '../../../packages/core/dist/result/frozen.js';
 import { runtimeAdapter } from '../../../packages/core/dist/orchestrator/runtime.js';
 import { setupRuntimeFixture } from '../../../tests/fixtures/fake-executor/fixture.mjs';
 
@@ -33,13 +34,40 @@ test('Codex RuntimeAdapter binds the Core request and frozen catalog before star
   const readCatalog = { repoRoot: request.repoRoot, runId: request.runId,
     requestId: request.requestId, snapshotHash: request.snapshotHash, files: [] };
   const prepared = { request, invocation: { prompt: 'SYNTHETIC', env: request.env, skillSha256: hash },
-    readCatalog, log: async () => {} };
+    readCatalog, log: async () => {}, recordHostStart: async () => {} };
   await assert.rejects(adapter.prepareInvocation({ ...prepared,
     readCatalog: { ...readCatalog, requestId: 'other' } }), { code: 'AUTHORIZATION_VIOLATION' });
   await adapter.prepareInvocation(prepared);
   await assert.rejects(adapter.prepareInvocation(prepared), { code: 'AUTHORIZATION_VIOLATION' });
   await assert.rejects(adapter.collectProposals({ request: { ...request, requestId: 'other' },
     result: {} }), { code: 'AUTHORIZATION_VIOLATION' });
+});
+
+test('fresh process refuses unknown Codex host and checks durable PID 1 identity', async () => {
+  const adapter = createCodexRuntimeAdapter(options);
+  const request = JSON.parse(await readFile(new URL('../../../packages/contracts/fixtures/execution/request.json', import.meta.url)));
+  const state = { runId: request.runId, currentTaskId: request.taskId,
+    currentAttempt: request.attempt, currentRequestId: request.requestId };
+  const record = { schemaVersion: 1, kind: 'codex-host-start',
+    runId: request.runId, taskId: request.taskId, attempt: request.attempt, requestId: request.requestId,
+    namespace: { providerSha256: hash, nodeSha256: hash, initPid: 999999999, initStartTime: '1',
+      namespaceIds: Object.fromEntries(['user', 'pid', 'mnt', 'net', 'ipc', 'uts', 'cgroup'].map((name) => [name, 100])),
+      network: 'isolated', asPid1: true } };
+  const evidence = (value) => {
+    const bytes = Buffer.from(`${JSON.stringify(value)}\n`);
+    return { ref: { path: `results/run-evidence/${recordName('host-start', request.requestId)}.json`,
+      sha256: createHash('sha256').update(bytes).digest('hex') }, bytes };
+  };
+  await assert.rejects(adapter.verifyQuiescence({ state, hostStart: null }), { code: 'QUIESCENCE_UNKNOWN' });
+  await assert.rejects(adapter.verifyQuiescence({ state }), { code: 'QUIESCENCE_UNKNOWN' });
+  await adapter.verifyQuiescence({ state, hostStart: evidence(record) });
+  const stat = await readFile(`/proc/${process.pid}/stat`, 'utf8');
+  const start = stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19];
+  await assert.rejects(adapter.verifyQuiescence({ state, hostStart: evidence({ ...record,
+    namespace: { ...record.namespace, initPid: process.pid, initStartTime: start } }) }),
+  { code: 'QUIESCENCE_UNKNOWN' });
+  await assert.rejects(adapter.verifyQuiescence({ state, hostStart: evidence({ ...record, requestId: 'other' }) }),
+    { code: 'QUIESCENCE_UNKNOWN' });
 });
 
 test('Codex persisted host verifier checks isolation, source identity and namespace liveness', async () => {

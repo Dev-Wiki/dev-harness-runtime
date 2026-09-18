@@ -34,6 +34,28 @@ HostEnvironment 提供 repoRoot / privateGitDir、os / architecture、Node / Git
 
 这个子集不要求改写上游 Planning Skill。Runtime 不兼容其他布局时返回 `UNSUPPORTED_PLAN_FORMAT` 和具体位置，交由项目按需调整。当前开发看板含有尚未解除的 G 编号，这些实施任务本就不能自动领取。
 
+### 自动执行 Task 的冻结声明
+
+Codex 包内 `dhr run` 在已选中的 Task 执行包内读取一个 `## Runtime 配置` 二级标题和唯一的 `dhr-runtime` JSON 代码块。普通 Planning 读取不依赖这段配置；只有自动派发需要它。示例中的 `test` 必须同时是原始 `HARNESS.md` 已确认命令的“用途”，对应的命令文本还必须作为行内代码出现在本 Task 的“验证证据”章节：
+
+```json
+{
+  "schemaVersion": 1,
+  "scope": {
+    "files": ["src/feature.ts", "tests/feature.test.mjs"],
+    "directories": [],
+    "archivePath": "docs/plan/archive/M1/A.md"
+  },
+  "verification": {
+    "sources": ["package.json", "pnpm-lock.yaml"],
+    "commands": [{ "id": "test", "purpose": "test", "criteria": [1, 2], "writableArtifacts": [] }],
+    "manual": []
+  }
+}
+```
+
+`scope.files` 和 `scope.directories` 必须精确等于“影响文件”列表里的仓库相对代码路径；目录在列表中以 `/` 结尾，在 JSON 中不带尾斜线。配置不能暗中扩大范围。`archivePath` 指向同一 docs root 的一个里程碑下 `<Task-ID>.md`；同目录 `README.md` 必须已存在，目标归档尚不存在。`criteria` 是“验收标准”复选框从 1 开始的序号，每项必须被至少一个验证项覆盖。`verification.sources` 列出验证所需且不会被本 Task 修改的额外输入；Core 自动加入原始 `HARNESS.md` 和当前 Task，冻结这些文件的字节摘要。会由 Worker 修改的候选文件不能列为冻结源。`writableArtifacts` 仅用于受控验证进程的明确产物，不授予 Worker 写入范围。人工项虽可声明，但当前 Codex 包没有可信人工确认通道，因而在派发前拒绝该 Task。缺字段、额外字段、路径或命令不一致均失败；不会执行项目提供的 JS 配置。
+
 ### 依赖完成证据
 
 - 若同 ID 仍在活跃表，任何旧归档都不算该依赖已完成，包括重开任务。
@@ -376,7 +398,7 @@ Worker 结束后先证明静止，再保存结果、实际结束快照和控制�
 
 CLI 提供 doctor、status、run（--task / --next / --all-ready）、resume 与 reconcile。参数冲突或未知 Adapter 退出 2，blocked 退出 3，执行或验收失败及 partial 退出 4，漂移 / 授权 / 互斥拒绝退出 5，取消退出 130。默认不提交；--commit-each / --no-commit 与 --commit task|deny 互斥。resume 未提供 expected revision 时只读取得当前值，再交给 Core CAS；不能借此修改 Run 授权。reconcile 只接收已由可信 Core 持久化的显式 resolution 引用，不能把用户 JSON 当作已验证的同意或证据。
 
-生产 CLI 当前可以运行只读 doctor / status；宿主 Executor 尚未安装时运行命令返回 CAPABILITY_MISSING。测试以显式注入的 Fake Executor 调用同一 Core，真实 Git、Planning 收口和 bubblewrap 验收证明公共流程，不证明 Codex / DSH 能力。CLI 使用固定 esbuild 将 Core 与依赖打入 ESM bundle；独立 tarball 在空 store 离线安装后实际验证项目发现和 Markdown 读取。验证记录见 [K4](verification/K4.md)。
+通用独立 CLI 可以运行只读 doctor / status；宿主 Executor 未显式注入时运行命令返回 CAPABILITY_MISSING。Codex 插件 launcher 已增加包内锁定来源的服务装配，但实际 Task 派发仍按 K5 独立验收。测试以显式注入的 Fake Executor 调用同一 Core，真实 Git、Planning 收口和 bubblewrap 验收证明公共流程，不证明 Codex / DSH 能力。CLI 使用固定 esbuild 将 Core 与依赖打入 ESM bundle；独立 tarball 在空 store 离线安装后实际验证项目发现和 Markdown 读取。验证记录见 [K4](verification/K4.md)。
 
 ## 17. K10-B 共享打包流水线
 

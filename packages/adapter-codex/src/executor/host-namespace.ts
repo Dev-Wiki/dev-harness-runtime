@@ -13,6 +13,15 @@ export class CodexHostNamespaceError extends Error {
 }
 
 export interface CodexHostMount { readonly source: string; readonly destination: string }
+export interface CodexHostStartEvidence {
+  readonly providerSha256: string;
+  readonly nodeSha256: string;
+  readonly initPid: number;
+  readonly initStartTime: string;
+  readonly namespaceIds: Readonly<Record<string, number>>;
+  readonly network: 'shared' | 'isolated';
+  readonly asPid1: true;
+}
 export interface CodexHostNamespaceInput {
   readonly bubblewrap: string;
   readonly nodeBinary: string;
@@ -28,6 +37,8 @@ export interface CodexHostNamespaceInput {
   readonly stdin?: Uint8Array;
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
+  /** Called while PID 1 is gated, before the requested executable can start. */
+  readonly onStarted?: (evidence: CodexHostStartEvidence) => Promise<void>;
 }
 export interface CodexHostNamespaceResult {
   readonly stdout: Buffer;
@@ -274,6 +285,9 @@ export async function runCodexHostNamespace(input: CodexHostNamespaceInput): Pro
       check();
     }), boundedClose.then(() => false)]);
     if (!readyAt || termination !== 'exited') fail('QUIESCENCE_UNKNOWN', 'Trusted PID 1 bootstrap did not become ready');
+    await input.onStarted?.({ providerSha256: binary.sha256, nodeSha256: node.sha256, initPid,
+      initStartTime: startTime, namespaceIds: { ...namespaceIds }, network: input.network ?? 'shared', asPid1: true });
+    if (termination !== 'exited') fail('QUIESCENCE_UNKNOWN', 'Namespace was stopped before its start record was persisted');
     child.stdin.end(input.stdin);
     gateStream.end('1');
     const exit = await boundedClose;

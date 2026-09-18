@@ -39,14 +39,15 @@ const testContext = { after: (cleanup) => cleanups.push(cleanup) };
 try {
   const f = await setupAcceptance(testContext, { initialFiles: { 'src/a.ts': 'HELLO' }, scopeFiles: ['src/a.ts'] });
   const binary = await executable();
-  const adapter = createCodexRuntimeAdapter({ binary,
+  const adapterOptions = { binary,
     bubblewrap: await realpath(process.env.DHR_TEST_BWRAP), nodeBinary: process.execPath,
     authFile: await realpath(join(process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'auth.json')),
     serverBundle: await realpath(new URL('../packages/adapter-codex/dist/executor/bridge.bundle.mjs', import.meta.url)),
     proposalServer: await realpath(new URL('../packages/adapter-codex/dist/executor/mcp-server.js', import.meta.url)),
     configHash: f.run.adapterConfigHash, gitVersion: 'synthetic-fixture', targetVersion: 'local-codex',
     timeoutMs: 120_000,
-    modelProxy: { HTTPS_PROXY: process.env.HTTPS_PROXY, HTTP_PROXY: process.env.HTTP_PROXY } });
+    modelProxy: { HTTPS_PROXY: process.env.HTTPS_PROXY, HTTP_PROXY: process.env.HTTP_PROXY } };
+  const adapter = createCodexRuntimeAdapter(adapterOptions);
   const request = f.request;
   const expected = { result: { schemaVersion: 1, runId: request.runId, taskId: request.taskId,
     attempt: request.attempt, requestId: request.requestId, snapshotHash: request.snapshotHash,
@@ -76,15 +77,17 @@ try {
     assert.equal(stopped.state.status, 'INTERRUPTED');
     assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'HELLO');
     await releaseLock(f.handle);
+    // A fresh Adapter has no in-memory host map; recovery must use Core's durable PID 1 record.
+    const freshAdapters = new Registry(); freshAdapters.register(createCodexRuntimeAdapter(adapterOptions));
     const resumed = await resumeRuntimeRun({ cwd: f.root, runId: f.run.runId,
-      expectedRevision: stopped.state.revision }, services);
+      expectedRevision: stopped.state.revision }, { ...services, adapters: freshAdapters });
     assert.equal(resumed.state.status, 'BLOCKED');
     assert.equal(resumed.state.currentAttempt, 2);
     assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'UPDATED');
     const secondThread = await threadFrom(join(f.project.stateRoot, f.run.runId, 'attempts/A-2/events.jsonl'));
     assert.ok(secondThread && secondThread !== firstThread, 'Resume did not start a distinct Codex thread');
     process.stdout.write(`${JSON.stringify({ status: 'passed', hostProbe: true,
-      cancelledAfterThreadStart: true, resumedWithFreshThread: true,
+      cancelledAfterThreadStart: true, resumedWithFreshAdapter: true, resumedWithFreshThread: true,
       coreAppliedProposal: true, outcome: resumed.state.status, syntheticOnly: true })}\n`);
   } else {
     let state;
