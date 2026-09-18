@@ -16,27 +16,30 @@ export class CodexEventDecoder {
   private completed = false;
   private failed = false;
   private eventCount = 0;
-  private pendingProposals = new Map<string, { path: string; content: string }>();
-  private acceptedProposals: { path: string; content: string }[] = [];
+  private pendingProposals = new Map<string, { path: string; content: string | null }>();
+  private acceptedProposals: { path: string; content: string | null }[] = [];
 
-  private proposalItem(item: object): { id: string; path: string; content: string } {
+  private proposalItem(item: object): { id: string; path: string; content: string | null } {
     if (!('id' in item) || typeof item.id !== 'string' || !('server' in item) || item.server !== 'dhr_proposal'
-      || !('tool' in item) || item.tool !== 'dhr_propose_text' || !('arguments' in item)
+      || !('tool' in item) || (item.tool !== 'dhr_propose_text' && item.tool !== 'dhr_propose_delete') || !('arguments' in item)
       || item.arguments === null || typeof item.arguments !== 'object' || Array.isArray(item.arguments)) {
       throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex called an unregistered MCP tool');
     }
     const args = item.arguments;
-    if (!('path' in args) || typeof args.path !== 'string' || !('content' in args) || typeof args.content !== 'string'
-      || Object.keys(args).length !== 2 || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024) {
+    if (!('path' in args) || typeof args.path !== 'string' || args.path.length > 4096
+      || (item.tool === 'dhr_propose_text' && (!('content' in args) || typeof args.content !== 'string'
+        || Object.keys(args).length !== 2 || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024))
+      || (item.tool === 'dhr_propose_delete' && Object.keys(args).join(',') !== 'path')) {
       throw new CodexEventError('INVALID_RESULT', 'Codex proposal arguments are malformed');
     }
-    return { id: item.id, path: args.path, content: args.content };
+    return { id: item.id, path: args.path,
+      content: item.tool === 'dhr_propose_text' ? (args as Record<string, unknown>).content as string : null };
   }
 
   consume(line: string): void {
     if (this.failed) throw new CodexEventError('INVALID_RESULT', 'Codex event stream was already rejected');
     try {
-      if (this.completed || ++this.eventCount > 100_000 || line.length > 1024 * 1024) {
+      if (this.completed || ++this.eventCount > 100_000 || line.length > 8 * 1024 * 1024) {
         throw new CodexEventError('INVALID_RESULT', 'Codex event stream exceeded its boundary');
       }
       let event: unknown;
@@ -86,7 +89,9 @@ export class CodexEventDecoder {
             throw new CodexEventError('INVALID_RESULT', 'Codex proposal call did not complete consistently');
           }
           const output: unknown = event.item.result.content[0];
-          const expected = `PROPOSED ${createHash('sha256').update(proposal.content, 'utf8').digest('hex')}`;
+          const expected = proposal.content === null
+            ? `PROPOSED_DELETE ${createHash('sha256').update(proposal.path, 'utf8').digest('hex')}`
+            : `PROPOSED ${createHash('sha256').update(proposal.content, 'utf8').digest('hex')}`;
           if (output === null || typeof output !== 'object' || !('type' in output) || output.type !== 'text'
             || !('text' in output) || output.text !== expected) {
             throw new CodexEventError('INVALID_RESULT', 'Codex proposal receipt hash differs from its arguments');
@@ -132,7 +137,7 @@ export class CodexEventDecoder {
     return { threadId: this.threadId, result: validateResultForRequest(request, raw) };
   }
 
-  proposals(): readonly { path: string; content: string }[] {
+  proposals(): readonly { path: string; content: string | null }[] {
     if (this.failed || !this.completed) throw new CodexEventError('INVALID_RESULT', 'Codex proposals require a complete turn');
     return this.acceptedProposals.map((proposal) => ({ ...proposal }));
   }

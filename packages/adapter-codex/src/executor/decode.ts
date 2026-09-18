@@ -7,7 +7,7 @@ export async function decodeCodexExecution(input: {
   request: TaskExecutionRequest;
   format?: 'contract' | 'codex';
   log(bytes: Uint8Array): Promise<void>;
-}): Promise<{ threadId: string; result: TaskExecutionResult; proposals: readonly { path: string; content: string }[] }> {
+}): Promise<{ threadId: string; result: TaskExecutionResult; proposals: readonly { path: string; content: string | null }[] }> {
   const decoder = new CodexEventDecoder();
   const text = new TextDecoder('utf-8', { fatal: true });
   let pending = '';
@@ -20,12 +20,12 @@ export async function decodeCodexExecution(input: {
       pending = pending.slice(newline + 1);
       newline = pending.indexOf('\n');
     }
-    if (pending.length > 1024 * 1024) throw new CodexEventError('INVALID_RESULT', 'Codex JSONL line is too large');
+    if (pending.length > 8 * 1024 * 1024) throw new CodexEventError('INVALID_RESULT', 'Codex JSONL line is too large');
   };
   for await (const chunk of input.events) {
     if (!(chunk instanceof Uint8Array)) throw new CodexEventError('INVALID_RESULT', 'Codex stdout is not bytes');
     totalBytes += chunk.byteLength;
-    if (totalBytes > 32 * 1024 * 1024) throw new CodexEventError('INVALID_RESULT', 'Codex stdout exceeded its boundary');
+    if (totalBytes > 64 * 1024 * 1024) throw new CodexEventError('INVALID_RESULT', 'Codex stdout exceeded its boundary');
     for (let offset = 0; offset < chunk.byteLength; offset += 1024 * 1024) {
       await input.log(chunk.subarray(offset, offset + 1024 * 1024));
     }

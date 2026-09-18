@@ -27,8 +27,31 @@ test('a Codex MCP receipt crosses into Core staging without modifying the projec
   decoder.consume(line('turn.completed'));
   assert.equal(decoder.finish(request).result.outcome, 'blocked');
   const collector = new WorkerProposalCollector(request, before);
-  for (const proposal of decoder.proposals()) collector.write(proposal.path, Buffer.from(proposal.content, 'utf8'));
+  for (const proposal of decoder.proposals()) {
+    if (proposal.content === null) collector.delete(proposal.path);
+    else collector.write(proposal.path, Buffer.from(proposal.content, 'utf8'));
+  }
   collector.assertDeclaredChanges(decoder.finish(request).result);
   assert.deepEqual(collector.list().map(({ path }) => path), ['src/a.ts']);
   assert.equal(collector.list()[0].beforeHash, 'a'.repeat(64));
+});
+
+test('a Codex delete receipt becomes a Core deletion proposal without touching the project', () => {
+  const decoder = new CodexEventDecoder();
+  decoder.consume(JSON.stringify({ type: 'thread.started', thread_id: '01a0b038-2652-7b22-b53d-c8d197dfb1a8' }));
+  decoder.consume(line('turn.started'));
+  const item = { id: 'item_1', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_propose_delete',
+    arguments: { path: 'src/a.ts' } };
+  decoder.consume(line('item.started', { ...item, status: 'in_progress', error: null, result: null }));
+  decoder.consume(line('item.completed', { ...item, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: `PROPOSED_DELETE ${createHash('sha256').update('src/a.ts').digest('hex')}` }] } }));
+  decoder.consume(line('item.completed', { type: 'agent_message', text: JSON.stringify(result) }));
+  decoder.consume(line('turn.completed'));
+  const collector = new WorkerProposalCollector(request, before);
+  for (const proposal of decoder.proposals()) {
+    if (proposal.content === null) collector.delete(proposal.path);
+    else collector.write(proposal.path, Buffer.from(proposal.content, 'utf8'));
+  }
+  collector.assertDeclaredChanges(decoder.finish(request).result);
+  assert.deepEqual(collector.list().map(({ path, content }) => [path, content]), [['src/a.ts', null]]);
 });

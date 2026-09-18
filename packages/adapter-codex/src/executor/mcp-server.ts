@@ -6,11 +6,17 @@ import { isRepoPath } from '@dev-harness-runtime/contracts';
 type RpcId = string | number;
 interface RpcRequest { jsonrpc: '2.0'; id?: RpcId; method: string; params?: unknown }
 type RpcResponse = { jsonrpc: '2.0'; id: RpcId; result?: unknown; error?: { code: number; message: string } };
-const tool = {
+const textTool = {
   name: 'dhr_propose_text',
   description: 'Propose UTF-8 content for one Task-scoped repository file. This records a proposal only; the trusted Runtime decides whether to apply it.',
   inputSchema: { type: 'object', properties: { path: { type: 'string' }, content: { type: 'string' } },
     required: ['path', 'content'], additionalProperties: false },
+};
+const deleteTool = {
+  name: 'dhr_propose_delete',
+  description: 'Propose deletion of one Task-scoped repository file. This records a proposal only; the trusted Runtime decides whether to apply it.',
+  inputSchema: { type: 'object', properties: { path: { type: 'string' } },
+    required: ['path'], additionalProperties: false },
 };
 const failure = (message: string) => ({ isError: true, content: [{ type: 'text', text: message }] });
 
@@ -28,17 +34,27 @@ export function handleCodexProposalMcp(value: unknown): RpcResponse | null {
     protocolVersion: '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'dhr-proposal', version: '0.1.0' },
   } };
   if (input.method === 'ping') return { jsonrpc: '2.0', id, result: {} };
-  if (input.method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: [tool] } };
+  if (input.method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: [textTool, deleteTool] } };
   if (input.method !== 'tools/call') return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } };
   const params = input.params;
-  if (params === null || typeof params !== 'object' || Array.isArray(params) || !('name' in params) || params.name !== tool.name
+  if (params === null || typeof params !== 'object' || Array.isArray(params) || !('name' in params)
+    || (params.name !== textTool.name && params.name !== deleteTool.name)
     || !('arguments' in params) || params.arguments === null || typeof params.arguments !== 'object' || Array.isArray(params.arguments)) {
     return { jsonrpc: '2.0', id, result: failure('Unknown proposal tool or invalid arguments') };
   }
   const args = params.arguments as Record<string, unknown>;
-  if (Object.keys(args).sort().join(',') !== 'content,path' || typeof args.path !== 'string' || !isRepoPath(args.path)
-    || typeof args.content !== 'string' || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024) {
-    return { jsonrpc: '2.0', id, result: failure('Proposal requires a repository-relative path and at most 4 MiB of UTF-8 text') };
+  if (typeof args.path !== 'string' || args.path.length > 4096 || !isRepoPath(args.path)
+    || args.path.split('/').some((part) => part.toLowerCase() === '.git')) {
+    return { jsonrpc: '2.0', id, result: failure('Proposal requires a repository-relative path') };
+  }
+  if (params.name === deleteTool.name) {
+    if (Object.keys(args).join(',') !== 'path') return { jsonrpc: '2.0', id, result: failure('Delete proposal accepts only path') };
+    return { jsonrpc: '2.0', id, result: { content: [{ type: 'text',
+      text: `PROPOSED_DELETE ${createHash('sha256').update(args.path, 'utf8').digest('hex')}` }] } };
+  }
+  if (Object.keys(args).sort().join(',') !== 'content,path' || typeof args.content !== 'string'
+    || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024) {
+    return { jsonrpc: '2.0', id, result: failure('Text proposal requires at most 4 MiB of UTF-8 content') };
   }
   return { jsonrpc: '2.0', id, result: { content: [{ type: 'text',
     text: `PROPOSED ${createHash('sha256').update(args.content, 'utf8').digest('hex')}` }] } };

@@ -87,3 +87,21 @@ test('Codex decoder rejects native tools and unknown event kinds before a result
   updated.consume(event('thread.started', { thread_id: threadId })); updated.consume(event('turn.started'));
   assert.throws(() => updated.consume(event('item.updated', { item: { id: 'item_2', type: 'command_execution' } })), { code: 'INVALID_RESULT' });
 });
+
+test('Codex delete proposal requires a matching path receipt', () => {
+  const item = { id: 'item_4', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_propose_delete',
+    arguments: { path: 'src/a.ts' } };
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+  decoder.consume(event('item.started', { item: { ...item, status: 'in_progress', error: null, result: null } }));
+  decoder.consume(event('item.completed', { item: { ...item, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: `PROPOSED_DELETE ${createHash('sha256').update('src/a.ts').digest('hex')}` }] } } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.deepEqual(decoder.proposals(), [{ path: 'src/a.ts', content: null }]);
+  const bad = new CodexEventDecoder();
+  bad.consume(event('thread.started', { thread_id: threadId })); bad.consume(event('turn.started'));
+  bad.consume(event('item.started', { item }));
+  assert.throws(() => bad.consume(event('item.completed', { item: { ...item, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: 'PROPOSED_DELETE wrong' }] } } })), { code: 'INVALID_RESULT' });
+});

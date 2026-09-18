@@ -23,7 +23,7 @@ export interface CodexProcessInput {
 export interface CodexProcessOutput {
   readonly threadId: string;
   readonly result: TaskExecutionResult;
-  readonly proposals: readonly { path: string; content: string }[];
+  readonly proposals: readonly { path: string; content: string | null }[];
 }
 
 /**
