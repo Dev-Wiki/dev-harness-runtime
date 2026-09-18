@@ -15,6 +15,21 @@ export interface WorkerFileProposal {
   readonly afterHash: string | null;
   readonly content: Uint8Array | null;
 }
+export interface WorkerProposalRecord {
+  readonly schemaVersion: 1;
+  readonly kind: 'worker-proposals';
+  readonly runId: string;
+  readonly taskId: string;
+  readonly attempt: number;
+  readonly requestId: string;
+  readonly snapshotHash: string;
+  readonly files: readonly {
+    readonly path: string;
+    readonly beforeHash: string | null;
+    readonly afterHash: string | null;
+    readonly contentBase64: string | null;
+  }[];
+}
 
 /** Host-owned, in-memory staging only. This never writes the project or proves confinement. */
 export class WorkerProposalCollector {
@@ -23,6 +38,7 @@ export class WorkerProposalCollector {
   private readonly baseline = new Map<string, { type: string; hash: string | null }>();
   private readonly proposals = new Map<string, WorkerFileProposal>();
   private totalBytes = 0;
+  private static readonly maxFiles = 1024;
 
   constructor(requestInput: TaskExecutionRequest, before: CapturedSnapshot) {
     const request = parseContract('taskExecutionRequest', requestInput);
@@ -60,6 +76,9 @@ export class WorkerProposalCollector {
       this.proposals.delete(path);
       return null;
     }
+    if (previous === undefined && this.proposals.size >= WorkerProposalCollector.maxFiles) {
+      throw new WorkerProposalError('INVALID_RESULT', 'Proposal set exceeds 1024 files');
+    }
     const total = this.totalBytes - (previous?.content?.byteLength ?? 0) + content.byteLength;
     if (total > 16 * 1024 * 1024) throw new WorkerProposalError('INVALID_RESULT', 'Proposal set exceeds 16 MiB');
     const value: WorkerFileProposal = { path, beforeHash: initial?.hash ?? null,
@@ -77,6 +96,9 @@ export class WorkerProposalCollector {
       return null;
     }
     const previous = this.proposals.get(path);
+    if (previous === undefined && this.proposals.size >= WorkerProposalCollector.maxFiles) {
+      throw new WorkerProposalError('INVALID_RESULT', 'Proposal set exceeds 1024 files');
+    }
     this.totalBytes -= previous?.content?.byteLength ?? 0;
     const value: WorkerFileProposal = { path, beforeHash: initial.hash, afterHash: null, content: null };
     this.proposals.set(path, value);
@@ -96,5 +118,57 @@ export class WorkerProposalCollector {
     if (proposed.length !== declared.length || proposed.some((path, index) => path !== declared[index])) {
       throw new WorkerProposalError('INVALID_RESULT', 'Worker result changedFiles differs from accepted proposals');
     }
+  }
+
+  /** Detached proposal bytes for private Run storage; provenance still needs host control evidence. */
+  record(): WorkerProposalRecord {
+    return { schemaVersion: 1, kind: 'worker-proposals', runId: this.request.runId,
+      taskId: this.request.taskId, attempt: this.request.attempt, requestId: this.request.requestId,
+      snapshotHash: this.request.snapshotHash,
+      files: this.list().map((file) => ({ path: file.path, beforeHash: file.beforeHash,
+        afterHash: file.afterHash, contentBase64: file.content === null ? null : Buffer.from(file.content).toString('base64') })) };
+  }
+
+  /** Revalidate a stored proposal record against the same Core request and before snapshot. */
+  static restore(request: TaskExecutionRequest, before: CapturedSnapshot, input: unknown): WorkerProposalCollector {
+    const collector = new WorkerProposalCollector(request, before);
+    if (input === null || typeof input !== 'object' || Array.isArray(input)) {
+      throw new WorkerProposalError('INVALID_RESULT', 'Proposal record is not an object');
+    }
+    const record = input as Partial<WorkerProposalRecord>;
+    if (Object.keys(record).sort().join(',') !== 'attempt,files,kind,requestId,runId,schemaVersion,snapshotHash,taskId'
+      || record.schemaVersion !== 1 || record.kind !== 'worker-proposals' || record.runId !== collector.request.runId
+      || record.taskId !== collector.request.taskId || record.attempt !== collector.request.attempt
+      || record.requestId !== collector.request.requestId || record.snapshotHash !== collector.request.snapshotHash
+      || !Array.isArray(record.files) || record.files.length > WorkerProposalCollector.maxFiles) {
+      throw new WorkerProposalError('INVALID_RESULT', 'Proposal record identity differs from the Core request');
+    }
+    let previousPath: string | undefined;
+    for (const item of record.files) {
+      if (item === null || typeof item !== 'object'
+        || Object.keys(item).sort().join(',') !== 'afterHash,beforeHash,contentBase64,path'
+        || typeof item.path !== 'string'
+        || (previousPath !== undefined && Buffer.compare(Buffer.from(previousPath), Buffer.from(item.path)) >= 0)
+        || (item.beforeHash !== null && typeof item.beforeHash !== 'string')
+        || (item.afterHash !== null && typeof item.afterHash !== 'string')
+        || (item.contentBase64 !== null && typeof item.contentBase64 !== 'string')) {
+        throw new WorkerProposalError('INVALID_RESULT', 'Proposal record file entry is malformed or unordered');
+      }
+      previousPath = item.path;
+      let accepted: WorkerFileProposal | null;
+      if (item.contentBase64 === null) accepted = collector.delete(item.path);
+      else {
+        if (item.contentBase64.length > 6 * 1024 * 1024 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(item.contentBase64)) {
+          throw new WorkerProposalError('INVALID_RESULT', 'Proposal record content is not bounded canonical base64');
+        }
+        const bytes = Buffer.from(item.contentBase64, 'base64');
+        if (bytes.toString('base64') !== item.contentBase64) throw new WorkerProposalError('INVALID_RESULT', 'Proposal record content is not canonical base64');
+        accepted = collector.write(item.path, bytes);
+      }
+      if (accepted === null || accepted.beforeHash !== item.beforeHash || accepted.afterHash !== item.afterHash) {
+        throw new WorkerProposalError('INVALID_RESULT', 'Proposal record hashes differ from the frozen baseline or content');
+      }
+    }
+    return collector;
   }
 }

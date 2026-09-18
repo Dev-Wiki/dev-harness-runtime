@@ -11,7 +11,8 @@ export function createWorkerWritePolicy(scopeInput: Scope): (path: string) => bo
   const files = new Set(scope.files);
   const directories = scope.directories.map((directory) => `${directory}/`);
   return (path: string): boolean => {
-    if (typeof path !== 'string' || !isRepoPath(path) || path.split('/').some((part) => part.toLowerCase() === '.git')) return false;
+    if (typeof path !== 'string' || path.length > 4096 || !isRepoPath(path)
+      || path.split('/').some((part) => part.toLowerCase() === '.git')) return false;
     if (path.startsWith(`${planningRoot}/`)) return planningPaths.has(path);
     return files.has(path) || directories.some((directory) => path.startsWith(directory));
   };

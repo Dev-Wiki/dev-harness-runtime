@@ -38,7 +38,8 @@ test('staged proposals bind to the Core snapshot, copy bytes and preserve origin
 test('proposal collector rejects drift, foreign paths, symlinks and oversized content before project writes', () => {
   assert.throws(() => new WorkerProposalCollector(request, { ...before, hash: 'b'.repeat(64) }), { code: 'DRIFT_DETECTED' });
   const collector = new WorkerProposalCollector(request, before);
-  for (const path of ['../outside', '.git/config', 'docs/plan/tasks/K2.md', 'src/generated-other/new.ts']) {
+  for (const path of ['../outside', '.git/config', 'docs/plan/tasks/K2.md', 'src/generated-other/new.ts',
+    `src/generated/${'a'.repeat(4090)}`]) {
     assert.throws(() => collector.write(path, Buffer.from('x')), { code: 'AUTHORIZATION_VIOLATION' });
   }
   assert.throws(() => collector.write('src/link', Buffer.from('x')), { code: 'AUTHORIZATION_VIOLATION' });
@@ -57,4 +58,28 @@ test('a proposal restoring the baseline is a no-op and is not a declared change'
   assert.equal(staged.write('src/a.ts', Buffer.from('same')), null);
   assert.deepEqual(staged.list(), []);
   assert.doesNotThrow(() => staged.assertDeclaredChanges({ ...blocked, snapshotHash: originalHash }));
+});
+
+test('proposal records round-trip bytes and reject changed identity, hashes and encoding', () => {
+  const staged = new WorkerProposalCollector(request, before);
+  staged.write('src/a.ts', Buffer.from('HELLO'));
+  staged.write('src/generated/new.ts', Buffer.from('NEW'));
+  const record = staged.record();
+  assert.deepEqual(WorkerProposalCollector.restore(request, before, record).record(), record);
+  assert.throws(() => WorkerProposalCollector.restore(request, before, { ...record, requestId: 'other' }), { code: 'INVALID_RESULT' });
+  assert.throws(() => WorkerProposalCollector.restore(request, before, { ...record, files: [
+    { ...record.files[0], afterHash: 'b'.repeat(64) }, record.files[1],
+  ] }), { code: 'INVALID_RESULT' });
+  assert.throws(() => WorkerProposalCollector.restore(request, before, { ...record, files: [
+    { ...record.files[0], contentBase64: '@@@@' }, record.files[1],
+  ] }), { code: 'INVALID_RESULT' });
+  assert.throws(() => WorkerProposalCollector.restore(request, before, { ...record, files: [...record.files].reverse() }),
+    { code: 'INVALID_RESULT' });
+});
+
+test('proposal staging bounds the number of zero-byte files independently of byte quota', () => {
+  const staged = new WorkerProposalCollector(request, before);
+  for (let index = 0; index < 1024; index++) staged.write(`src/generated/${index}.txt`, Buffer.alloc(0));
+  assert.equal(staged.list().length, 1024);
+  assert.throws(() => staged.write('src/generated/extra.txt', Buffer.alloc(0)), { code: 'INVALID_RESULT' });
 });
