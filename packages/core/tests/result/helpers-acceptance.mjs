@@ -59,6 +59,7 @@ export async function setupAcceptance(t, options = {}) {
   const identity = { runId: initial.runId, taskId: 'A', attempt: 1, requestId: 'request-a' };
   const scope = structuredClone(planningFixture.scope);
   scope.files = [...new Set([...scope.files, ...(options.scopeFiles ?? [])])];
+  scope.directories = [...new Set([...scope.directories, ...(options.scopeDirectories ?? [])])];
   const startedAt = new Date().toISOString();
   const run = await compareAndSwapRun(handle, initial.runId, 0, { ...initial, revision: 1, status: 'RUNNING', phase: 'EXECUTE',
     currentTaskId: 'A', currentAttempt: 1, currentRequestId: identity.requestId, updatedAt: startedAt,

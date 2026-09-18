@@ -15,6 +15,8 @@ import { finalizeWithoutCommit, verifyTaskAcceptance, type VerifyTaskAcceptanceO
 import { commitAcceptedTask } from '../authorization/git.js';
 import { prepareWorkerInvocation } from '../worker/prompt.js';
 import { createWorkerReadCatalog } from '../worker/read-catalog.js';
+import { persistWorkerProposals } from '../worker/proposal-evidence.js';
+import { applyWorkerProposals } from '../worker/apply-proposals.js';
 import { RuntimeError, type RuntimeAdapter, type RuntimeResult, type RuntimeServices, type StartRunOptions } from './types.js';
 
 export function requireParent(): void {
@@ -73,14 +75,20 @@ export async function dispatchTask(handle: LockHandle, project: ProjectContext, 
   assertUnchanged(before, await recaptureSnapshot(before)); aborted(signal);
   const result = validateResultForRequest(request, await adapter.executor.execute(structuredClone(request), signal ?? new AbortController().signal));
   await adapter.verifyQuiescence({ state: structuredClone(state) });
-  const ending = await captureSnapshot({ project, runId: state.runId, protocolSource: state.protocolSource, adapterConfigHash: state.adapterConfigHash });
+  const operations = await adapter.collectProposals?.({ request: structuredClone(request), result: structuredClone(result) });
+  const application = operations === undefined ? undefined : await applyWorkerProposals(handle, state.revision, request, result,
+    await persistWorkerProposals(handle, state.revision, request, result, operations), project);
+  const ending = application?.ending ?? await captureSnapshot({ project, runId: state.runId,
+    protocolSource: state.protocolSource, adapterConfigHash: state.adapterConfigHash });
   const endingSnapshotRef = await ensureRunEvidence(handle, state.runId, state.revision, recordName('ending', request.requestId), ending.snapshot);
   const resultRef = await writeResult(handle, state.runId, state.revision, result);
-  const records = await adapter.collectEvidence({ request: structuredClone(request), before, after: ending });
+  const records = await adapter.collectEvidence({ request: structuredClone(request), before, after: ending,
+    ...(application ? { application } : {}) });
   if (records.length === 0) throw new RuntimeError('CAPABILITY_MISSING', 'Host supplied no controlled ending evidence');
   const workerEvidenceRefs: EvidenceRef[] = [];
   for (const [index, record] of records.entries()) workerEvidenceRefs.push(await ensureRunEvidence(handle, state.runId, state.revision,
     recordName(`host-${index}`, request.requestId), record));
+  if (application) workerEvidenceRefs.push(application.proposalRef, application.intentRef, application.receiptRef);
   // Resolve provenance before making even a failed attempt's ending checkpoint recoverable.
   const evidence = await Promise.all(workerEvidenceRefs.map(async (ref) => ({ ref, bytes: await readEvidence(handle, state.runId, state.revision, ref) })));
   const receipt = await adapter.workerControl.verify({ state, request, before, after: ending, evidence });

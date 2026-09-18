@@ -3,6 +3,7 @@ import { parseContract, validateResultForRequest, type Snapshot, type TaskExecut
 import type { CapturedSnapshot } from '../snapshot/types.js';
 import { serializeSnapshot, snapshotBoundaryHash } from '../snapshot/capture.js';
 import { compareSnapshots } from '../snapshot/guard.js';
+import { sameRecord } from '../recovery/evidence.js';
 import { createWorkerWritePolicy } from './bridge-policy.js';
 
 export class WorkerProposalError extends Error {
@@ -140,7 +141,7 @@ export class WorkerProposalCollector {
       || snapshot.repoIdentity.head !== this.beforeSnapshot.repoIdentity.head
       || snapshot.repoIdentity.branch !== this.beforeSnapshot.repoIdentity.branch
       || snapshot.indexFingerprint !== this.beforeSnapshot.indexFingerprint
-      || JSON.stringify(snapshot.protocolSource) !== JSON.stringify(this.beforeSnapshot.protocolSource)
+      || !sameRecord(snapshot.protocolSource, this.beforeSnapshot.protocolSource)
       || snapshot.adapterConfigHash !== this.beforeSnapshot.adapterConfigHash) {
       throw new WorkerProposalError('DRIFT_DETECTED', 'Ending snapshot does not bind the unchanged Worker boundary');
     }
@@ -161,12 +162,12 @@ export class WorkerProposalCollector {
           throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Tracked deletion has no missing entry: ${file.path}`);
         }
         if (current !== undefined && (current.type !== 'missing' || current.deleted !== true
-          || JSON.stringify(current.index) !== JSON.stringify(previous?.index ?? []))) {
+          || !sameRecord(current.index, previous?.index ?? []))) {
           throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Deleted proposal remains present: ${file.path}`);
         }
       } else if (current?.type !== 'file' || current.rawContentHash !== file.afterHash || current.deleted !== false
         || current.mode !== (previous?.type === 'file' ? previous.mode : '100644')
-        || JSON.stringify(current.index) !== JSON.stringify(previous?.index ?? [])) {
+        || !sameRecord(current.index, previous?.index ?? [])) {
         throw new WorkerProposalError('AUTHORIZATION_VIOLATION', `Applied bytes or mode differ from proposal: ${file.path}`);
       }
     }

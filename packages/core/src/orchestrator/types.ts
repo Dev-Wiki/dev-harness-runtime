@@ -1,4 +1,4 @@
-import type { HostEnvironment, ProtocolSource, RunState, Scope, TaskExecutionRequest, TaskExecutor, VerificationPlan } from '@dev-harness-runtime/contracts';
+import type { HostEnvironment, ProtocolSource, RunState, Scope, TaskExecutionRequest, TaskExecutionResult, TaskExecutor, VerificationPlan } from '@dev-harness-runtime/contracts';
 import type { ProjectContext } from '../discovery/project.js';
 import type { PlanningDocument, PlanningTask, TaskSelection } from '../planning/types.js';
 import type { Registry } from '../registry.js';
@@ -10,6 +10,8 @@ import type { ReconciliationVerifier } from '../recovery/reconcile.js';
 import type { RecoveryEvidenceContext } from '../recovery/types.js';
 import type { prepareWorkerInvocation } from '../worker/prompt.js';
 import type { WorkerReadCatalog } from '../worker/read-catalog.js';
+import type { ProposedFileOperation } from '../worker/proposal-evidence.js';
+import type { AppliedWorkerProposals } from '../worker/apply-proposals.js';
 
 /** Trusted, explicitly registered host integration. Worker output cannot supply these services. */
 export interface RuntimeAdapter {
@@ -23,8 +25,11 @@ export interface RuntimeAdapter {
     readCatalog: WorkerReadCatalog;
     log(stream: 'stdout' | 'stderr' | 'events', bytes: Uint8Array): Promise<void>;
   }): Promise<void>;
+  /** Optional proposal transport. Core alone persists and applies these operations after host quiescence. */
+  collectProposals?(input: { request: TaskExecutionRequest; result: TaskExecutionResult }): Promise<readonly ProposedFileOperation[]>;
   /** Records originate from the host controller after the entire worker tree is quiescent. */
-  collectEvidence(input: { request: TaskExecutionRequest; before: CapturedSnapshot; after: CapturedSnapshot }): Promise<{ schemaVersion: 1; [key: string]: unknown }[]>;
+  collectEvidence(input: { request: TaskExecutionRequest; before: CapturedSnapshot; after: CapturedSnapshot;
+    application?: AppliedWorkerProposals }): Promise<{ schemaVersion: 1; [key: string]: unknown }[]>;
   verifyQuiescence(input: { state: RunState }): Promise<void>;
   verifyCheckpoint(input: RecoveryEvidenceContext): Promise<void>;
 }
