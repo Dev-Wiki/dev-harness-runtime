@@ -25,16 +25,30 @@ interface CommandContext {
     register(definition: ProposalTool): () => void;
     guard(check: (execution: { readonly name: string; readonly agent?: unknown }) => string | undefined): () => void;
   };
+  on(event: 'tools/pre-execute', check: (execution: { readonly name: string; readonly agent?: unknown },
+    next: () => Promise<{ kind: string; reason?: string }>) => Promise<{ kind: string; reason?: string }> | { kind: string; reason?: string },
+  options: { prepend: true }): () => void;
   effect(register: () => () => void, label: string): void;
 }
 
-/** Until the scoped bridge exists, a DHR Worker cannot invoke any DSH model-facing tool. */
+/** Until the scoped bridge exists, a DHR Worker cannot invoke other DSH model-facing tool bodies. */
 export function guardUnbridgedWorkerTool(environment: Readonly<Record<string, string | undefined>>,
   _execution: { readonly name: string }): string | undefined {
   if (environment.DEV_HARNESS_WORKER === '1' && environment.DEV_HARNESS_ADAPTER === 'dsh') {
     return 'DHR Worker tool execution requires a controlled Task bridge';
   }
   return undefined;
+}
+
+/** Short-circuit later host pre-execute listeners before they can run for this Worker call. */
+export function createDshWorkerPrecheck(environment: Readonly<Record<string, string | undefined>>,
+  isOwnProposal: (execution: { readonly name: string; readonly agent?: unknown }) => boolean) {
+  return (execution: { readonly name: string; readonly agent?: unknown }, next: () => Promise<{ kind: string; reason?: string }>) => {
+    if (environment.DEV_HARNESS_WORKER !== '1' || environment.DEV_HARNESS_ADAPTER !== 'dsh') return next();
+    return isOwnProposal(execution) ? { kind: 'allow' } : {
+      kind: 'deny', reason: 'DHR Worker tool execution requires a controlled Task bridge',
+    };
+  };
 }
 
 /** This tool only acknowledges a proposal; it cannot edit or persist project content. */
@@ -60,9 +74,13 @@ export function createDshProposalTool(): ProposalTool {
 
 export function apply(ctx: CommandContext): void {
   const proposalTool = createDshProposalTool();
+  const isOwnProposal = (execution: { readonly name: string; readonly agent?: unknown }) =>
+    execution.name === proposalTool.name && ctx.tools.get(execution.name, execution.agent) === proposalTool;
+  ctx.effect(() => ctx.on('tools/pre-execute', createDshWorkerPrecheck(process.env, isOwnProposal), { prepend: true }),
+    'dev-harness-runtime: worker pre-execute gate');
   ctx.effect(() => ctx.tools.guard((execution) => {
     if (process.env.DEV_HARNESS_WORKER === '1' && process.env.DEV_HARNESS_ADAPTER === 'dsh'
-      && execution.name === proposalTool.name && ctx.tools.get(execution.name, execution.agent) === proposalTool) return undefined;
+      && isOwnProposal(execution)) return undefined;
     return guardUnbridgedWorkerTool(process.env, execution);
   }),
     'dev-harness-runtime: worker tool gate');

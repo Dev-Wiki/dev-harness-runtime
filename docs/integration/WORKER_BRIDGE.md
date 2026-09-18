@@ -11,7 +11,7 @@
 1. Core 从已冻结的 `TaskExecutionRequest.scope` 构造桥接策略；Worker 的 prompt、工具参数或结果都不能扩大策略。策略绑定 runId、taskId、attempt、requestId、before snapshot hash 和固定的 Adapter 配置摘要。
 2. Agent 宿主只提供受控读取与桥接写入。Codex 使用 `read-only` 原生沙箱和显式固定的本地 MCP server；DSH 使用 `read-only` 文件策略，并在工具注册层对 bash、web、subagent、workflow、代码执行及所有非桥接工具施加不可由后续插件放开的拒绝。必须逐一枚举并验证实际宿主工具目录；一个配置开关或 prompt 禁令不算证明。
 
-DSH rc.2 的 `tools.guard` 在 `tools/pre-execute` waterfall **之后**运行；本机安装的 `dsh-hooks-codex` 已有可执行 `PreToolUse` 的前置监听器。因而仅凭 guard 拒绝 bash 的结果，不能推断前置 hook 无副作用。生产 Worker 还需冻结隔离 profile 的完整插件/监听器集合并验证前置阶段，或使用覆盖整个宿主进程的可信隔离。
+DSH rc.2 的 `tools.guard` 在 `tools/pre-execute` waterfall **之后**运行；本机安装的 `dsh-hooks-codex` 已有可执行 `PreToolUse` 的前置监听器。DHR 插件因此增加 `{prepend:true}` 的前置短路门禁，实际组件测试证明它会跳过**随后注册**的监听器；原 guard 仍在工具体前二次核验。生产 Worker 还需冻结隔离 profile 的完整插件/监听器集合并证明没有更早执行的监听器，或使用覆盖整个宿主进程的可信隔离。
 3. 桥接进程单独运行于无网络、无宿主凭据、无 Git 私有目录的隔离命名空间。仓库内容默认只读；仅当前 Task 明确允许的文件或目录可通过桥接写入。路径检查需防 symlink、hardlink、大小写别名和检查后替换；无法安全映射单文件或新建路径时拒绝，而不是扩大到父目录。
 4. 桥接只提供必要的文件读取、目录枚举、搜索和精确文件编辑接口，不提供任意 shell、网络、Git、进程启动或任意路径访问。每次调用记录请求身份、规范化路径、操作、前后字节摘要、执行结果与顺序；日志由可信控制器收集到当前 Run 的私有证据区。
 5. 宿主 Agent 和桥接进程均须有可验证的生命周期控制。取消、超时或异常后等待整个 Worker / 桥接进程树静止，再捕获结束快照；无法证明时保留锁并返回 `QUIESCENCE_UNKNOWN`。恢复一律启动新 Session，且不得复用旧桥接授权。

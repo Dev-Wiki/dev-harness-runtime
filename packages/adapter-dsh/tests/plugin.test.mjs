@@ -12,41 +12,55 @@ test('DSH Worker denies model-facing tools until a controlled bridge is installe
   assert.deepEqual(inject, ['commands', 'tools']);
 });
 
-test('DSH plugin registers and disposes its guard with the Human Command', () => {
+test('DSH plugin registers and disposes its precheck, guard and Human Command', async () => {
   const registered = [];
   const ctx = {
     commands: { register(command) { registered.push(['command', command]); return () => registered.push(['command-disposed']); } },
     tools: { get() { return undefined; }, register() { throw new Error('non-Worker must not register a proposal tool'); },
       guard(check) { registered.push(['guard', check]); return () => registered.push(['guard-disposed']); } },
+    on(name, check, options) { registered.push(['precheck', name, check, options]); return () => registered.push(['precheck-disposed']); },
     effect(register) { const dispose = register(); registered.push(['effect', dispose]); },
   };
   apply(ctx);
-  assert.equal(registered[0][0], 'guard');
-  assert.equal(registered[2][0], 'command');
-  assert.equal(registered[2][1].name, 'dhr-status');
-  assert.match(registered[2][1].handler().text, /not enabled/u);
-  registered[1][1](); registered[3][1]();
-  assert.deepEqual(registered.slice(-2).map(([kind]) => kind), ['guard-disposed', 'command-disposed']);
+  assert.deepEqual(registered.filter(([kind]) => kind !== 'effect').map(([kind]) => kind), ['precheck', 'guard', 'command']);
+  assert.deepEqual(registered[0].slice(1, 2), ['tools/pre-execute']);
+  assert.deepEqual(registered[0][3], { prepend: true });
+  assert.deepEqual(await registered[0][2]({ name: 'bash' }, async () => ({ kind: 'allow' })), { kind: 'allow' });
+  const command = registered.find(([kind]) => kind === 'command')[1];
+  assert.equal(command.name, 'dhr-status');
+  assert.match(command.handler().text, /not enabled/u);
+  for (const [, dispose] of registered.filter(([kind]) => kind === 'effect')) dispose();
+  assert.deepEqual(registered.slice(-3).map(([kind]) => kind), ['precheck-disposed', 'guard-disposed', 'command-disposed']);
 });
 
 test('DSH Worker allows only its exact proposal definition and that tool has no file side effect', async () => {
   const oldWorker = process.env.DEV_HARNESS_WORKER; const oldAdapter = process.env.DEV_HARNESS_ADAPTER;
   process.env.DEV_HARNESS_WORKER = '1'; process.env.DEV_HARNESS_ADAPTER = 'dsh';
   try {
-    let definition; let guard;
+    let definition; let guard; let precheck;
     const effects = [];
     const ctx = {
       commands: { register() { return () => {}; } },
       tools: { get() { return definition; }, register(value) { definition = value; return () => { definition = undefined; }; },
         guard(check) { guard = check; return () => { guard = undefined; }; } },
+      on(name, check, options) { assert.equal(name, 'tools/pre-execute'); assert.deepEqual(options, { prepend: true });
+        precheck = check; return () => { precheck = undefined; }; },
       effect(register) { effects.push(register()); },
     };
     apply(ctx);
     assert.equal(definition.name, 'dhr_propose_text');
+    let downstream = 0;
+    const next = async () => { downstream++; return { kind: 'allow' }; };
+    assert.deepEqual(await precheck({ name: 'bash' }, next),
+      { kind: 'deny', reason: 'DHR Worker tool execution requires a controlled Task bridge' });
+    assert.deepEqual(await precheck({ name: 'dhr_propose_text' }, next), { kind: 'allow' });
+    assert.equal(downstream, 0);
     assert.equal(guard({ name: 'dhr_propose_text' }), undefined);
     assert.match(guard({ name: 'bash' }), /controlled Task bridge/u);
     const original = definition;
     definition = createDshProposalTool();
+    assert.deepEqual(await precheck({ name: 'dhr_propose_text' }, next),
+      { kind: 'deny', reason: 'DHR Worker tool execution requires a controlled Task bridge' });
     assert.match(guard({ name: 'dhr_propose_text' }), /controlled Task bridge/u);
     definition = original;
     assert.equal(await definition.execute({ path: 'src/a.ts', content: 'HELLO' }, { signal: new AbortController().signal }),
