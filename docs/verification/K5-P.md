@@ -4,6 +4,8 @@
 
 在 WSL2、Node 24.15.0、pnpm 11.1.0、Codex CLI 0.154.0 上，从本仓 Skill、已编译 CLI / Adapter、固定协议 checkout 和共享元数据生成兼容 `.codex-plugin/plugin.json` 包与本地 Marketplace。生成树有 11 个文件，包含三个 Skill、包内 ESM `package.json`、`scripts/dhr.mjs`、Runtime / Adapter bundle 和实际分发声明；ZIP 解包后路径位于 `marketplace/` 下。构建证据标记本次未提交源码为 `localUnversioned`，提交后由最终 K10 dry-run 重建，不将临时 ZIP 当作可发布成品。
 
+后续 K5 验证发现当时包内 `runtime/adapter.js` 仍有 workspace import；K5 已将它改为自包含 bundle，并在临时目录证明可导入且能独立响应 MCP。原 K5-P 的安装、发现及包内 CLI 调用记录不等于 Executor 可运行；更新后的具体构建与校验见 [K5 验证记录](K5.md)。
+
 `codex plugin marketplace add`、`plugin add`、`plugin list`、包内 `node scripts/dhr.mjs --version`（0.1.0）和 `plugin remove` 均在临时隔离的 Codex 配置下成功，卸载后列表为空。原生安装来自实际 ZIP 解包目录，不读写既有个人插件目录。本轮未发起模型会话内 Skill 调用；插件可发现与 CLI 可调用不能推定 Executor、独立 Session、结构化结果或授权能力。根 Portable fixture 在另一隔离目录也可安装；本产物按设计 §19.1 与当前兼容样例选择 `.codex-plugin`，没有在同一包并放两种 manifest。
 
 ## 可复核检查

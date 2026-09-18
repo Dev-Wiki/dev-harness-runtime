@@ -29,7 +29,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 | 用途 | 命令 | 语义 | 状态 |
 |---|---|---|---|
-| build | `pnpm build` | TypeScript workspace 编译、独立 CLI bundle 与 Codex MCP bridge bundle；不生成平台插件产物 | confirmed |
+| build | `pnpm build` | TypeScript workspace 编译、独立 CLI bundle 与 Codex 自包含 Adapter / MCP bridge bundle；不生成平台插件产物 | confirmed |
 | test | `pnpm test` | 编译后执行 node:test，包含 tests/packaging 专项 | confirmed |
 | quick | `pnpm harness:quick` | typecheck + lint | confirmed |
 | bugfix | `pnpm harness:bugfix` | 编译及 node:test 回归 | confirmed |

@@ -16,7 +16,7 @@ export type DistributionPlatform = typeof distributionPlatforms[number];
 /** Build-only registrations from trusted compiled code; no RuntimeAdapter is enabled. */
 export async function createRepositoryBuildPipeline(root: string, protocolCheckout: string): Promise<BuildPipeline> {
   const definitions = [
-    { id: 'codex', manifest: 'packages/adapter-codex/package.json', bundle: 'packages/adapter-codex/dist/index.js',
+    { id: 'codex', manifest: 'packages/adapter-codex/package.json', bundle: 'packages/adapter-codex/dist/adapter.bundle.js',
       packager: new CodexPackager(root), spec: codexStaticSpec, targetVersion: 'codex-compat-0.154.0' },
     { id: 'dsh', manifest: 'packages/adapter-dsh/package.json', bundle: 'packages/adapter-dsh/dist/plugin.js',
       packager: new DshPackager(root), spec: dshStaticSpec, targetVersion: 'dsh-0.1.5-rc.1' },

@@ -151,7 +151,7 @@ export class CodexPackager implements PluginPackager {
 /** Explicit repository entry point; the caller must provide the pinned protocol checkout. */
 export async function createCodexBuildPipeline(root: string, protocolCheckout: string): Promise<BuildPipeline> {
   const input = await repositoryBuildInput(root, id, 'packages/adapter-codex/package.json',
-    'packages/adapter-codex/dist/index.js', protocolCheckout);
+    'packages/adapter-codex/dist/adapter.bundle.js', protocolCheckout);
   const platforms = createPlatformRegistry();
   const existing = platforms.get(id);
   // Registry entries are immutable; replace the metadata-only descriptor in a new registry.

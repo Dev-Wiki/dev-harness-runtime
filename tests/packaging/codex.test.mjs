@@ -34,7 +34,7 @@ async function fixture(t) {
   await mkdir(join(root, 'packages/adapter-codex/dist'), { recursive: true });
   await mkdir(join(root, 'build/manifests'), { recursive: true });
   await writeFile(join(root, 'packages/cli/dist/bundle.js'), runtime);
-  await writeFile(join(root, 'packages/adapter-codex/dist/index.js'), adapter);
+  await writeFile(join(root, 'packages/adapter-codex/dist/adapter.bundle.js'), adapter);
   await writeFile(join(root, 'build/manifests/DISTRIBUTION_NOTICE.md'), notice);
   const input = { schemaVersion: 1, platform: 'codex', releaseVersion: '0.1.0',
     adapterVersion: '0.1.0', coreProtocolVersion: 1,
@@ -42,7 +42,7 @@ async function fixture(t) {
       version: '1.11.8', commit: 'b'.repeat(40), files: [{ path: 'VERSION', sha256: hash('1.11.8\n') }] },
     skills, runtimeBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/cli/dist/bundle.js',
       sha256: hash(runtime), source },
-    adapterBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/adapter-codex/dist/index.js',
+    adapterBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/adapter-codex/dist/adapter.bundle.js',
       sha256: hash(adapter), source },
     metadata: { schemaVersion: 1, name: 'dev-harness', displayName: 'Dev Harness',
       description: 'Planning task runtime', author: 'Dev-Wiki',
