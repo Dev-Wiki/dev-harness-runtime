@@ -22,6 +22,7 @@
     "smoke:codex-autonomous": "node scripts/smoke-codex-autonomous.mjs",
     "smoke:codex-packaged-worker": "node scripts/smoke-codex-autonomous.mjs --packaged-worker",
     "smoke:codex-commit": "node scripts/smoke-codex-autonomous.mjs --packaged-worker --commit-each",
+    "smoke:codex-plugin": "node scripts/smoke-codex-plugin.mjs",
     "smoke:codex-restart": "node scripts/smoke-codex-autonomous.mjs --packaged-worker --restart-resume",
     "smoke:codex-planning": "node scripts/smoke-codex-planning.mjs",
     "verify:protocol": "node scripts/check-protocol.mjs",
