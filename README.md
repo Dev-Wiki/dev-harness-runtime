@@ -46,6 +46,31 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - 运行：pnpm dhr --help
 - Codex 插件：安装本地 Marketplace 后，在新线程显式使用 `$dev-harness:status` 或 `$dev-harness:run`；Skill 会调用同一插件包内的 `scripts/dhr.mjs`，不要求全局 `dhr` alias。
 
+### Codex 插件体验
+
+每次从新的 Codex 线程显式调用插件。安装自检不会读取项目或创建 Run：
+
+```text
+$dev-harness:run 插件安装自检
+```
+
+实际执行前，项目需要有可领取的 Planning Task，并按[执行契约](docs/CONTRACTS.md#自动执行-task-的冻结声明)声明有界写入范围、归档目标和已确认的验证命令。可按需选择一种模式：
+
+```text
+$dev-harness:run 执行 Planning Task K5，不提交
+$dev-harness:run 执行下一个 ready Task，不提交
+$dev-harness:run 执行全部 ready Task，按任务提交
+```
+
+默认不提交；只有第三种示例中的明确授权才允许 Core 在每个 Task 独立验收通过后提交。运行返回 `runId` 后，可在新线程查询或恢复：
+
+```text
+$dev-harness:status 查询 Run <run-id>
+$dev-harness:run 恢复 Run <run-id>
+```
+
+Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runtime 会在创建 Run 前探测实际能力，缺失时返回诊断并停止。
+
 ## 项目入口
 
 - [文档导航](docs/README.md)
