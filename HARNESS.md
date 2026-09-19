@@ -5,7 +5,7 @@
 
 ## 项目类型
 
-TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。Codex 包内 CLI 已在临时 Git 项目自主完成一个合成 Planning Task，并由 Core 独立验证；原始 Worker Skill、逐任务提交与跨进程崩溃恢复仍待验收。
+TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。Codex 包内 CLI 与原始 Worker Skill 已在临时 Git 项目自主完成一个合成 Planning Task，并由 Core 独立验证；逐任务提交与跨进程崩溃恢复仍待验收。
 
 ## 编译与启动问题排查
 
@@ -53,7 +53,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-runtime` 以临时 Git 项目和合成 Worker Skill 显式验证 Codex 能力探测、Core 派发、受控提案应用与宿主回执；需要本机 Codex CLI 登录，不进入常规 `pnpm verify`。该用例返回合成 `blocked`，不代表真实 Planning Task 或多任务验收。
 - `DHR_TEST_BWRAP=<absolute> DHR_TEST_CANCEL_RESUME=1 pnpm smoke:codex-runtime` 在同一合成项目中取消已启动 thread 的 Codex 会话，由 Core 标为 `INTERRUPTED`，再经 `resumeRuntimeRun` 创建新 attempt；脚本核对不同 thread ID、工作树在取消后未改及恢复后由 Core 应用提案。该显式 smoke 不进入常规 full。
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-planning` 在临时合成 Git 项目中，让真实 Codex 连续为 A、B、C 三个 Planning Task 返回五项精确提案和不含 Worker 验证声明的 `completed` 候选；Core 逐项受控应用并独立运行冻结验收命令。脚本核对 Run `COMPLETED`、三条不同 thread、无隐式提交与独立验证输出。测试使用合成 Worker Skill 和测试控制器提供的预期文件内容，不代表模型自主完成真实项目任务；需要本机 Codex 登录，不进入常规 full。
-- `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-autonomous` 在临时 Git 项目中使用包内 CLI 和通用合成 Worker 指引，由真实 Codex 自行读取需求、生成实现与 node:test、更新验证记录并完成 Planning 收口；测试控制器不预置提案文件内容。Core 独立运行冻结命令，脚本核对 Run `COMPLETED`、HEAD / index 未变。该显式 smoke 需要本机 Codex CLI 登录，不进入常规 full，也不替代原始包内 Worker Skill、真实项目或提交链验收。
+- `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-autonomous` 在临时 Git 项目中使用包内 CLI 和通用合成 Worker 指引，由真实 Codex 自行读取需求、生成实现与 node:test、更新验证记录并完成 Planning 收口；测试控制器不预置提案文件内容。`pnpm smoke:codex-packaged-worker` 在同一场景改用包内未替换的原始 Worker Skill。两者均由 Core 独立运行冻结命令并核对 Run `COMPLETED`、HEAD / index 未变。显式 smoke 需要本机 Codex CLI 登录，不进入常规 full，也不替代真实项目、交互式插件 Skill 调用或提交链验收。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录
@@ -73,7 +73,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 ## 需人工确认
 
-- 通用独立 CLI 未预装宿主 Executor；Codex 插件已通过包内自主合成 Task，原始 Worker Skill、跨进程恢复和逐任务提交仍未验收。
+- 通用独立 CLI 未预装宿主 Executor；Codex 插件已通过包内原始 Worker Skill 的自主合成 Task，跨进程恢复和逐任务提交仍未验收。
 - 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
 - 原生 Windows / Linux、真实插件安装和模型 Session 尚未取得本轮运行证据。
 

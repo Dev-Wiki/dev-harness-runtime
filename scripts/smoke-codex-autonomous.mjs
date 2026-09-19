@@ -10,7 +10,9 @@ import { inspectRun } from '../packages/core/dist/state/inspect.js';
 import { git, setupRuntimeFixture } from '../tests/fixtures/fake-executor/fixture.mjs';
 
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-assert.equal(process.argv.length, 2, 'Autonomous Codex smoke does not accept arguments');
+const packagedWorker = process.argv.length === 3 && process.argv[2] === '--packaged-worker';
+assert.ok(process.argv.length === 2 || packagedWorker,
+  'Autonomous Codex smoke accepts only --packaged-worker');
 assert.ok(process.env.DHR_TEST_BWRAP?.startsWith('/'), 'Set DHR_TEST_BWRAP to a trusted absolute bubblewrap path');
 const cleanups = [];
 const t = { after: (cleanup) => cleanups.push(cleanup) };
@@ -48,8 +50,9 @@ try {
   cleanups.push(() => rm(stage, { recursive: true, force: true }));
   const syntheticPackage = join(stage, 'plugin');
   await cp(packageRoot, syntheticPackage, { recursive: true });
-  const workerPath = join(syntheticPackage, 'skills/worker/SKILL.md');
-  const worker = Buffer.from(`---
+  if (!packagedWorker) {
+    const workerPath = join(syntheticPackage, 'skills/worker/SKILL.md');
+    const worker = Buffer.from(`---
 name: worker
 description: synthetic autonomous Planning Task smoke
 ---
@@ -86,11 +89,12 @@ reason=null, commitIntent=null, and a complete closure with schemaVersion=1 and
 the request scope.planning fields. If you cannot complete these steps, return a
 truthful blocked result with reason and no closure.
 `);
-  await writeFile(workerPath, worker);
-  const sourcePath = join(syntheticPackage, 'runtime/source.json');
-  const source = JSON.parse(await readFile(sourcePath, 'utf8'));
-  source.workerSkill.sha256 = digest(worker);
-  await writeFile(sourcePath, `${JSON.stringify(source)}\n`);
+    await writeFile(workerPath, worker);
+    const sourcePath = join(syntheticPackage, 'runtime/source.json');
+    const source = JSON.parse(await readFile(sourcePath, 'utf8'));
+    source.workerSkill.sha256 = digest(worker);
+    await writeFile(sourcePath, `${JSON.stringify(source)}\n`);
+  }
 
   const child = spawn(process.execPath, [join(syntheticPackage, 'scripts/dhr.mjs'), 'run',
     '--adapter', 'codex', '--task', 'A', '--project', f.root, '--no-commit'],
@@ -119,7 +123,8 @@ truthful blocked result with reason and no closure.
   const run = await inspectRun(project, summary.runId);
   assert.deepEqual(run.completedTasks, ['A']);
   process.stdout.write(`${JSON.stringify({ status: 'passed', autonomousTask: true,
-    packagedCli: true, independentVerification: true, outcome: run.status, syntheticOnly: true })}\n`);
+    packagedCli: true, packagedWorker, independentVerification: true,
+    outcome: run.status, syntheticOnly: true })}\n`);
 } finally {
   if (process.env.DHR_KEEP_SMOKE !== '1') for (const cleanup of cleanups.reverse()) await cleanup();
 }

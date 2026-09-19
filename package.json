@@ -20,6 +20,7 @@
     "smoke:codex-runtime": "node scripts/smoke-codex-runtime.mjs",
     "smoke:codex-package": "node scripts/smoke-codex-package.mjs",
     "smoke:codex-autonomous": "node scripts/smoke-codex-autonomous.mjs",
+    "smoke:codex-packaged-worker": "node scripts/smoke-codex-autonomous.mjs --packaged-worker",
     "smoke:codex-planning": "node scripts/smoke-codex-planning.mjs",
     "verify:protocol": "node scripts/check-protocol.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm schemas:check && pnpm test:fixtures && pnpm test:cli-package",
