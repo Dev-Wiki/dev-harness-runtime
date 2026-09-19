@@ -20,6 +20,8 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 
 定向读取项目 AGENTS.md、HARNESS.md、请求指定的 Dashboard 和当前 Task Packet，再读取该 Task 指向的必要代码、文档和依赖证据。不要全量加载历史任务或重新规划 backlog。验收依据是 Core 冻结的原 Task / HARNESS 与 verificationPlan；即使 scope 允许修改治理文件，新版本也不能替代本次原始验收基线。
 
+`dhr_read_text` 对冻结快照里尚不存在的新文件返回 `missing: true`，表示本 Task 可以在已授权 scope 内创建它；已存在文件的读取失败则视为权限或漂移问题，不能猜测内容后继续。
+
 ## 执行边界
 
 - 仅修改固定 scope 内的项目文件和当前 Task 的四个 Planning 收口路径。保留原有用户修改、其他任务的状态、优先级、依赖、范围和执行顺序。
@@ -34,6 +36,9 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 按原验收标准和冻结 verificationPlan 执行宿主实际提供的受控检查。验证只允许写预先声明的构建产物；不能借验证修改源码、计划、原有用户内容、HEAD 或 index。若宿主只有只读与提案工具，无法取得私有日志引用，就在完成候选中使用空 `verification` 列表，交由 Core 独立运行冻结检查；绝不编造通过记录。未获得的人工确认必须如实报告为阻断，不能用 Worker 自写声明代替。
 
 只有当前 Task 达到成功候选条件时，按锁定的 Planning 流程记录证据、将当前执行包移至授权 archivePath、向 archiveIndexPath 追加本次记录，并从 Dashboard 活跃表和工作顺序移除当前 Task；近期完成摘要最多五项。只调整当前任务依赖链接的等价归档位置，保留其他任务语义和原始验收文本。不要重排整个 backlog、重写历史索引或自行选择其他归档里程碑。
+
+归档包须保留原任务正文与验收标准原文，只将验收复选框勾选、更新 `验证证据` 中的真实候选记录及相对链接，并新增且仅新增一个二级标题 `## 完成验收结果`，在其下明确记录本任务完成候选。不要在其他章节添加归档说明或改写原始要求；Core 会按冻结原文逐段比对。若只有 Core 能执行权威命令，应明确写“待 Core 独立验证”，不要声称 Worker 已验证通过。
+任务包移动到 archivePath 后，逐个按新目录深度重算正文中的所有相对 Markdown 链接，使其仍指向原目标；例如指向仓库根 HARNESS.md 的链接通常要比原 `tasks/` 位置多一个 `../`。Core 会解析每个链接的实际目标，不能只保留原链接文字。
 
 失败、未完成或收口无法在授权范围内完成时保留现场，如实返回 failed、partial 或 blocked；不能用 completed 掩盖问题。Worker 的 completed 仍是候选声明，Core 将独立核对实际文件、Planning delta、证据及受控验收。
 

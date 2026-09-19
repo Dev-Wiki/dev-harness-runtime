@@ -133,6 +133,28 @@ test('Codex read and list calls require paired bounded receipts', () => {
       sha256: 'a'.repeat(64), offset: 0, nextOffset: null }) }] } } })), { code: 'INVALID_RESULT' });
 });
 
+test('Codex accepts only an exact missing-file receipt for a new frozen path', () => {
+  const call = { id: 'item_missing', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_read_text',
+    arguments: { path: 'src/new.ts', offset: 0 } };
+  const receipt = { content: [{ type: 'text', text: JSON.stringify({ path: 'src/new.ts', missing: true }) }] };
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+  decoder.consume(event('item.started', { item: call }));
+  decoder.consume(event('item.completed', { item: { ...call, status: 'completed', error: null, result: receipt } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.equal(decoder.finish(request).result.outcome, 'blocked');
+
+  for (const invalid of [{ path: 'src/new.ts', missing: false }, { path: '../outside', missing: true },
+    { path: 'src/new.ts', missing: true, content: '' }]) {
+    const bad = new CodexEventDecoder();
+    bad.consume(event('thread.started', { thread_id: threadId })); bad.consume(event('turn.started'));
+    bad.consume(event('item.started', { item: call }));
+    assert.throws(() => bad.consume(event('item.completed', { item: { ...call, status: 'completed', error: null,
+      result: { content: [{ type: 'text', text: JSON.stringify(invalid) }] } } })), { code: 'INVALID_RESULT' });
+  }
+});
+
 test('Codex literal search requires a paired bounded receipt', () => {
   const call = { id: 'item_7', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_search_text',
     arguments: { query: 'ELL', prefix: 'src', after: '' } };

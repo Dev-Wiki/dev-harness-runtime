@@ -21,6 +21,9 @@ test('Codex read view lists only frozen paths and returns verified UTF-8 bytes',
   assert.deepEqual(await view.read('src/a.ts'), { path: 'src/a.ts', content: 'HELLO', sha256: digest('HELLO') });
   assert.deepEqual(await view.readPage('src/a.ts'), { path: 'src/a.ts', content: 'HELLO', sha256: digest('HELLO'),
     offset: 0, nextOffset: null });
+  assert.deepEqual(await view.readPage('src/new.ts'), { path: 'src/new.ts', missing: true });
+  await assert.rejects(view.readPage('src/new.ts', 1), { code: 'UNSAFE_PATH' });
+  await assert.rejects(view.readPage('../outside'), { code: 'UNSAFE_PATH' });
   await assert.rejects(view.read('src/secret.ts'), { code: 'UNSAFE_PATH' });
   await assert.rejects(view.read('../outside'), { code: 'UNSAFE_PATH' });
   await assert.rejects(CodexReadView.create(policy(root, [{ path: '.git/config', sha256: digest('x') }])), { code: 'INVALID_POLICY' });
@@ -51,6 +54,7 @@ test('Codex read view refuses snapshot drift, symlinks and hardlink aliases', as
   const view = await CodexReadView.create(policy(root, [{ path: 'src/a.ts', sha256: digest('BEFORE') }]));
   await writeFile(join(root, 'src/a.ts'), 'AFTER');
   await assert.rejects(view.read('src/a.ts'), { code: 'DRIFT_DETECTED' });
+  await assert.rejects(view.readPage('src/a.ts'), { code: 'DRIFT_DETECTED' });
   await writeFile(join(root, 'src/a.ts'), 'BEFORE');
   await link(join(root, 'src/a.ts'), join(root, 'src/hardlink.ts'));
   await assert.rejects(view.read('src/a.ts'), { code: 'UNSAFE_PATH' });

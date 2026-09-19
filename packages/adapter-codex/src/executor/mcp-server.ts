@@ -27,7 +27,7 @@ const listTool = {
 };
 const readTool = {
   name: 'dhr_read_text',
-  description: 'Read a bounded page of one frozen repository text file, verifying its snapshot hash.',
+  description: 'Read a bounded page of a frozen text file, verifying its snapshot hash; paths absent from the snapshot return a missing receipt.',
   inputSchema: { type: 'object', properties: { path: { type: 'string' }, offset: { type: 'integer', minimum: 0 } },
     required: ['path', 'offset'], additionalProperties: false },
 };

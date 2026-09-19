@@ -89,8 +89,7 @@ export const codexStaticSpec: StaticSpec = {
 };
 
 const launcher = `#!/usr/bin/env node
-import { runCli } from '../runtime/dhr.js';
-import { createPackagedCodexServices } from '../runtime/adapter.js';
+import { runCli, createPackagedCodexServices } from '../runtime/dhr.js';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { join } from 'node:path';

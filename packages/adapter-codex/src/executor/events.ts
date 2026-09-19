@@ -97,6 +97,14 @@ export class CodexEventDecoder {
       throw new CodexEventError('INVALID_RESULT', 'Codex read receipt is malformed');
     }
     if (read.tool === 'dhr_read_text') {
+      if ('missing' in data) {
+        if (read.offset !== 0 || Object.keys(data).sort().join(',') !== 'missing,path'
+          || !('path' in data) || data.path !== read.path || data.missing !== true) {
+          throw new CodexEventError('INVALID_RESULT', 'Codex missing-file receipt is malformed');
+        }
+        this.pendingReads.delete(read.id);
+        return;
+      }
       if (!('path' in data) || data.path !== read.path || !('offset' in data) || data.offset !== read.offset
         || !('content' in data) || typeof data.content !== 'string' || data.content.length > 16 * 1024
         || !('sha256' in data) || typeof data.sha256 !== 'string' || !/^[a-f0-9]{64}$/u.test(data.sha256)

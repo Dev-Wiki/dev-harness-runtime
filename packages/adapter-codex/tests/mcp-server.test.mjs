@@ -60,6 +60,8 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
     { paths: ['src/a.ts'], next: null });
   assert.deepEqual(JSON.parse((await rpc('dhr_read_text', { path: 'src/a.ts', offset: 0 })).result.content[0].text),
     { path: 'src/a.ts', content: 'HELLO', sha256: createHash('sha256').update('HELLO').digest('hex'), offset: 0, nextOffset: null });
+  assert.deepEqual(JSON.parse((await rpc('dhr_read_text', { path: 'src/new.ts', offset: 0 })).result.content[0].text),
+    { path: 'src/new.ts', missing: true });
   assert.equal((await rpc('dhr_read_text', { path: '.git/config', offset: 0 })).result.isError, true);
   assert.deepEqual(JSON.parse((await rpc('dhr_search_text', { query: 'ELL', prefix: 'src', after: '' })).result.content[0].text),
     { matches: [{ path: 'src/a.ts', line: 1, column: 2, excerpt: 'HELLO' }], skipped: [], next: null });

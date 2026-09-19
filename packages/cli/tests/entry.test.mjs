@@ -79,3 +79,9 @@ test('Worker help, version, status and other nonmutating input retain existing b
     if (['--version', '-v'].includes(args[0])) assert.equal(result.stdout, '0.1.0\n');
   }
 });
+
+test('self-contained CLI bundle owns the packaged Codex service factory', async () => {
+  const bundled = await import(new URL('../dist/bundle.js', import.meta.url).href);
+  assert.equal(typeof bundled.runCli, 'function');
+  assert.equal(typeof bundled.createPackagedCodexServices, 'function');
+});

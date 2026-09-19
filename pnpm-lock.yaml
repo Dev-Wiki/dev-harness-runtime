@@ -84,6 +84,9 @@ importers:
 
   packages/cli:
     devDependencies:
+      '@dev-harness-runtime/adapter-codex':
+        specifier: workspace:*
+        version: link:../adapter-codex
       '@dev-harness-runtime/build':
         specifier: workspace:*
         version: link:../../build

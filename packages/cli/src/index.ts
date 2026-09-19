@@ -7,6 +7,12 @@ import {
   runtimeExitCode, startRuntimeRun, type RuntimeServices, type TaskSelection,
 } from '@dev-harness-runtime/core';
 
+// The packaged Codex service factory must be bundled into this same module as
+// Core. Sandbox handles are in-process capabilities backed by Core's private
+// identity map, so a factory from a second self-contained bundle cannot create
+// a handle that this bundle's acceptance path can consume.
+export { createPackagedCodexServices } from '@dev-harness-runtime/adapter-codex';
+
 export interface CliOutput { out(text: string): void; error(text: string): void }
 export interface CliOptions {
   cwd?: string; signal?: AbortSignal; services?: RuntimeServices;

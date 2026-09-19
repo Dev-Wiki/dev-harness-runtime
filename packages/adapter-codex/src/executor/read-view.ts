@@ -99,7 +99,15 @@ export class CodexReadView {
     } finally { await file.close(); }
   }
 
-  async readPage(path: string, offset = 0): Promise<{ path: string; content: string; sha256: string; offset: number; nextOffset: number | null }> {
+  async readPage(path: string, offset = 0): Promise<{ path: string; content: string; sha256: string; offset: number; nextOffset: number | null }
+    | { path: string; missing: true }> {
+    if (!allowedPath(path)) throw new CodexReadError('UNSAFE_PATH', 'Read path is unsafe');
+    // New Task files are absent from the before snapshot. This exact negative receipt
+    // lets a Worker inspect absence without mistaking it for bridge or snapshot drift.
+    if (!this.files.has(path)) {
+      if (offset !== 0) throw new CodexReadError('UNSAFE_PATH', 'Missing file has no read cursor');
+      return { path, missing: true };
+    }
     const file = await this.read(path);
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > file.content.length
       || (offset > 0 && offset < file.content.length && /[\uD800-\uDBFF]/u.test(file.content[offset - 1]!)
