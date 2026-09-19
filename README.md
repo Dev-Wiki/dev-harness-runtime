@@ -6,7 +6,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 ## 当前阶段
 
-公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。三任务流程通过 Fake Executor 与真实本地验收验证。共享打包流水线已通过 Fake Packager 验证；各平台真实 Executor / Packager 仍待后续任务接入。
+公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。Codex Executor 已通过真实 Worker、自主 Task、独立验收、逐任务提交及跨进程恢复，并可由本机安装的 Codex 插件显式调用；DSH 和其他平台仍按开发看板推进。
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`
@@ -44,6 +44,7 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - 安装：pnpm install --frozen-lockfile --ignore-scripts
 - 构建：pnpm build
 - 运行：pnpm dhr --help
+- Codex 插件：安装本地 Marketplace 后，在新线程显式使用 `$dev-harness:status` 或 `$dev-harness:run`；Skill 会调用同一插件包内的 `scripts/dhr.mjs`，不要求全局 `dhr` alias。
 
 ## 项目入口
 

@@ -133,10 +133,11 @@ export class CodexPackager implements PluginPackager {
       description: input.metadata.description, author: { name: input.metadata.author }, skills: './skills',
       interface: { displayName: input.metadata.displayName, shortDescription: input.metadata.description,
         longDescription: 'Run planning tasks with the shared dev-harness-runtime Core.',
-        developerName: input.metadata.author, category: 'Productivity', capabilities: [],
-        defaultPrompt: ['Show the current dhr Run status.'] } }));
+        developerName: input.metadata.author, category: 'Productivity', capabilities: ['Interactive', 'Read', 'Write'],
+        defaultPrompt: ['$dev-harness:status Show a dhr Run status.',
+          '$dev-harness:run Run one explicitly selected Planning Task.'] } }));
     files.set(packageManifest, json({ name: input.metadata.name, version: input.releaseVersion, type: 'module', private: true }));
-    files.set(`${plugin}/README.md`, Buffer.from(`# Dev Harness Codex plugin\n\nLocal installation: add the extracted marketplace directory with \`codex plugin marketplace add ./marketplace\`, then install \`dev-harness@dev-harness-local\`. The command wrapper is \`node scripts/dhr.mjs\` from this plugin directory. On Linux, run execution requires an installed Codex CLI, authenticated Codex home, and a trusted bubblewrap provider; the Runtime probes the real host before starting a Task. Each ready Task also needs a bounded \`dhr-runtime\` declaration in its Planning packet.\n\nThis is a local build. See DISTRIBUTION_NOTICE.md before any external distribution.\n`));
+    files.set(`${plugin}/README.md`, Buffer.from(`# Dev Harness Codex plugin\n\nLocal installation: add the extracted marketplace directory with \`codex plugin marketplace add ./marketplace\`, then install \`dev-harness@dev-harness-local\`. Start a new Codex thread and invoke \`$dev-harness:status\` or \`$dev-harness:run\`; each Skill resolves \`scripts/dhr.mjs\` from its own installed plugin root, so no global \`dhr\` alias is required. On Linux, run execution requires an installed Codex CLI, authenticated Codex home, and a trusted bubblewrap provider; the Runtime probes the real host before starting a Task. Each ready Task also needs a bounded \`dhr-runtime\` declaration in its Planning packet.\n\nThis is a local build. See DISTRIBUTION_NOTICE.md before any external distribution.\n`));
     files.set(`${plugin}/scripts/dhr.mjs`, Buffer.from(launcher));
     files.set(`${plugin}/runtime/dhr.js`, await readPinnedFile(this.#root, input.runtimeBundle.path));
     files.set(`${plugin}/runtime/adapter.js`, await readPinnedFile(this.#root, input.adapterBundle.path));

@@ -60,8 +60,31 @@ try {
   assert.match(answer.authoritativeState, /run\.json/iu);
   const forbidden = answer.forbiddenCommands.join(' ').toLowerCase();
   for (const command of ['run', 'resume', 'reconcile']) assert.ok(forbidden.includes(command));
+
+  await writeFile(schemaPath, JSON.stringify({ type: 'object', additionalProperties: false,
+    required: ['skill', 'cliVersion', 'bundledLauncher'], properties: {
+      skill: { type: 'string' }, cliVersion: { type: 'string' }, bundledLauncher: { type: 'boolean' } } }));
+  const selfCheckPrompt = 'Explicitly use $dev-harness:run for the plugin installation self-check described by that Skill. '
+    + 'Run only the same-plugin bundled CLI with --version; do not run --help, run, resume, reconcile, or inspect project files. '
+    + 'Return the invoked skill name, exact CLI version, and whether the launcher came from this plugin package.';
+  const selfCheck = await run(['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'read-only', '--json',
+    '--output-schema', schemaPath, '--output-last-message', finalPath, '-C', project, '--', selfCheckPrompt], { env, cwd: project });
+  const selfCheckEvents = selfCheck.stdout.split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  const commands = selfCheckEvents.filter((event) => event.type === 'item.completed'
+    && event.item?.type === 'command_execution');
+  const successful = commands.filter((event) => event.item?.status === 'completed' && event.item?.exit_code === 0);
+  const launcherCommands = successful.filter((event) => /scripts\/dhr\.mjs/u.test(JSON.stringify(event))
+    && /--version/u.test(JSON.stringify(event)));
+  assert.equal(launcherCommands.length, 1,
+    `Plugin self-check must complete one bundled launcher command: ${JSON.stringify(commands)}`);
+  assert.equal(commands.some((event) => /\bdhr\s+(?:run|resume|reconcile)\b/u.test(JSON.stringify(event))), false);
+  const checked = JSON.parse(await readFile(finalPath, 'utf8'));
+  assert.equal(checked.skill, 'dev-harness:run');
+  assert.equal(checked.cliVersion, '0.1.0');
+  assert.equal(checked.bundledLauncher, true);
   process.stdout.write(`${JSON.stringify({ status: 'passed', pluginId: installed.pluginId, version: installed.version,
-    explicitSkill: answer.skill, authoritativeState: true, forbiddenCommands: true, syntheticOnly: true })}\n`);
+    explicitSkill: answer.skill, authoritativeState: true, forbiddenCommands: true,
+    bundledCli: checked.cliVersion, runSkill: checked.skill, syntheticOnly: true })}\n`);
 } finally {
   await rm(stage, { recursive: true, force: true });
 }

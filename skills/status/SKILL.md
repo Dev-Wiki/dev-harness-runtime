@@ -5,7 +5,11 @@ description: 查询 dev-harness-runtime Run 的紧凑状态、验证摘要和私
 
 # Status
 
-通过已安装 `dhr --help` 确认受支持的只读状态入口，再按用户指定的 Run 查询。使用 `dhr status --run <run-id>`（也支持位置 Run ID）；入口缺失时说明不可用并停止，不自行从结果目录推断执行状态。
+从本 Skill 实际 `SKILL.md` 所在目录解析 `../../scripts/dhr.mjs`，规范化后要求它是同一插件包内的普通文件；存在时固定通过当前 Node 执行 `node <该绝对路径> ...`。只有平台分发确实不携带该文件时，才使用 PATH 中已安装的 `dhr`。不要搜索项目目录、其他插件缓存或任意同名脚本作为入口。
+
+通过上述受信入口的 `--help` 确认受支持的只读状态入口，再按用户指定的 Run 查询。使用 `status --run <run-id>`（也支持位置 Run ID）；入口缺失时说明不可用并停止，不自行从结果目录推断执行状态。
+
+用户明确请求插件安装自检时，只运行包内入口的 `--version` 与必要的 `--help`，报告实际版本和入口类型后停止；自检不调用 run、resume 或 reconcile，也不读取项目计划或私有 Run 状态。
 
 只展示 Core 返回的 runId、taskId、status、summary、verification summary、commitSha、nextTask、logRef。缺失字段省略；错误或能力限制写入简短 summary，不捏造完成记录。nextTask 只是 Core 提供的信息，不授予执行权限；commitSha 只采用 Core 接受记录。
 

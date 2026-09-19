@@ -56,7 +56,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-autonomous` 在临时 Git 项目中使用包内 CLI 和通用合成 Worker 指引，由真实 Codex 自行读取需求、生成实现与 node:test、更新验证记录并完成 Planning 收口；测试控制器不预置提案文件内容。`pnpm smoke:codex-packaged-worker` 在同一场景改用包内未替换的原始 Worker Skill。两者均由 Core 独立运行冻结命令并核对 Run `COMPLETED`、HEAD / index 未变。显式 smoke 需要本机 Codex CLI 登录，不进入常规 full，也不替代真实项目、交互式插件 Skill 调用或提交链验收。
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-commit` 使用原始 Worker Skill 和临时项目内已冻结的中文 Conventional Commits 规范运行 `--commit-each`。Worker 先通过 `dhr_identity` 核对 Core 绑定的请求与四个环境标记，只返回提交候选；Core 独立验收后创建唯一提交。脚本核对 commitSha、父提交、精确七路径、中文标题、空 index 与干净工作树。该显式 smoke 不进入常规 full。
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-restart` 在原始 Worker thread 启动后向第一段包内 CLI 发送 `SIGTERM`。Core 等宿主静止后持久化 `INTERRUPTED`、保留已完成 Worker 的检查点和应用结果并释放锁；全新的 CLI 进程随后 `resume` 同一 Run，只重做独立验收而不重复开发，最终核对 `COMPLETED`。强制杀死且无法证明后代静止时仍按恢复协议保留锁并拒绝自动接管。
-- `pnpm smoke:codex-plugin` 把当前生成的 Codex Marketplace 安装到带现有登录凭据副本的隔离临时配置，启动全新模型会话并显式调用 `$dev-harness:status`。脚本核对会话不退回 shell / MCP 资源查找，且回答包含唯一 `run.json` 权威状态和禁止的 run / resume / reconcile 入口；结束后清理临时配置。该显式 smoke 不进入常规 full。
+- `pnpm smoke:codex-plugin` 把当前生成的 Codex Marketplace 安装到带现有登录凭据副本的隔离临时配置。第一个新模型会话显式调用 `$dev-harness:status`，核对唯一 `run.json` 权威状态和禁止的 run / resume / reconcile 入口且不退回 shell / MCP 资源查找；第二个新会话显式调用 `$dev-harness:run` 的安装自检，从该 Skill 所在插件根解析并执行包内 `scripts/dhr.mjs --version`，核对版本 0.1.0。结束后清理临时配置。该显式 smoke 不进入常规 full。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

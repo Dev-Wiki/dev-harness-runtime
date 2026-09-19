@@ -71,7 +71,11 @@ test('Codex package has one native plugin, one marketplace source, three Skills 
   await compareGolden(new URL('golden/codex.json', import.meta.url).pathname, {
     paths: value.generated.files.map((file) => file.path), artifact: { file: first.file, sha256: first.sha256 },
   }, { update: process.env.DHR_UPDATE_GOLDEN === '1' });
-  assert.equal(JSON.parse(value.files.get(manifestPath)).version, value.input.releaseVersion);
+  const manifest = JSON.parse(value.files.get(manifestPath));
+  assert.equal(manifest.version, value.input.releaseVersion);
+  assert.deepEqual(manifest.interface.capabilities, ['Interactive', 'Read', 'Write']);
+  assert.deepEqual(manifest.interface.defaultPrompt, ['$dev-harness:status Show a dhr Run status.',
+    '$dev-harness:run Run one explicitly selected Planning Task.']);
   assert.equal(JSON.parse(value.files.get(catalogPath)).plugins[0].source.path, './plugins/dev-harness');
 });
 
