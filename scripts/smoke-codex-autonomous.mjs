@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cp, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { discoverProject } from '../packages/core/dist/discovery/index.js';
@@ -12,11 +12,13 @@ import { git, setupRuntimeFixture } from '../tests/fixtures/fake-executor/fixtur
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const flags = process.argv.slice(2);
 assert.equal(new Set(flags).size, flags.length, 'Autonomous Codex smoke flags must be unique');
-assert.ok(flags.every((flag) => ['--packaged-worker', '--commit-each'].includes(flag)),
-  'Autonomous Codex smoke accepts only --packaged-worker and --commit-each');
+assert.ok(flags.every((flag) => ['--packaged-worker', '--commit-each', '--restart-resume'].includes(flag)),
+  'Autonomous Codex smoke accepts only --packaged-worker, --commit-each and --restart-resume');
 const packagedWorker = flags.includes('--packaged-worker');
 const commitEach = flags.includes('--commit-each');
-assert.ok(!commitEach || packagedWorker, '--commit-each requires the packaged Worker Skill');
+const restartResume = flags.includes('--restart-resume');
+assert.ok((!commitEach && !restartResume) || packagedWorker, 'commit and restart smoke require the packaged Worker Skill');
+assert.ok(!commitEach || !restartResume, '--commit-each and --restart-resume are separate smoke modes');
 assert.ok(process.env.DHR_TEST_BWRAP?.startsWith('/'), 'Set DHR_TEST_BWRAP to a trusted absolute bubblewrap path');
 const cleanups = [];
 const t = { after: (cleanup) => cleanups.push(cleanup) };
@@ -115,19 +117,73 @@ truthful blocked result with reason and no closure.
     await writeFile(sourcePath, `${JSON.stringify(source)}\n`);
   }
 
-  const child = spawn(process.execPath, [join(syntheticPackage, 'scripts/dhr.mjs'), 'run',
-    '--adapter', 'codex', '--task', 'A', '--project', f.root, commitEach ? '--commit-each' : '--no-commit'],
-  { env: { ...process.env, DHR_BWRAP: await realpath(process.env.DHR_TEST_BWRAP) },
-    stdio: ['ignore', 'pipe', 'pipe'] });
-  const output = []; const errors = [];
-  child.stdout.on('data', (bytes) => output.push(bytes));
-  child.stderr.on('data', (bytes) => errors.push(bytes));
-  const code = await new Promise((resolve, reject) => {
-    child.on('error', reject);
-    child.on('close', (status, signal) => signal ? reject(new Error(`Packaged CLI ended by ${signal}`)) : resolve(status));
-  });
-  const lines = Buffer.concat(output).toString('utf8').split('\n').filter(Boolean);
-  const summary = lines.length ? JSON.parse(lines.at(-1)) : null;
+  const cli = join(syntheticPackage, 'scripts/dhr.mjs');
+  const env = { ...process.env, DHR_BWRAP: await realpath(process.env.DHR_TEST_BWRAP) };
+  const launch = (args) => {
+    const child = spawn(process.execPath, [cli, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const output = []; const errors = [];
+    child.stdout.on('data', (bytes) => output.push(bytes)); child.stderr.on('data', (bytes) => errors.push(bytes));
+    const done = new Promise((resolve, reject) => {
+      child.on('error', reject);
+      child.on('close', (status, signal) => signal
+        ? reject(new Error(`Packaged CLI ended by ${signal}`)) : resolve({ code: status, output, errors }));
+    });
+    return { child, done };
+  };
+  const parsed = ({ code, output, errors }) => {
+    const lines = Buffer.concat(output).toString('utf8').split('\n').filter(Boolean);
+    return { code, errors, summary: lines.length ? JSON.parse(lines.at(-1)) : null };
+  };
+  const runArgs = ['run', '--adapter', 'codex', '--task', 'A', '--project', f.root,
+    commitEach ? '--commit-each' : '--no-commit'];
+  let execution;
+  let firstThread = null;
+  let recoveryMode = null;
+  if (restartResume) {
+    const project = await discoverProject(f.root);
+    const first = launch(runArgs);
+    const deadline = Date.now() + 10 * 60_000;
+    let runId; let eventsPath;
+    while (Date.now() < deadline) {
+      const entries = await readdir(project.stateRoot, { withFileTypes: true }).catch(() => []);
+      runId = entries.find((entry) => entry.isDirectory() && /^[0-9a-f-]{36}$/u.test(entry.name))?.name;
+      if (runId) {
+        eventsPath = join(project.stateRoot, runId, 'attempts/A-1/events.jsonl');
+        const events = await readFile(eventsPath, 'utf8').catch(() => '');
+        firstThread = /"thread_id":"([0-9a-f-]{36})"/u.exec(events)?.[1] ?? null;
+        if (firstThread) break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!runId || !eventsPath || !firstThread) {
+      first.child.kill('SIGTERM');
+      await first.done.catch(() => undefined);
+      assert.fail('Timed out waiting for the first packaged Codex thread');
+    }
+    assert.equal(first.child.kill('SIGTERM'), true);
+    const interrupted = parsed(await first.done);
+    assert.equal(interrupted.code, 130);
+    assert.equal(interrupted.summary?.runId, runId);
+    assert.equal(interrupted.summary?.status, 'INTERRUPTED');
+    const state = await inspectRun(project, runId);
+    assert.equal(state.status, 'INTERRUPTED');
+    assert.equal(await git(f.root, 'rev-parse', 'HEAD'), head);
+    recoveryMode = state.pendingOperation?.checkpointRef ? 'checkpoint-revalidation' : 'fresh-session';
+    const interruptedStatus = await git(f.root, 'status', '--porcelain');
+    execution = parsed(await launch(['resume', '--run', runId, '--project', f.root]).done);
+    if (recoveryMode === 'fresh-session') {
+      const secondEvents = await readFile(join(project.stateRoot, runId, 'attempts/A-2/events.jsonl'), 'utf8');
+      const secondThread = /"thread_id":"([0-9a-f-]{36})"/u.exec(secondEvents)?.[1];
+      assert.ok(secondThread && secondThread !== firstThread, 'An incomplete Worker must resume in a fresh Codex thread');
+    } else {
+      assert.notEqual(interruptedStatus, '', 'A completed Worker checkpoint must preserve its applied worktree');
+      const attempts = await readdir(join(project.stateRoot, runId, 'attempts'));
+      assert.deepEqual(attempts, ['A-1'], 'Checkpoint recovery must not repeat Worker development');
+    }
+  } else {
+    execution = parsed(await launch(runArgs).done);
+  }
+  const { code, errors, summary } = execution;
   if (code !== 0 || summary?.status !== 'COMPLETED') {
     const project = await discoverProject(f.root);
     const state = summary?.runId ? await inspectRun(project, summary.runId).catch(() => null) : null;
@@ -155,7 +211,8 @@ truthful blocked result with reason and no closure.
   const run = await inspectRun(project, summary.runId);
   assert.deepEqual(run.completedTasks, ['A']);
   process.stdout.write(`${JSON.stringify({ status: 'passed', autonomousTask: true,
-    packagedCli: true, packagedWorker, commitEach, independentVerification: true,
+    packagedCli: true, packagedWorker, commitEach, restartResume,
+    ...(restartResume ? { recoveryMode, firstThread } : {}), independentVerification: true,
     outcome: run.status, commitSha: summary.commitSha, syntheticOnly: true })}\n`);
 } finally {
   if (process.env.DHR_KEEP_SMOKE !== '1') for (const cleanup of cleanups.reverse()) await cleanup();
