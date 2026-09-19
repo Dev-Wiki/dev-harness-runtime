@@ -11,10 +11,11 @@ description: 通过 dev-harness-runtime 的 dhr 入口启动或恢复用户指�
 
 - 先检查 `DEV_HARNESS_WORKER`。值为 `1` 时拒绝所有 `dhr run` 模式、`resume` 和 `reconcile`，包括显式指定 Task；不通过子进程、其他入口或修改环境标记绕过。
 - 从本 Skill 实际 `SKILL.md` 所在目录解析 `../../scripts/dhr.mjs`，规范化后要求它是同一插件包内的普通文件；存在时固定通过当前 Node 执行 `node <该绝对路径> ...`。只有平台分发确实不携带该文件时，才使用 PATH 中已安装的 `dhr`。不要搜索项目目录、其他插件缓存或任意同名脚本作为入口。
-- 使用上述受信入口的 `--help` 核对可用参数。将用户选择原样映射为一个模式：指定 Task、next 或 all-ready；不能自行增加模式、Task 或循环调用。
+- 使用上述受信入口的 `--help` 核对可用参数。将用户选择映射为一个模式：指定 Task、next 或 all-ready；不能自行增加模式、Task 或循环调用。指定 Task 时只把用户明确标出的 Task ID 传给 `--task`，例如“任务 ID K5”映射为 `--task K5`；不要把“Planning Task K5”或整句描述当成 ID。无法唯一提取合法 ID 时停止并要求用户给出 ID。
 - 默认 no-commit。只有用户已明确授权本次 Run 按 Task 提交时，才传递 commit-each；两种提交标志冲突时停止。恢复保持原 Run 授权，不能借恢复扩大权限。
 - resume 只交给 Core 重验持久边界并按需启动新 Session。不要恢复旧 Conversation、按日志时间猜测结果、手改状态或自动进行 reconcile。显式 reconcile 请求只交给已实现的 CLI，由 Core 校验用户提供的对齐记录。
 - Worker 始终没有提交权限。即使 Run 获准提交，也只由 Core 验收后处理 commitIntent。push、PR、tag、release、deploy 均不在此流程授权内。
+- `run` / `resume` / `reconcile` 会在自身内部创建更窄的进程与文件隔离。若父 Codex 的命令沙箱阻止启动这个嵌套 provider，只为已经核对过的包内 `dhr` 精确命令请求宿主的沙箱升级，并保持入口、参数、项目路径和授权不变；不要借此运行 shell 组合、项目脚本或其他命令。宿主不允许时报告能力缺失并停止。
 
 ## 执行与停止
 

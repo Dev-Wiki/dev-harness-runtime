@@ -38,8 +38,8 @@ status/resume/reconcile 也接受位置参数 Run ID。默认不提交；提交�
 status --verbose 只返回已核验日志引用，不展开原始日志；resume 缺省读取当前 revision 后做 CAS。
 resolution 文件必须包含 Core 已持久化的 EvidenceRef JSON，不接受隐式审批。
 build 从已编译输入生成产物；validate / pack 不隐式编译或生成。
-已知平台: ${createPlatformRegistry().list().map((entry) => entry.id).join(', ')}。当前分发包没有已实现的宿主 Executor / Packager；
-run/resume/reconcile 需要可信调用者显式注入服务，否则返回 CAPABILITY_MISSING。
+已知平台: ${createPlatformRegistry().list().map((entry) => entry.id).join(', ')}。默认独立入口不内置宿主 Executor / Packager；
+平台包可由可信 launcher 注入服务，未注入时 run/resume/reconcile 返回 CAPABILITY_MISSING。
 `;
 class CliError extends Error {
   constructor(readonly code: string, message: string) { super(message); this.name = 'CliError'; }

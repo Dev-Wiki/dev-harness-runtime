@@ -80,6 +80,14 @@ test('Worker help, version, status and other nonmutating input retain existing b
   }
 });
 
+test('help distinguishes the default entry from a trusted platform launcher', () => {
+  const result = run(['--help']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /默认独立入口不内置宿主 Executor \/ Packager/u);
+  assert.match(result.stdout, /平台包可由可信 launcher 注入服务/u);
+  assert.doesNotMatch(result.stdout, /当前分发包没有已实现/u);
+});
+
 test('self-contained CLI bundle owns the packaged Codex service factory', async () => {
   const bundled = await import(new URL('../dist/bundle.js', import.meta.url).href);
   assert.equal(typeof bundled.runCli, 'function');

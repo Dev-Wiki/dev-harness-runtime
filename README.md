@@ -57,7 +57,7 @@ $dev-harness:run 插件安装自检
 实际执行前，项目需要有可领取的 Planning Task，并按[执行契约](docs/CONTRACTS.md#自动执行-task-的冻结声明)声明有界写入范围、归档目标和已确认的验证命令。可按需选择一种模式：
 
 ```text
-$dev-harness:run 执行 Planning Task K5，不提交
+$dev-harness:run 执行任务 ID K5，不提交
 $dev-harness:run 执行下一个 ready Task，不提交
 $dev-harness:run 执行全部 ready Task，按任务提交
 ```
@@ -69,7 +69,7 @@ $dev-harness:status 查询 Run <run-id>
 $dev-harness:run 恢复 Run <run-id>
 ```
 
-Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runtime 会在创建 Run 前探测实际能力，缺失时返回诊断并停止。
+Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runtime 会在创建 Run 前探测实际能力，缺失时返回诊断并停止。父 Codex 的命令沙箱无法启动嵌套隔离时，会只为已校验的包内 `dhr` 精确命令请求升级；批准前应核对插件缓存路径、任务 ID、项目路径和提交模式。
 
 ## 项目入口
 
