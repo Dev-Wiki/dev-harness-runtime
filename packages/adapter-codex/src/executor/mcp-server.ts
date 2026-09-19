@@ -37,6 +37,11 @@ const searchTool = {
   inputSchema: { type: 'object', properties: { query: { type: 'string' }, prefix: { type: 'string' }, after: { type: 'string' } },
     required: ['query', 'prefix', 'after'], additionalProperties: false },
 };
+const identityTool = {
+  name: 'dhr_identity',
+  description: 'Return the Core-bound Task identity and exact Worker environment markers for this fresh confined session.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};
 const failure = (message: string) => ({ isError: true, content: [{ type: 'text', text: message }] });
 
 /** Pure stdio MCP endpoint: it never writes the project or persists a proposal. */
@@ -87,10 +92,11 @@ export async function handleCodexBridgeMcp(value: unknown, bridge: CodexBridgeVi
   if (!Object.hasOwn(input, 'id') || (typeof input.id !== 'string' && typeof input.id !== 'number')
     || input.jsonrpc !== '2.0' || typeof input.method !== 'string') return handleCodexProposalMcp(value, bridge.allowsProposal);
   if (input.method === 'tools/list') return { jsonrpc: '2.0', id: input.id,
-    result: { tools: [textTool, deleteTool, listTool, readTool, searchTool] } };
+    result: { tools: [textTool, deleteTool, identityTool, listTool, readTool, searchTool] } };
   if (input.method !== 'tools/call' || input.params === null || typeof input.params !== 'object'
     || Array.isArray(input.params) || !('name' in input.params)
-    || (input.params.name !== listTool.name && input.params.name !== readTool.name && input.params.name !== searchTool.name)) {
+    || (input.params.name !== identityTool.name && input.params.name !== listTool.name
+      && input.params.name !== readTool.name && input.params.name !== searchTool.name)) {
     return handleCodexProposalMcp(value, bridge.allowsProposal);
   }
   const params = input.params;
@@ -98,6 +104,11 @@ export async function handleCodexBridgeMcp(value: unknown, bridge: CodexBridgeVi
     || Array.isArray(params.arguments)) return { jsonrpc: '2.0', id: input.id, result: failure('Invalid read arguments') };
   const args = params.arguments as Record<string, unknown>;
   try {
+    if (params.name === identityTool.name) {
+      if (Object.keys(args).length !== 0) return { jsonrpc: '2.0', id: input.id, result: failure('Identity accepts no arguments') };
+      return { jsonrpc: '2.0', id: input.id, result: { content: [{ type: 'text',
+        text: JSON.stringify({ schemaVersion: 1, ...bridge.policy.identity, env: bridge.policy.env }) }] } };
+    }
     if (params.name === listTool.name) {
       if (Object.keys(args).sort().join(',') !== 'after,prefix' || typeof args.prefix !== 'string' || typeof args.after !== 'string') {
         return { jsonrpc: '2.0', id: input.id, result: failure('List requires prefix and after strings') };

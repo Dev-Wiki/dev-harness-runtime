@@ -9,7 +9,7 @@ description: 在 Core 已绑定身份、scope、授权和验证计划的 TaskExe
 
 ## 绑定输入
 
-核对请求的 schemaVersion、coreProtocolVersion、runId、taskId、attempt、requestId、snapshotHash、scope、authorization、verificationPlan 和 protocolSource。四个标记由 Core 覆盖注入，必须与请求一致：
+先调用无参数的 `dhr_identity`，把受控回执中的 runId、taskId、attempt、requestId、snapshotHash 和四个环境标记逐项与请求核对；该回执是本会话的身份依据，不尝试用原生命令读取宿主环境。缺少工具、调用失败或任一字段不一致时立即阻断。四个标记由 Core 覆盖注入，必须与请求一致：
 
 - `DEV_HARNESS_WORKER=1`
 - `DEV_HARNESS_RUN_ID` 等于 runId

@@ -14,6 +14,7 @@ const scope = { schemaVersion: 1, files: ['src/a.ts'], directories: ['src/genera
     dashboardPath: 'docs/plan/Dashboard.md', archiveIndexPath: 'docs/plan/archive/V1/README.md' } };
 const policy = (root) => ({ schemaVersion: 1,
   identity: { runId: 'run-a', taskId: 'K1', attempt: 1, requestId: 'request-a', snapshotHash: 'a'.repeat(64) },
+  env: { DEV_HARNESS_WORKER: '1', DEV_HARNESS_RUN_ID: 'run-a', DEV_HARNESS_TASK_ID: 'K1', DEV_HARNESS_ADAPTER: 'codex' },
   read: { repoRoot: root, runId: 'run-a', requestId: 'request-a', snapshotHash: 'a'.repeat(64),
     files: [{ path: 'src/a.ts', sha256: createHash('sha256').update('HELLO').digest('hex') }] },
   scope });
@@ -55,7 +56,10 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
     params: { name, arguments: args } }, bridge);
   const listed = await handleCodexBridgeMcp({ jsonrpc: '2.0', id: 7, method: 'tools/list' }, bridge);
   assert.deepEqual(listed.result.tools.map((tool) => tool.name),
-    ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
+    ['dhr_propose_text', 'dhr_propose_delete', 'dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
+  assert.deepEqual(JSON.parse((await rpc('dhr_identity', {})).result.content[0].text),
+    { schemaVersion: 1, ...policy(root).identity, env: policy(root).env });
+  assert.equal((await rpc('dhr_identity', { extra: true })).result.isError, true);
   assert.deepEqual(JSON.parse((await rpc('dhr_list_paths', { prefix: 'src', after: '' })).result.content[0].text),
     { paths: ['src/a.ts'], next: null });
   assert.deepEqual(JSON.parse((await rpc('dhr_read_text', { path: 'src/a.ts', offset: 0 })).result.content[0].text),
@@ -80,9 +84,10 @@ test('stdio MCP process loads one private bridge policy and gates proposal calls
   await withCodexBridgePolicy(policy(root), async (path) => {
     const messages = [
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
-      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'dhr_read_text', arguments: { path: 'src/a.ts', offset: 0 } } },
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'dhr_propose_text', arguments: { path: 'other.ts', content: 'x' } } },
-      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'dhr_search_text', arguments: { query: 'ELL', prefix: 'src', after: '' } } },
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'dhr_identity', arguments: {} } },
+      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'dhr_read_text', arguments: { path: 'src/a.ts', offset: 0 } } },
+      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'dhr_propose_text', arguments: { path: 'other.ts', content: 'x' } } },
+      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'dhr_search_text', arguments: { query: 'ELL', prefix: 'src', after: '' } } },
     ];
     const result = spawnSync(process.execPath, [fileURLToPath(new URL('../dist/executor/mcp-server.js', import.meta.url)), path],
       { input: messages.map((message) => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', timeout: 5000 });
@@ -90,9 +95,10 @@ test('stdio MCP process loads one private bridge policy and gates proposal calls
     assert.equal(result.status, 0, result.stderr);
     const lines = result.stdout.trim().split('\n').map((line) => JSON.parse(line));
     assert.deepEqual(lines[0].result.tools.map((tool) => tool.name),
-      ['dhr_propose_text', 'dhr_propose_delete', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
-    assert.equal(JSON.parse(lines[1].result.content[0].text).content, 'HELLO');
-    assert.equal(lines[2].result.isError, true);
-    assert.equal(JSON.parse(lines[3].result.content[0].text).matches[0].column, 2);
+      ['dhr_propose_text', 'dhr_propose_delete', 'dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text']);
+    assert.equal(JSON.parse(lines[1].result.content[0].text).env.DEV_HARNESS_ADAPTER, 'codex');
+    assert.equal(JSON.parse(lines[2].result.content[0].text).content, 'HELLO');
+    assert.equal(lines[3].result.isError, true);
+    assert.equal(JSON.parse(lines[4].result.content[0].text).matches[0].column, 2);
   });
 });

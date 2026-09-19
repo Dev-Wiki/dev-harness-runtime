@@ -10,9 +10,13 @@ import { inspectRun } from '../packages/core/dist/state/inspect.js';
 import { git, setupRuntimeFixture } from '../tests/fixtures/fake-executor/fixture.mjs';
 
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const packagedWorker = process.argv.length === 3 && process.argv[2] === '--packaged-worker';
-assert.ok(process.argv.length === 2 || packagedWorker,
-  'Autonomous Codex smoke accepts only --packaged-worker');
+const flags = process.argv.slice(2);
+assert.equal(new Set(flags).size, flags.length, 'Autonomous Codex smoke flags must be unique');
+assert.ok(flags.every((flag) => ['--packaged-worker', '--commit-each'].includes(flag)),
+  'Autonomous Codex smoke accepts only --packaged-worker and --commit-each');
+const packagedWorker = flags.includes('--packaged-worker');
+const commitEach = flags.includes('--commit-each');
+assert.ok(!commitEach || packagedWorker, '--commit-each requires the packaged Worker Skill');
 assert.ok(process.env.DHR_TEST_BWRAP?.startsWith('/'), 'Set DHR_TEST_BWRAP to a trusted absolute bubblewrap path');
 const cleanups = [];
 const t = { after: (cleanup) => cleanups.push(cleanup) };
@@ -21,6 +25,21 @@ try {
   const command = 'node --test tests/feature.test.mjs';
   await writeFile(join(f.root, 'HARNESS.md'), '# HARNESS\n\n## 已确认命令\n\n| 用途 | 命令 | 状态 |\n|---|---|---|\n'
     + `| full | \`${command}\` | confirmed |\n`);
+  if (commitEach) await writeFile(join(f.root, 'docs/GIT_WORKFLOW.md'), `# Git 工作流契约
+
+## 提交规范
+
+使用 Conventional Commits：
+
+\`\`\`text
+<type>(<scope>): <中文描述>
+\`\`\`
+
+- \`feat\`
+- \`fix\`
+- \`test\`
+- \`docs\`
+`);
   const taskPath = join(f.root, 'docs/plan/tasks/A.md');
   const original = await readFile(taskPath, 'utf8');
   const task = original
@@ -41,7 +60,7 @@ try {
       archivePath: 'docs/plan/archive/M1/A.md' },
     verification: { sources: [], commands: [{ id: 'check', purpose: 'full', criteria: [1, 2], writableArtifacts: [] }], manual: [] } };
   await writeFile(taskPath, `${task}\n## Runtime 配置\n\n\`\`\`dhr-runtime\n${JSON.stringify(declaration)}\n\`\`\`\n`);
-  await git(f.root, 'add', '--', 'HARNESS.md', 'docs/plan/tasks/A.md');
+  await git(f.root, 'add', '--', 'HARNESS.md', 'docs/plan/tasks/A.md', ...(commitEach ? ['docs/GIT_WORKFLOW.md'] : []));
   await git(f.root, 'commit', '--quiet', '--no-gpg-sign', '-m', 'fixture: define autonomous Task A');
   const head = await git(f.root, 'rev-parse', 'HEAD');
 
@@ -97,7 +116,7 @@ truthful blocked result with reason and no closure.
   }
 
   const child = spawn(process.execPath, [join(syntheticPackage, 'scripts/dhr.mjs'), 'run',
-    '--adapter', 'codex', '--task', 'A', '--project', f.root, '--no-commit'],
+    '--adapter', 'codex', '--task', 'A', '--project', f.root, commitEach ? '--commit-each' : '--no-commit'],
   { env: { ...process.env, DHR_BWRAP: await realpath(process.env.DHR_TEST_BWRAP) },
     stdio: ['ignore', 'pipe', 'pipe'] });
   const output = []; const errors = [];
@@ -115,16 +134,29 @@ truthful blocked result with reason and no closure.
     throw new Error(JSON.stringify({ code, stderr: Buffer.concat(errors).toString('utf8').slice(-1600),
       summary, stopReason: state?.stopReason, root: f.root }));
   }
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), head);
+  const finalHead = await git(f.root, 'rev-parse', 'HEAD');
   assert.equal(await git(f.root, 'diff', '--cached', '--name-only'), '');
+  if (commitEach) {
+    assert.notEqual(finalHead, head);
+    assert.equal(await git(f.root, 'rev-list', '--count', `${head}..${finalHead}`), '1');
+    assert.equal(summary.commitSha, finalHead);
+    assert.match(await git(f.root, 'show', '-s', '--format=%s', finalHead),
+      /^(?:feat|fix|test|docs)(?:\([a-z0-9][a-z0-9-]*\))?: .*\p{Script=Han}/u);
+    assert.deepEqual((await git(f.root, 'diff-tree', '--no-commit-id', '--name-only', '-r', finalHead)).split('\n').sort(),
+      ['docs/plan/Dashboard.md', 'docs/plan/archive/M1/A.md', 'docs/plan/archive/M1/README.md',
+        'docs/plan/tasks/A.md', 'docs/verification/A.md', 'src/feature.mjs', 'tests/feature.test.mjs'].sort());
+    assert.equal(await git(f.root, 'status', '--porcelain'), '');
+  } else {
+    assert.equal(finalHead, head);
+  }
   assert.equal((await readFile(join(f.root, 'src/feature.mjs'), 'utf8')).includes('greet'), true);
   assert.equal((await readFile(join(f.root, 'tests/feature.test.mjs'), 'utf8')).includes('node:test'), true);
   const project = await discoverProject(f.root);
   const run = await inspectRun(project, summary.runId);
   assert.deepEqual(run.completedTasks, ['A']);
   process.stdout.write(`${JSON.stringify({ status: 'passed', autonomousTask: true,
-    packagedCli: true, packagedWorker, independentVerification: true,
-    outcome: run.status, syntheticOnly: true })}\n`);
+    packagedCli: true, packagedWorker, commitEach, independentVerification: true,
+    outcome: run.status, commitSha: summary.commitSha, syntheticOnly: true })}\n`);
 } finally {
   if (process.env.DHR_KEEP_SMOKE !== '1') for (const cleanup of cleanups.reverse()) await cleanup();
 }

@@ -21,10 +21,13 @@ test('Codex bridge policy binds the Core request, read catalog and Task write sc
   assert.equal(bridge.allowsProposal('src/other.ts'), false);
   assert.equal(bridge.allowsProposal('docs/plan/tasks/other.md'), false);
   assert.equal(bridge.allowsProposal('docs/plan/tasks/K1.md'), true);
+  assert.deepEqual(bridge.policy.env, request.env);
   assert.throws(() => createCodexBridgePolicy(request, { ...catalog, snapshotHash: 'b'.repeat(64) }), { code: 'INVALID_POLICY' });
   await assert.rejects(createCodexBridgeView({ ...policy, identity: { ...policy.identity, requestId: 'other' } }),
     { code: 'INVALID_POLICY' });
   await assert.rejects(createCodexBridgeView({ ...policy, scope: { ...policy.scope,
     planning: { ...policy.scope.planning, taskId: 'K2' } } }), { code: 'INVALID_POLICY' });
+  await assert.rejects(createCodexBridgeView({ ...policy, env: { ...policy.env, DEV_HARNESS_RUN_ID: 'other' } }),
+    { code: 'INVALID_POLICY' });
   await assert.rejects(createCodexBridgeView({ ...policy, extra: true }), { code: 'INVALID_POLICY' });
 });

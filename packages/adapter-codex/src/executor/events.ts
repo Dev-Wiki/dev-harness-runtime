@@ -10,7 +10,8 @@ export class CodexEventError extends Error {
 
 type ReadCall = { id: string; tool: 'dhr_list_paths'; prefix: string; after: string }
   | { id: string; tool: 'dhr_read_text'; path: string; offset: number }
-  | { id: string; tool: 'dhr_search_text'; query: string; prefix: string; after: string };
+  | { id: string; tool: 'dhr_search_text'; query: string; prefix: string; after: string }
+  | { id: string; tool: 'dhr_identity' };
 
 /** Decode one fresh Codex exec turn. Raw JSONL must be persisted separately by the controller. */
 export class CodexEventDecoder {
@@ -25,6 +26,7 @@ export class CodexEventDecoder {
   private eventCount = 0;
   private pendingProposals = new Map<string, { path: string; content: string | null }>();
   private pendingReads = new Map<string, ReadCall>();
+  private identityReceipt: Record<string, unknown> | undefined;
   private acceptedProposals: { path: string; content: string | null }[] = [];
 
   private proposalItem(item: object): { id: string; path: string; content: string | null } {
@@ -46,11 +48,15 @@ export class CodexEventDecoder {
 
   private readItem(item: object): ReadCall {
     if (!('id' in item) || typeof item.id !== 'string' || !('server' in item) || item.server !== 'dhr_proposal'
-      || !('tool' in item) || (item.tool !== 'dhr_list_paths' && item.tool !== 'dhr_read_text'
-        && item.tool !== 'dhr_search_text')
+      || !('tool' in item) || (item.tool !== 'dhr_identity' && item.tool !== 'dhr_list_paths'
+        && item.tool !== 'dhr_read_text' && item.tool !== 'dhr_search_text')
       || !('arguments' in item) || item.arguments === null || typeof item.arguments !== 'object'
       || Array.isArray(item.arguments)) throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex called an unregistered MCP tool');
     const args = item.arguments as Record<string, unknown>;
+    if (item.tool === 'dhr_identity') {
+      if (Object.keys(args).length !== 0) throw new CodexEventError('INVALID_RESULT', 'Codex identity arguments are malformed');
+      return { id: item.id, tool: 'dhr_identity' };
+    }
     if (item.tool === 'dhr_list_paths') {
       if (Object.keys(args).sort().join(',') !== 'after,prefix' || typeof args.prefix !== 'string' || typeof args.after !== 'string'
         || (args.prefix !== '' && !CodexEventDecoder.safeReadPath(args.prefix))
@@ -96,7 +102,25 @@ export class CodexEventDecoder {
     if (data === null || typeof data !== 'object' || Array.isArray(data)) {
       throw new CodexEventError('INVALID_RESULT', 'Codex read receipt is malformed');
     }
-    if (read.tool === 'dhr_read_text') {
+    if (read.tool === 'dhr_identity') {
+      const identity = data as Record<string, unknown>;
+      const env = identity.env;
+      if (Object.keys(identity).sort().join(',') !== 'attempt,env,requestId,runId,schemaVersion,snapshotHash,taskId'
+        || identity.schemaVersion !== 1 || typeof identity.runId !== 'string' || typeof identity.taskId !== 'string'
+        || !Number.isSafeInteger(identity.attempt) || typeof identity.attempt !== 'number' || identity.attempt < 1
+        || typeof identity.requestId !== 'string'
+        || typeof identity.snapshotHash !== 'string' || !/^[a-f0-9]{64}$/u.test(identity.snapshotHash)
+        || env === null || typeof env !== 'object' || Array.isArray(env)
+        || Object.keys(env).sort().join(',') !== 'DEV_HARNESS_ADAPTER,DEV_HARNESS_RUN_ID,DEV_HARNESS_TASK_ID,DEV_HARNESS_WORKER'
+        || !('DEV_HARNESS_WORKER' in env) || env.DEV_HARNESS_WORKER !== '1'
+        || !('DEV_HARNESS_RUN_ID' in env) || env.DEV_HARNESS_RUN_ID !== identity.runId
+        || !('DEV_HARNESS_TASK_ID' in env) || env.DEV_HARNESS_TASK_ID !== identity.taskId
+        || !('DEV_HARNESS_ADAPTER' in env) || typeof env.DEV_HARNESS_ADAPTER !== 'string') {
+        throw new CodexEventError('INVALID_RESULT', 'Codex identity receipt is malformed');
+      }
+      if (this.identityReceipt !== undefined) throw new CodexEventError('INVALID_RESULT', 'Codex repeated the identity receipt');
+      this.identityReceipt = structuredClone(identity);
+    } else if (read.tool === 'dhr_read_text') {
       if ('missing' in data) {
         if (read.offset !== 0 || Object.keys(data).sort().join(',') !== 'missing,path'
           || !('path' in data) || data.path !== read.path || data.missing !== true) {
@@ -194,8 +218,8 @@ export class CodexEventDecoder {
           throw new CodexEventError('INVALID_RESULT', 'Codex started an item without a type');
         }
         if (event.item.type === 'mcp_tool_call') {
-          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text'
-            || event.item.tool === 'dhr_search_text')) {
+          if ('tool' in event.item && (event.item.tool === 'dhr_identity' || event.item.tool === 'dhr_list_paths'
+            || event.item.tool === 'dhr_read_text' || event.item.tool === 'dhr_search_text')) {
             const read = this.readItem(event.item);
             if (this.pendingReads.has(read.id) || this.pendingProposals.has(read.id)) throw new CodexEventError('INVALID_RESULT', 'Duplicate Codex MCP call');
             this.pendingReads.set(read.id, read);
@@ -213,8 +237,8 @@ export class CodexEventDecoder {
           throw new CodexEventError('INVALID_RESULT', 'Codex completed a malformed item');
         }
         if (event.item.type === 'mcp_tool_call') {
-          if ('tool' in event.item && (event.item.tool === 'dhr_list_paths' || event.item.tool === 'dhr_read_text'
-            || event.item.tool === 'dhr_search_text')) {
+          if ('tool' in event.item && (event.item.tool === 'dhr_identity' || event.item.tool === 'dhr_list_paths'
+            || event.item.tool === 'dhr_read_text' || event.item.tool === 'dhr_search_text')) {
             this.completeRead(event.item);
             return;
           }
@@ -263,6 +287,13 @@ export class CodexEventDecoder {
   finish(request: TaskExecutionRequest, format: 'contract' | 'codex' = 'contract'): { threadId: string; result: TaskExecutionResult } {
     if (this.failed || !this.completed || this.threadId === undefined || this.finalText === undefined) {
       throw new CodexEventError('INVALID_RESULT', 'Codex stream ended before a complete turn');
+    }
+    if (this.identityReceipt !== undefined) {
+      const expected = { schemaVersion: 1, runId: request.runId, taskId: request.taskId, attempt: request.attempt,
+        requestId: request.requestId, snapshotHash: request.snapshotHash, env: request.env };
+      if (JSON.stringify(this.identityReceipt) !== JSON.stringify(expected)) {
+        throw new CodexEventError('AUTHORIZATION_VIOLATION', 'Codex identity receipt differs from the Core request');
+      }
     }
     let raw: unknown;
     try { raw = JSON.parse(this.finalText); } catch { throw new CodexEventError('INVALID_RESULT', 'Codex final message is not JSON'); }

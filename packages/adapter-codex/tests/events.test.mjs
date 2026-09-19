@@ -155,6 +155,38 @@ test('Codex accepts only an exact missing-file receipt for a new frozen path', (
   }
 });
 
+test('Codex identity receipt is exact, single-use and bound to the Core request', () => {
+  const call = { id: 'item_identity', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_identity', arguments: {} };
+  const identity = { schemaVersion: 1, runId: request.runId, taskId: request.taskId, attempt: request.attempt,
+    requestId: request.requestId, snapshotHash: request.snapshotHash, env: request.env };
+  const receipt = { content: [{ type: 'text', text: JSON.stringify(identity) }] };
+  const decoder = new CodexEventDecoder();
+  decoder.consume(event('thread.started', { thread_id: threadId })); decoder.consume(event('turn.started'));
+  decoder.consume(event('item.started', { item: call }));
+  decoder.consume(event('item.completed', { item: { ...call, status: 'completed', error: null, result: receipt } }));
+  decoder.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  decoder.consume(event('turn.completed'));
+  assert.equal(decoder.finish(request).result.outcome, 'blocked');
+
+  const mismatched = new CodexEventDecoder();
+  mismatched.consume(event('thread.started', { thread_id: threadId })); mismatched.consume(event('turn.started'));
+  mismatched.consume(event('item.started', { item: call }));
+  mismatched.consume(event('item.completed', { item: { ...call, status: 'completed', error: null,
+    result: { content: [{ type: 'text', text: JSON.stringify({ ...identity, requestId: 'other' }) }] } } }));
+  mismatched.consume(event('item.completed', { item: { type: 'agent_message', text: JSON.stringify(blocked) } }));
+  mismatched.consume(event('turn.completed'));
+  assert.throws(() => mismatched.finish(request), { code: 'AUTHORIZATION_VIOLATION' });
+
+  const repeated = new CodexEventDecoder();
+  repeated.consume(event('thread.started', { thread_id: threadId })); repeated.consume(event('turn.started'));
+  repeated.consume(event('item.started', { item: call }));
+  repeated.consume(event('item.completed', { item: { ...call, status: 'completed', error: null, result: receipt } }));
+  const second = { ...call, id: 'item_identity_2' };
+  repeated.consume(event('item.started', { item: second }));
+  assert.throws(() => repeated.consume(event('item.completed', { item: { ...second, status: 'completed', error: null,
+    result: receipt } })), { code: 'INVALID_RESULT' });
+});
+
 test('Codex literal search requires a paired bounded receipt', () => {
   const call = { id: 'item_7', type: 'mcp_tool_call', server: 'dhr_proposal', tool: 'dhr_search_text',
     arguments: { query: 'ELL', prefix: 'src', after: '' } };
