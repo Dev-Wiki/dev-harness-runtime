@@ -5,9 +5,9 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 已收口，M2 的 Codex K5 已验收；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，OpenCode 本地变体宿主发现和 Antigravity 原生安装链已有部分证据，模型会话调用验收仍缺。
-- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 自动 Executor 和插件会话入口已取得本机证据，当前转入 DSH 的逐 Task 权限隔离与自动执行；Cursor / OpenCode / Antigravity 完整宿主调用、原生 OS CI 运行和对外分发许可仍待落实。
+- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 自动 Executor、真实插件父会话、包内 CLI、隔离 Worker 与独立验收完整链路已取得本机证据，修正版已安装供用户体验。按当前顺序，在用户完成 Codex 体验前不继续 DSH 或其他插件；原生 OS CI 运行和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
-- **需求状态**：R0 / R1 / V0、M1 与 Codex K5 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。Codex 自动执行 Adapter 已通过本机授权门禁；DSH 仍在开发，且不继承旧 DSH 的完成状态。
+- **需求状态**：R0 / R1 / V0、M1 与 Codex K5 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。Codex 自动执行 Adapter 已通过本机授权门禁及真实插件完整任务链；K6 保留已有状态但当前不执行，且不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
 - **Run 布局**：`<run-id>/run.json` 是每个 Run 唯一权威状态文件；同级 `attempts/`、`results/`、`summary.json` 分别保存日志、结果与派生摘要。
 - **DSH 目标**：`0.1.5-rc.1`（本轮复跑；实际为 rc.1 启动器 + rc.2 组件）；旧 rc.8 仅作历史迁移参考，适配与验证以设计 §19.2 为准。
@@ -22,12 +22,12 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 |---|---|---|
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
-| M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5 已完成并归档；K6 DSH 宿主能力仍在开发 |
+| M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5 已完成并归档，修正版已安装待用户体验；K6 此前状态保留，当前未继续 |
 | M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 六平台九产物、本地 dry-run 和矩阵通过；K7 / K8 / K9 宿主调用与 K10 完整验收未完成 |
 
 ## 3. 当前工作顺序
 
-当前按顺序继续 K6 DSH Executor；K7 / K8 / K9 等待完整宿主验收。K10 已完成本地九产物 dry-run 与矩阵，完整 MVP 验收仍依赖这些宿主证据。
+当前等待用户体验已安装的 Codex 插件；体验确认或问题修复完成后再继续 K6 DSH Executor，随后处理 K7 / K8 / K9 完整宿主验收。K10 已完成本地九产物 dry-run 与矩阵，完整 MVP 验收仍依赖这些宿主证据。
 
 ## 4. 活跃任务
 
@@ -133,4 +133,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-19（K5 Codex 完成并归档；当前转入 K6 DSH Executor）*
+*最后更新：2026-09-19（Codex 真实插件完整任务链通过并安装；等待用户体验后再继续 K6）*
