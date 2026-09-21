@@ -47,7 +47,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `pnpm schemas:write` 先编译再从 TypeBox 定义写入 packages/contracts/schemas；`pnpm schemas:check` 在编译后核对导出一致性，已纳入 full。
 - `pnpm clean` 仅移除 packages/*/dist 和 build/dist；后续 `pnpm build` 重建。
 - 安装和验证分开；workspace 设置 `verifyDepsBeforeRun: error`，依赖不一致时先显式安装。
-- Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；当前成功记录仅限 WSL2。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
+- Windows / 原生 Linux 为支持目标，CI 已配置而未实跑；Runtime 自动执行成功记录仍限 WSL2。原生 Windows 已通过 Codex Marketplace 安装、Skill 发现和包内 CLI 只读自检，不代表 Linux 隔离 Executor 可在 Windows 执行。当前受限沙箱的 Node 子进程输出捕获返回 EPERM，需要可执行该测试的环境。
 - `pnpm smoke:codex-host` 是显式选用的合成宿主测试：先 `pnpm build`，并要求本机已登录的 Codex CLI；只在临时目录向模型发送合成请求、Schema 和 `HELLO` 文件内容，不在常规 `pnpm verify` 中运行。可显式设置 `DHR_TEST_BWRAP` 为可信 bubblewrap 的绝对路径，改由隔离 MCP 子进程处理桥接；未设置时运行直接子进程模式。它验证真实桥接与解码入口，不构成实际 Planning Task 或整个宿主进程树的授权证据，见 [K5 验证记录](docs/verification/K5.md)。
 - `DHR_TEST_BWRAP=<absolute> DHR_TEST_CODEX_HOST=1 pnpm smoke:codex-host` 在上述合成输入上将 Codex 宿主放入受监控的独立 PID / 网络命名空间，模型请求经独立网络内的 loopback Relay、私有 Unix socket 和宿主侧精确目的地主机代理转发；MCP bridge 位于嵌套的无网络命名空间。`pnpm smoke:codex-host-namespace` 只使用合成空目录检查宿主 PID 1 会话；两者都不属于常规 full，也不证明生产 Adapter 的完整授权。
 - `DHR_TEST_BWRAP=<absolute> pnpm smoke:codex-runtime` 以临时 Git 项目和合成 Worker Skill 显式验证 Codex 能力探测、Core 派发、受控提案应用与宿主回执；需要本机 Codex CLI 登录，不进入常规 `pnpm verify`。该用例返回合成 `blocked`，不代表真实 Planning Task 或多任务验收。
@@ -78,7 +78,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 - 通用独立 CLI 未预装宿主 Executor；Codex 插件已通过包内原始 Worker Skill 的自主合成 Task、逐任务提交、跨进程检查点恢复与会话内显式 Skill 调用。
 - 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
-- 原生 Windows / Linux 尚未取得本轮运行证据；Codex 已有真实插件安装和模型 Session，其余平台按各自任务记录边界。
+- 原生 Windows 已有 Codex 插件安装和 `$dev-harness:status` 自检 Session，尚无 Runtime Task 执行证据；原生 Linux 尚未取得本轮运行证据。WSL2 Codex 已通过完整任务链，其余平台按各自任务记录边界。
 
 ## K4-V 实际隔离专项
 

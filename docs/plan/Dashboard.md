@@ -5,7 +5,7 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 已收口，M2 的 Codex K5 已验收；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，OpenCode 本地变体宿主发现和 Antigravity 原生安装链已有部分证据，模型会话调用验收仍缺。
-- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 自动 Executor、真实插件父会话、包内 CLI、隔离 Worker 与独立验收完整链路已取得本机证据，修正版已安装供用户体验。按当前顺序，在用户完成 Codex 体验前不继续 DSH 或其他插件；原生 OS CI 运行和对外分发许可仍待落实。
+- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 自动 Executor、真实插件父会话、包内 CLI、隔离 Worker 与独立验收完整链路已取得 WSL2 证据，原生 Windows 也已安装同一产物并通过 Skill 自检。修正版已安装供用户体验；按当前顺序，在用户完成 Codex 体验前不继续 DSH 或其他插件。原生 OS Runtime CI 和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1 与 Codex K5 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。Codex 自动执行 Adapter 已通过本机授权门禁及真实插件完整任务链；K6 保留已有状态但当前不执行，且不继承旧 DSH 的完成状态。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
