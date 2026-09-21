@@ -10,7 +10,7 @@
 - 上游协议基线为本地 `dev-harness` 提交 `1ed830aa0d696b52dbd666118ced475f4d6e8f79`，`VERSION` 为 `1.11.8`。引用 [Planning](../../../dev-harness/planning/SKILL.md)、[Commands](../../../dev-harness/commands/SKILL.md)、[Git Workflow](../../../dev-harness/git-workflow/SKILL.md)；不能用本机已安装 Skill 的版本替代项目锁定来源。
 - 旧 DSH 参考提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`，仅作为迁移证据，不作为新公共协议。
 - 用户已确认项目名 `dev-harness-runtime`、CLI `dhr`、唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`，以及 `<run-id>/run.json` 的唯一状态权威。
-- 用户已确认 DSH 目标为 `0.1.5-rc.1`；首版只迁移通用机制，旧 Audit / 修复 / QA 流程留在旧仓；旧 Run 由旧实现读取，新 Runtime 不自动转换。
+- 用户已确认 DSH 目标为 `0.1.5-rc.1`；首版只迁移通用机制，Audit / 修复 / QA 全流程不纳入 Runtime 内建编排；历史 Run 不自动转换。
 - 本仓库采用 `main` 上的 `single-branch`；身份和提交发布规则见 [Git 工作流](../GIT_WORKFLOW.md)。执行 R0 不包含提交或发布授权。
 
 ## 2. 决策清单
@@ -27,7 +27,7 @@
 | D08 | G3 | Run 授权不可扩张；Worker 不持有提交权限；Core 依据项目 Git Workflow 执行精确提交 | 原始设计 §9、§37；把提交安排在独立核验之后 |
 | D09 | G4 | MVP 保证进程异常退出下的完整状态与保守恢复；断电持久性不作跨平台统一保证 | 原始设计 §10；旧实现明确未证明 fsync crash durability |
 | D10 | G4 | 锁、CAS、持久操作意图和静止检查点先于副作用；未知中间态停下，不承诺任意工具副作用 exactly-once | 原始设计 §11–12；以可证明的当前状态决定恢复 |
-| D11 | G5 | 迁移通用行为和验证性质，保留旧产品流程与旧 Run 读取实现 | 用户已确认；新 Task 模型与旧 Finding 模型不同 |
+| D11 | G5 | 承接通用行为和验证性质，不承接旧产品流程或历史 Run 读取 | 用户已确认；新 Task 模型与旧 Finding 模型不同 |
 | D12 | G7 | Core protocol 从 1 开始；Adapter SemVer 独立；构建元数据和来源锁集中维护 | 原始设计 §25–28；宿主变动不迫使其他 Adapter 改版 |
 | D13 | G7 | build 只编译，generate 只生成目录，validate 校验目录，pack 打包已验证目录；release dry-run 显式串联 | 原始设计 §24、§40；避免 build / generate 循环和隐式发布 |
 | D14 | G7 | 首版只生成本地私有产物；分发前校验所含文件的许可来源，缺失即阻止分发 | 原始设计 §40；源码许可信息与发布动作不能靠推断补全 |
@@ -40,7 +40,7 @@ V0 采用以下起点，精确版本写入 package.json / lockfile；不以“�
 |---|---|---|
 | Node.js | 开发和首版 CI 使用 `24.15.0`；包 engines 首先限定 `>=24.15.0 <25` | 本次本地 `node --version` 返回 v24.15.0；V0 验证后才在 HARNESS 标为 confirmed |
 | pnpm | `11.1.0` | 本次本地 `pnpm --version` 返回 11.1.0；V0 写 packageManager 与锁文件 |
-| TypeScript / lint | 以旧项目锁定的 `typescript@6.0.3`、`oxlint@1.76.0` 为工程起点 | 来源为 [旧 package.json](../../../dev-harness-dsh/package.json)，不是本轮安装验证；V0 验证不兼容时回到本决策调整 |
+| TypeScript / lint | 采用 `typescript@6.0.3`、`oxlint@1.76.0` | 当前锁定值见本仓库 [package.json](../../package.json)；安装与验证证据见 [V0](../verification/V0.md) |
 | 单元测试 | 编译后的 ESM + `node:test`，不新增测试框架 | 可以在无宿主、无模型凭据时验证公共逻辑 |
 | Git | 首版验证下限 `2.43.0` | 本次本地 Git 为 2.43.0；V0 必须用最低版本需要的命令验证 |
 | 平台 | Windows、Linux、WSL 为设计支持目标；各自证据分开记录 | 本次只检查当前终端工具版本，未证明其他 OS 可用 |

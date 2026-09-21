@@ -71,6 +71,14 @@ $dev-harness:run 恢复 Run <run-id>
 
 Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runtime 会在创建 Run 前探测实际能力，缺失时返回诊断并停止。父 Codex 的命令沙箱无法启动嵌套隔离时，会只为已校验的包内 `dhr` 精确命令请求升级；批准前应核对插件缓存路径、任务 ID、项目路径和提交模式。
 
+## 与 dev-harness 协作
+
+[`dev-harness`](https://github.com/Dev-Wiki/dev-harness) 维护工程契约与 8 个 Skill；本项目提供统一执行 Runtime、`dhr` 和平台插件。Skills Bundle 与 Runtime 插件分别安装；本项目的 `run / status / worker` 是执行入口，不替代上游 Planning、Commands 或 Git Workflow 契约。
+
+构建消费 [`protocol-lock.json`](protocol-lock.json) 固定的上游来源；项目执行读取目标仓库的 Context、Planning、HARNESS 与 Git 规范。完整 Audit / Finding / Auto Fix / QA 流程不作为内建自动流水线，已准备好的 Planning Task 按公共 Core 契约执行。
+
+各平台的打包、安装与自动执行能力见 [平台能力矩阵](docs/PLATFORM_MATRIX.md)。DSH 是本仓库中的 Adapter / Packager 目标，其宿主能力由本仓库的实现与验证记录维护。
+
 ## 项目入口
 
 - [文档导航](docs/README.md)

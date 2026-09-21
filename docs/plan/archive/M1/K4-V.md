@@ -13,7 +13,7 @@
 - **代码入口**：已有 contracts/binding、Core Planning / Snapshot / state / lock / recovery。恢复所需可信验证器目前为接口，需本任务实现受控验收、授权与收口证明；不得把 fixture 回调当作真实宿主能力。
 - **相关测试**：伪造成功、跨 attempt 结果、证据缺失、未授权 commit、混入用户修改和不完整归档的失败 fixture。
 - **必须保持的不变量**：push / PR / tag / release / deploy 保持 false；Worker 返回值不能成为唯一完成证据。
-- 参考 [Git Workflow Skill](../../../../../dev-harness/git-workflow/SKILL.md) 与 [旧授权测试](../../../../../dev-harness-dsh/tests/authorization.test.mjs)。
+- 参考 [Git Workflow Skill](../../../../../dev-harness/git-workflow/SKILL.md) 与 [历史授权测试对照](../../../DSH_MIGRATION.md#3-测试对照清单)。
 
 ## 范围
 

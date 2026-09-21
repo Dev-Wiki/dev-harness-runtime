@@ -21,11 +21,9 @@ V0 后续已建立 workspace、验证入口与来源锁；原设计已迁入 [do
 | [Runtime 设计](../design/runtime-design.md) §1–50 | 目标、Core / Adapter / Packager 分层、V0 与 K1–K10、最终验收 | 设计输入，尚无目标实现 |
 | [Planning 协议](../../../dev-harness/planning/SKILL.md) | Dashboard 唯一权威、任务执行包、归档与漂移门禁 | 文字协议，尚非完整 Markdown 解析规范 |
 | [dev-harness 文档入口](../../../dev-harness/docs/README.md) | 上游 Context / HARNESS / Git / Docs 的来源定位 | Runtime 不应复制这些业务协议 |
-| [旧 DSH 架构](../../../dev-harness-dsh/ARCHITECTURE.md)、[HARNESS](../../../dev-harness-dsh/HARNESS.md) | 已有工程入口与历史验证说明 | 历史记录，本次未重跑 |
-| [DSH rc.8 集成基线](../../../dev-harness-dsh/docs/integration/DSH_API_BASELINE.md) | Cordis、Agent、Session、Workflow、private state 的已记录证据 | 锁定 rc.8，不能推广到其他版本或新任务模型 |
-| [旧 state.ts](../../../dev-harness-dsh/src/state.ts)、[orchestrator.ts](../../../dev-harness-dsh/src/orchestrator.ts)、[tests](../../../dev-harness-dsh/tests) | 通用状态与授权行为的迁移参考 | 旧流程以 Audit / 修复 / QA 为中心，非 Planning Task 队列 |
+| 历史 DSH 工程与 rc.8 行为基线；后续对照记录见 [DSH 迁移边界](../DSH_MIGRATION.md) 与 [K6 验证](../verification/K6.md) | 通用状态、授权和宿主 API 的历史输入 | 初次评估未重跑；后续验证不追溯为初评结果，也不推广为新 Task Executor 能力 |
 
-只读参考源码版本：`dev-harness` 为 `1ed830aa0d696b52dbd666118ced475f4d6e8f79`，`dev-harness-dsh` 为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`。两个参考仓库检查时工作树干净。
+只读参考源码版本：`dev-harness` 为 `1ed830aa0d696b52dbd666118ced475f4d6e8f79`，历史 DSH 行为参考基线为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`。初次检查时两个来源的工作树均干净；历史实现仅保留行为记录，当前开发入口均在本 Runtime 仓库内。
 
 ## 用户已确认的统一约定
 
@@ -55,7 +53,7 @@ V0 后续已建立 workspace、验证入口与来源锁；原设计已迁入 [do
 
 ### G5 DSH 行为等价范围
 
-旧 DSH 为 Audit → Router → Auto Fix → Full Verification → QA → Reconciliation → Report，新设计为 Planning Task 串行执行。须定义迁移的是哪些通用安全性质、哪些旧产品流程保持在旧仓、旧 Run 是否支持转换。必须建立模块与测试的映射；不能仅因两个项目都有 orchestrator.ts 就宣称等价。旧仓弃用或归档不属于本次规划写入动作。
+旧 DSH 为 Audit → Router → Auto Fix → Full Verification → QA → Reconciliation → Report，新设计为 Planning Task 串行执行。初次评估要求定义通用安全性质、产品流程边界和历史 Run 兼容性，并建立模块与测试映射；不能仅因两套实现都有 orchestrator.ts 就宣称等价。当前范围已收敛为本仓库 Core / Adapter 与 Planning Task，详见 [适配边界](../DSH_MIGRATION.md)。
 
 ### G6 平台格式与能力依据
 

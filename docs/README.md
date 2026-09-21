@@ -1,11 +1,13 @@
 # dev-harness-runtime 文档入口
 
+- [项目协作与使用](../README.md#与-dev-harness-协作)：上游 Skills Bundle、协议来源与 Runtime 执行入口。
+- [平台能力矩阵](PLATFORM_MATRIX.md)：各平台的打包、安装和自动执行证据边界。
 - [实现架构](../ARCHITECTURE.md)：当前 workspace、Registry 与 CLI 边界。
 - [构建验证契约](../HARNESS.md)：工具链、已确认命令与验证范围。
 - [公共契约](CONTRACTS.md)：Planning 读取、执行结果、授权、状态恢复与打包接口。
 - [共享打包流水线](PACKAGING.md)：锁定输入、阶段门禁、静态校验和确定性归档。
 - [契约决策](decisions/runtime-contracts.md)：设计选择、来源锁定与工程基线。
-- [DSH 迁移边界](DSH_MIGRATION.md)：通用行为、旧产品流程和旧 Run 的处理。
+- [DSH 迁移边界](DSH_MIGRATION.md)：Core / Adapter 职责、通用行为与历史状态的兼容性边界。
 - [R0 验证记录](verification/R0.md)：契约走查、源码映射与文档验证。
 - [平台基线](integration/PLATFORM_BASELINE.md)：六类格式、DSH 实际组件、离线样例与宿主门禁。
 - [R1 验证记录](verification/R1.md)：格式校验、版本盘点与归档检查。

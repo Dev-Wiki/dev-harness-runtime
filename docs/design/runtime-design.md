@@ -1109,9 +1109,9 @@ TaskExecutionResult
 
 本次迁移与适配的目标宿主固定为 **DSH `0.1.5-rc.1`**。依据是用户于 2026-09-17 提供的本机 `dsh --version` 输出；该信息确认目标版本，不代表新 Adapter 已通过兼容性验收。
 
-旧 `dev-harness-dsh` 的 `0.1.0-rc.8` 集成基线仅作历史行为参考。需要针对 `0.1.5-rc.1` 重新核对公开 API、Bundle 格式与实际解析的组件依赖，并重跑契约、安装和 Session 测试；不得直接沿用旧版本的兼容结论，也不得假定所有 `@deepseek-ai/*` 包与宿主版本相同。
+历史 DSH `0.1.0-rc.8` 集成基线仅作历史行为参考。需要针对 `0.1.5-rc.1` 重新核对公开 API、Bundle 格式与实际解析的组件依赖，并重跑契约、安装和 Session 测试；不得直接沿用旧版本的兼容结论，也不得假定所有 `@deepseek-ai/*` 包与宿主版本相同。
 
-现有 `dev-harness-dsh` 中已经存在大量：
+公共 Core 承担以下通用机制：
 
 - State
 - Authorization
@@ -1120,7 +1120,7 @@ TaskExecutionResult
 - Verification
 - Reconciliation
 
-新架构中应逐步把真正平台无关部分迁移到 Core。
+平台无关部分由 Core 统一维护；具体协议见 [公共契约](../CONTRACTS.md)。
 
 DSH Adapter 只保留：
 
@@ -1142,20 +1142,10 @@ dist/dsh/
 │   ├── package.json
 │   └── README.md
 │
-└── dev-harness-dsh-vX.Y.Z.tgz
+└── <versioned-dsh-bundle>.tgz
 ```
 
-MVP 迁移期间允许旧 `dev-harness-dsh` 仓库继续存在。
-
-在新实现达到测试等价后：
-
-```text
-dev-harness-dsh
-    ↓
-deprecated / archived / redirect
-```
-
-不要直接删除旧仓库。
+DSH 接入、打包与行为验证统一在本仓库维护。历史行为对照见 [DSH 适配边界](../DSH_MIGRATION.md)，不要求外部历史源码仓库继续存在。产物树中的 `<versioned-dsh-bundle>.tgz` 为占位名，实际文件名见生成后的 `dist/manifest.json`。
 
 ---
 
@@ -1534,7 +1524,7 @@ dist/
 │   └── dev-harness-codex-vX.Y.Z.zip
 │
 ├── dsh/
-│   └── dev-harness-dsh-vX.Y.Z.tgz
+│   └── <versioned-dsh-bundle>.tgz
 │
 ├── cursor/
 │   └── dev-harness-cursor-vX.Y.Z.zip
@@ -1975,79 +1965,36 @@ deploy
 
 ---
 
-# 38. `dev-harness-dsh` 迁移方案
+# 38. DSH 适配与通用行为边界
 
-不要直接推翻现有项目。
+`dev-harness-runtime` 统一维护 Core、Adapter 与 Packager。当前实现入口见 [架构](../../ARCHITECTURE.md)，通用行为与历史测试对照见 [DSH 适配边界](../DSH_MIGRATION.md)。
 
-分阶段：
+## Core 职责
 
-## Phase A
+- authorization；
+- state / lock；
+- snapshot；
+- recovery；
+- orchestrator；
+- generic verification result；
+- final result contract。
 
-`dev-harness-runtime` 建立 Core。
+平台共享行为在 Core 中实现和验证，Adapter 不复制一套业务流程。
 
-用当前 DSH 实现作为行为参考。
-
----
-
-## Phase B
-
-识别 `dev-harness-dsh` 中真正通用模块：
-
-- authorization
-- state
-- lock
-- snapshot
-- recovery
-- orchestrator
-- generic verification result
-- final result contract
-
-迁入 / 重构进 Core。
-
-注意：
-
-> 迁移行为，不复制两份源码。
-
----
-
-## Phase C
-
-实现新的 `adapter-dsh`。
-
-只保留：
+## DSH Adapter 职责
 
 - Cordis；
 - DSH Commands；
-- DSH Session；
-- DSH Workflow；
-- DSH-specific API；
-- package manifest。
+- DSH Agent / Session；
+- 经验证需要的 DSH Workflow 桥接；
+- DSH lifecycle 与特定 API；
+- package manifest 与宿主兼容性。
 
----
+## 验收与兼容性
 
-## Phase D
+本仓库的 Core 回归验证通用性质，DSH 宿主专项验证实际 API、权限边界、取消、Session 身份和结构化结果；同一三 Task 链用于比较不同 Adapter 的 Core 生命周期。历史通过记录不代替当前 Executor 验收，具体证据见 [K6](../verification/K6.md)。
 
-跑旧项目与新 Adapter 的行为等价测试。
-
-达到 parity 后：
-
-```text
-dev-harness-dsh
-```
-
-进入：
-
-```text
-maintenance / deprecated
-```
-
-README 指向：
-
-```text
-Dev-Wiki/dev-harness-runtime
-```
-
-Git 历史保留。
+Runtime 不内建 Audit / Router / Auto Fix / QA 全流程，也不导入或转换历史 Run。后续开发和验收不依赖外部历史源码 checkout。
 
 ---
 
@@ -2344,7 +2291,7 @@ resume
 
 - DSH plugin packager；
 - DSH executor；
-- 当前 dev-harness-dsh 通用流程迁入 Core；
+- 平台无关运行机制统一由 Core 承担；
 - parity tests。
 
 ---
@@ -2496,7 +2443,7 @@ Core Orchestrator
   - https://codelabs.developers.google.com/cloud-dev-plugin-agy
   - https://codelabs.developers.google.com/getting-started-with-antigravity-skills
 - DSH：
-  - 目标版本为第 19.2 节固定的 `0.1.5-rc.1`，以该版本的公开 API 和重新取得的运行证据为准；`Dev-Wiki/dev-harness-dsh` 的 rc.8 基线只作历史迁移参考。
+  - 目标版本为第 19.2 节固定的 `0.1.5-rc.1`，以该版本的公开 API 和重新取得的运行证据为准；历史 rc.8 行为记录见 [DSH 适配边界](../DSH_MIGRATION.md)，不作为当前宿主能力证明。
 
 任何平台打包器在构建前都应通过：
 
@@ -2516,17 +2463,7 @@ platform capability / format validation
 
 # 50. 最终架构结论
 
-目标不是维护：
-
-```text
-dev-harness-codex
-dev-harness-dsh
-dev-harness-cursor
-dev-harness-opencode
-dev-harness-antigravity
-```
-
-五套工作流。
+各平台共享同一套工作流、Core 协议与工程契约；平台差异由 Adapter / Packager 承担。
 
 目标是维护：
 
