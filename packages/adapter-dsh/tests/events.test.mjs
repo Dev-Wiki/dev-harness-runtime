@@ -57,3 +57,17 @@ test('DSH Session decoder rejects foreign tool, altered receipt, gap, incomplete
   const failed = transcript(); failed[6].data.reason.kind = 'aborted';
   assert.throws(() => decode(failed), { code: 'CAPABILITY_MISSING' });
 });
+
+test('DSH Session decodes a deletion receipt and rejects altered deletion arguments or receipt', () => {
+  const deleted = transcript();
+  deleted[3].data.name = 'dhr_propose_delete';
+  deleted[3].data.arguments = JSON.stringify({ path: 'src/a.ts' });
+  deleted[4].data.message.content[0].content[0].text = `PROPOSED_DELETE ${createHash('sha256').update('src/a.ts').digest('hex')}`;
+  assert.deepEqual(decode(deleted).proposals(), [{ path: 'src/a.ts', content: null }]);
+  const extra = structuredClone(deleted);
+  extra[3].data.arguments = JSON.stringify({ path: 'src/a.ts', extra: true });
+  assert.throws(() => decode(extra), { code: 'INVALID_RESULT' });
+  const receipt = structuredClone(deleted);
+  receipt[4].data.message.content[0].content[0].text = 'PROPOSED_DELETE wrong';
+  assert.throws(() => decode(receipt), { code: 'INVALID_RESULT' });
+});

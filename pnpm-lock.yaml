@@ -75,6 +75,9 @@ importers:
       '@dev-harness-runtime/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@dev-harness-runtime/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/adapter-opencode:
     dependencies:

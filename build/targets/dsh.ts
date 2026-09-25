@@ -139,7 +139,7 @@ export class DshPackager implements PluginPackager {
 
 export async function createDshBuildPipeline(root: string, protocolCheckout: string): Promise<BuildPipeline> {
   const input = await repositoryBuildInput(root, id, 'packages/adapter-dsh/package.json',
-    'packages/adapter-dsh/dist/plugin.js', protocolCheckout);
+    'packages/adapter-dsh/dist/plugin.bundle.js', protocolCheckout);
   const descriptors = createPlatformRegistry();
   const platforms = new PlatformRegistry();
   for (const entry of descriptors.list()) platforms.register(entry.id === id

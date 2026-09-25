@@ -8,7 +8,7 @@ export async function decodeFreshDshExecution(input: {
   sessionsRoot: string;
   request: TaskExecutionRequest;
   log(bytes: Uint8Array): Promise<void>;
-}): Promise<{ sessionId: string; result: TaskExecutionResult; proposals: readonly { path: string; content: string }[] }> {
+}): Promise<{ sessionId: string; result: TaskExecutionResult; proposals: readonly { path: string; content: string | null }[] }> {
   const session = await readFreshDshSession({ dshEntry: input.dshEntry, sessionsRoot: input.sessionsRoot,
     repoRoot: input.request.repoRoot });
   const decoder = new DshSessionEventDecoder();

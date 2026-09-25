@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { apply, createDshProposalTool, guardUnbridgedWorkerTool, inject } from '../dist/plugin.js';
 
@@ -37,37 +38,45 @@ test('DSH Worker allows only its exact proposal definition and that tool has no 
   const oldWorker = process.env.DEV_HARNESS_WORKER; const oldAdapter = process.env.DEV_HARNESS_ADAPTER;
   process.env.DEV_HARNESS_WORKER = '1'; process.env.DEV_HARNESS_ADAPTER = 'dsh';
   try {
-    let definition; let guard; let precheck;
+    const definitions = new Map(); let guard; let precheck;
     const effects = [];
     const ctx = {
       commands: { register() { return () => {}; } },
-      tools: { get() { return definition; }, register(value) { definition = value; return () => { definition = undefined; }; },
+      tools: { get(name) { return definitions.get(name); }, register(value) { definitions.set(value.name, value);
+        return () => { definitions.delete(value.name); }; },
         guard(check) { guard = check; return () => { guard = undefined; }; } },
       on(name, check, options) { assert.equal(name, 'tools/pre-execute'); assert.deepEqual(options, { prepend: true });
         precheck = check; return () => { precheck = undefined; }; },
       effect(register) { effects.push(register()); },
     };
     apply(ctx);
-    assert.equal(definition.name, 'dhr_propose_text');
+    assert.deepEqual([...definitions.keys()], ['dhr_propose_text', 'dhr_propose_delete']);
     let downstream = 0;
     const next = async () => { downstream++; return { kind: 'allow' }; };
     assert.deepEqual(await precheck({ name: 'bash' }, next),
       { kind: 'deny', reason: 'DHR Worker tool execution requires a controlled Task bridge' });
     assert.deepEqual(await precheck({ name: 'dhr_propose_text' }, next), { kind: 'allow' });
+    assert.deepEqual(await precheck({ name: 'dhr_propose_delete' }, next), { kind: 'allow' });
     assert.equal(downstream, 0);
     assert.equal(guard({ name: 'dhr_propose_text' }), undefined);
+    assert.equal(guard({ name: 'dhr_propose_delete' }), undefined);
     assert.match(guard({ name: 'bash' }), /controlled Task bridge/u);
-    const original = definition;
-    definition = createDshProposalTool();
+    const original = definitions.get('dhr_propose_text');
+    definitions.set('dhr_propose_text', createDshProposalTool());
     assert.deepEqual(await precheck({ name: 'dhr_propose_text' }, next),
       { kind: 'deny', reason: 'DHR Worker tool execution requires a controlled Task bridge' });
     assert.match(guard({ name: 'dhr_propose_text' }), /controlled Task bridge/u);
-    definition = original;
-    assert.equal(await definition.execute({ path: 'src/a.ts', content: 'HELLO' }, { signal: new AbortController().signal }),
+    definitions.set('dhr_propose_text', original);
+    assert.equal(await original.execute({ path: 'src/a.ts', content: 'HELLO' }, { signal: new AbortController().signal }),
       'PROPOSED 3733cd977ff8eb18b987357e22ced99f46097f31ecb239e878ae63760e83e4d5');
-    await assert.rejects(definition.execute({ path: '../outside', content: 'x' }, { signal: new AbortController().signal }));
+    await assert.rejects(original.execute({ path: '../outside', content: 'x' }, { signal: new AbortController().signal }));
+    const deletion = definitions.get('dhr_propose_delete');
+    assert.equal(await deletion.execute({ path: 'src/a.ts' }, { signal: new AbortController().signal }),
+      `PROPOSED_DELETE ${createHash('sha256').update('src/a.ts').digest('hex')}`);
+    await assert.rejects(deletion.execute({ path: '../outside' }, { signal: new AbortController().signal }));
+    await assert.rejects(deletion.execute({ path: 'src/a.ts', extra: true }, { signal: new AbortController().signal }));
     for (const dispose of effects) dispose();
-    assert.equal(definition, undefined);
+    assert.equal(definitions.size, 0);
   } finally {
     if (oldWorker === undefined) delete process.env.DEV_HARNESS_WORKER; else process.env.DEV_HARNESS_WORKER = oldWorker;
     if (oldAdapter === undefined) delete process.env.DEV_HARNESS_ADAPTER; else process.env.DEV_HARNESS_ADAPTER = oldAdapter;

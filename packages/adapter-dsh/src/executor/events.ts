@@ -7,7 +7,8 @@ export class DshEventError extends Error {
   }
 }
 
-type Proposal = { path: string; content: string };
+type Proposal = { path: string; content: string | null };
+type PendingCall = ({ kind: 'proposal' } & Proposal) | { kind: 'read'; name: string };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const receipt = (content: string): string => `PROPOSED ${createHash('sha256').update(content, 'utf8').digest('hex')}`;
 
@@ -18,8 +19,10 @@ export class DshSessionEventDecoder {
   private ended = false;
   private failed = false;
   private finalText: string | undefined;
-  private pending = new Map<string, Proposal & { seq: number; turn: number; step: number }>();
+  private pending = new Map<string, PendingCall & { seq: number; turn: number; step: number }>();
+  private seenCalls = new Set<string>();
   private accepted: Proposal[] = [];
+  private identityReceipt: Record<string, unknown> | undefined;
 
   consume(value: unknown): void {
     if (this.failed) throw new DshEventError('INVALID_RESULT', 'DSH Session was already rejected');
@@ -45,19 +48,37 @@ export class DshSessionEventDecoder {
         this.ended = true;
       } else if (value.type === 'tool/call') {
         if (this.turn === undefined || this.ended || data.turn !== this.turn || !Number.isSafeInteger(data.step)
-          || typeof data.callId !== 'string' || data.callId.length === 0 || this.pending.has(data.callId)) {
+          || typeof data.callId !== 'string' || data.callId.length === 0 || this.seenCalls.has(data.callId)) {
           throw new DshEventError('INVALID_RESULT', 'DSH tool call is outside the fresh turn');
         }
-        if (data.name !== 'dhr_propose_text') throw new DshEventError('AUTHORIZATION_VIOLATION', 'DSH called an unbridged tool');
+        const proposalCall = data.name === 'dhr_propose_text' || data.name === 'dhr_propose_delete';
+        const readCall = ['dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text'].includes(String(data.name));
+        if (!proposalCall && !readCall) {
+          throw new DshEventError('AUTHORIZATION_VIOLATION', 'DSH called an unbridged tool');
+        }
+        this.seenCalls.add(data.callId);
         this.finalText = undefined;
         let args: unknown;
         try { args = JSON.parse(String(data.arguments)); }
         catch { throw new DshEventError('INVALID_RESULT', 'DSH proposal arguments are not JSON'); }
-        if (!record(args) || Object.keys(args).sort().join(',') !== 'content,path' || typeof args.path !== 'string'
-          || typeof args.content !== 'string' || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024) {
+        if (readCall) {
+          const keys = data.name === 'dhr_identity' ? '' : data.name === 'dhr_list_paths' ? 'after,prefix'
+            : data.name === 'dhr_read_text' ? 'offset,path' : 'after,prefix,query';
+          if (!record(args) || Object.keys(args).sort().join(',') !== keys) {
+            throw new DshEventError('INVALID_RESULT', 'DSH read arguments are malformed');
+          }
+          this.pending.set(data.callId, { kind: 'read', name: String(data.name),
+            seq: value.seq as number, turn: this.turn, step: data.step as number });
+          return;
+        }
+        if (!record(args) || typeof args.path !== 'string' || (data.name === 'dhr_propose_text'
+          ? Object.keys(args).sort().join(',') !== 'content,path' || typeof args.content !== 'string'
+            || Buffer.byteLength(args.content, 'utf8') > 4 * 1024 * 1024
+          : Object.keys(args).join(',') !== 'path')) {
           throw new DshEventError('INVALID_RESULT', 'DSH proposal arguments are malformed');
         }
-        this.pending.set(data.callId, { path: args.path, content: args.content,
+        this.pending.set(data.callId, { kind: 'proposal', path: args.path,
+          content: data.name === 'dhr_propose_text' ? args.content as string : null,
           seq: value.seq as number, turn: this.turn, step: data.step as number });
       } else if (value.type === 'tool/result') {
         if (this.turn === undefined || this.ended || data.turn !== this.turn || !record(data.message)
@@ -68,16 +89,33 @@ export class DshSessionEventDecoder {
         if (!record(block) || block.type !== 'tool-result' || typeof block.toolCallId !== 'string') {
           throw new DshEventError('INVALID_RESULT', 'DSH tool result block is malformed');
         }
-        const proposal = this.pending.get(block.toolCallId);
-        if (proposal === undefined || proposal.turn !== data.turn || proposal.step !== data.step
+        const call = this.pending.get(block.toolCallId);
+        if (call === undefined || call.turn !== data.turn || call.step !== data.step
           || !Array.isArray(value.sourceEventSeqs) || value.sourceEventSeqs.length !== 1
-          || value.sourceEventSeqs[0] !== proposal.seq || block.isError === true
+          || value.sourceEventSeqs[0] !== call.seq || block.isError === true
           || !Array.isArray(block.content) || block.content.length !== 1 || !record(block.content[0])
-          || block.content[0].type !== 'text' || block.content[0].text !== receipt(proposal.content)) {
+          || block.content[0].type !== 'text' || typeof block.content[0].text !== 'string') {
           throw new DshEventError('INVALID_RESULT', 'DSH proposal receipt does not match its call');
         }
+        const response = block.content[0].text;
+        if (call.kind === 'proposal') {
+          if (response !== (call.content === null
+            ? `PROPOSED_DELETE ${createHash('sha256').update(call.path, 'utf8').digest('hex')}`
+            : receipt(call.content))) {
+            throw new DshEventError('INVALID_RESULT', 'DSH proposal receipt does not match its call');
+          }
+          this.accepted.push({ path: call.path, content: call.content });
+        } else {
+          if (Buffer.byteLength(response, 'utf8') > 1024 * 1024) {
+            throw new DshEventError('INVALID_RESULT', 'DSH read receipt exceeds its boundary');
+          }
+          let parsed: unknown;
+          try { parsed = JSON.parse(response); }
+          catch { throw new DshEventError('INVALID_RESULT', 'DSH read receipt is not JSON'); }
+          if (!record(parsed)) throw new DshEventError('INVALID_RESULT', 'DSH read receipt is malformed');
+          if (call.name === 'dhr_identity') this.identityReceipt = parsed;
+        }
         this.pending.delete(block.toolCallId);
-        this.accepted.push({ path: proposal.path, content: proposal.content });
       } else if (value.type === 'assistant/message') {
         if (this.turn === undefined || this.ended || data.turn !== this.turn || !record(data.message)
           || data.message.role !== 'assistant' || !Array.isArray(data.message.content) || data.interrupted === true) {
@@ -99,6 +137,12 @@ export class DshSessionEventDecoder {
       || typeof header.id !== 'string' || !/^session-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(header.id)
       || header.cwd !== request.repoRoot || header.isSeeded !== false || header.parentSession !== undefined) {
       throw new DshEventError('INVALID_RESULT', 'DSH did not provide one fresh, complete Session');
+    }
+    if (this.identityReceipt && (this.identityReceipt.runId !== request.runId
+      || this.identityReceipt.taskId !== request.taskId || this.identityReceipt.attempt !== request.attempt
+      || this.identityReceipt.requestId !== request.requestId
+      || this.identityReceipt.snapshotHash !== request.snapshotHash)) {
+      throw new DshEventError('INVALID_RESULT', 'DSH read identity differs from the Core request');
     }
     let raw: unknown;
     try { raw = JSON.parse(this.finalText); }

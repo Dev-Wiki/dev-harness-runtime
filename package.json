@@ -9,7 +9,7 @@
     "pnpm": "11.1.0"
   },
   "scripts": {
-    "build": "tsc -b && node scripts/bundle-cli.mjs && node scripts/bundle-codex-bridge.mjs",
+    "build": "tsc -b && node scripts/bundle-cli.mjs && node scripts/bundle-codex-bridge.mjs && node scripts/bundle-dsh-plugin.mjs",
     "typecheck": "tsc -p tsconfig.check.json",
     "lint": "oxlint packages build/targets build/transforms build/validators build/manifests build/tests scripts tests/integration tests/contract tests/packaging",
     "test": "pnpm build && node scripts/test.mjs",
@@ -18,6 +18,7 @@
     "smoke:codex-host": "node scripts/smoke-codex-host.mjs",
     "smoke:codex-host-namespace": "node scripts/smoke-codex-host-namespace.mjs",
     "smoke:codex-runtime": "node scripts/smoke-codex-runtime.mjs",
+    "smoke:dsh-runtime": "node scripts/smoke-dsh-runtime.mjs",
     "smoke:codex-package": "node scripts/smoke-codex-package.mjs",
     "smoke:codex-autonomous": "node scripts/smoke-codex-autonomous.mjs",
     "smoke:codex-packaged-worker": "node scripts/smoke-codex-autonomous.mjs --packaged-worker",

@@ -18,7 +18,7 @@ export async function createRepositoryBuildPipeline(root: string, protocolChecko
   const definitions = [
     { id: 'codex', manifest: 'packages/adapter-codex/package.json', bundle: 'packages/adapter-codex/dist/adapter.bundle.js',
       packager: new CodexPackager(root), spec: codexStaticSpec, targetVersion: 'codex-compat-0.154.0' },
-    { id: 'dsh', manifest: 'packages/adapter-dsh/package.json', bundle: 'packages/adapter-dsh/dist/plugin.js',
+    { id: 'dsh', manifest: 'packages/adapter-dsh/package.json', bundle: 'packages/adapter-dsh/dist/plugin.bundle.js',
       packager: new DshPackager(root), spec: dshStaticSpec, targetVersion: 'dsh-0.1.5-rc.1' },
     { id: 'cursor', manifest: 'packages/adapter-cursor/package.json', bundle: 'packages/adapter-cursor/dist/index.js',
       packager: new CursorPackager(root), spec: cursorStaticSpec, targetVersion: 'cursor-native-2026.06.26' },

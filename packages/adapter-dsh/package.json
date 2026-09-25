@@ -19,6 +19,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@dev-harness-runtime/contracts": "workspace:*"
+    "@dev-harness-runtime/contracts": "workspace:*",
+    "@dev-harness-runtime/core": "workspace:*"
   }
 }
