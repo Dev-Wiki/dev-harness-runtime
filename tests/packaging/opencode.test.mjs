@@ -60,6 +60,7 @@ test('OpenCode npm and local variants have distinct native layouts and determini
   assert.equal(value.files.size, 19);
   assert.deepEqual(JSON.parse(value.files.get(manifestPath)).exports, { '.': './dist/index.js' });
   assert.match(value.files.get('local/.opencode/plugins/dev-harness.js').toString(), /export const DevHarnessPlugin/u);
+  assert.match(value.files.get('local/.opencode/plugins/dev-harness.js').toString(), /export default \{\s+id: 'dev-harness',\s+server: DevHarnessPlugin,\s+setup\(ctx\)/u);
   const first = await value.packager.pack(value.generated, value.input);
   const firstBytes = await Promise.all(first.map((artifact) => readFile(join(value.root, 'dist', artifact.file))));
   assert.deepEqual(first.map((artifact) => artifact.variant), ['npm', 'local']);

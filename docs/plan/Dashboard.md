@@ -4,7 +4,7 @@
 
 ## 1. 进度快照
 
-- **核心阶段**：M0 / M1 / M2 已收口，Codex K5 与 DSH K6 均已验收；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，OpenCode 本地变体宿主发现和 Antigravity 原生安装链已有部分证据，模型会话调用验收仍缺。
+- **核心阶段**：M0 / M1 / M2 已收口，Codex K5 与 DSH K6 均已验收；M3 的共享 K10-B、Codex K5-P、DSH K6-P 与 Portable K10-G 已验收；Cursor K7、OpenCode K8 和 Antigravity K9 已完成离线实现，OpenCode 双版本插件加载与本机模拟 registry 包名安装、Antigravity 原生安装链已有证据，模型会话调用验收仍缺。
 - **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 与 DSH 自动 Executor、包内 CLI、隔离 Worker、独立验收和逐任务提交已取得 WSL2 证据，Codex 在原生 Windows 完成安装与 Skill 自检。Cursor / OpenCode / Antigravity 模型会话调用、原生 OS Runtime CI 和对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
@@ -36,7 +36,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；已授权的宿主 smoke 在 headless 认证门禁处停止，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
-| **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证、npm 临时安装及 OpenCode 1.18.31 双变体入口发现通过；本地变体移除通过，模型调用与按包名安装未验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
+| **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 1.18.31 / 2.0.15 双版本插件加载、Skill 发现与本机模拟 registry 包名安装通过；模型会话调用待验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
 | **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 🚧 开发中 | [K5](archive/M2/K5.md)、[K6](archive/M2/K6.md)、[K7](tasks/K7.md)、[K8](tasks/K8.md)、[K9](tasks/K9.md)、[K10-G](archive/M3/K10-G.md) | 本地 dry-run、九包 SHA 与矩阵通过；其余宿主链和原生 CI 未验，详见[证据](../verification/K10.md) | [执行包](tasks/K10.md) |
 | **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](tasks/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
@@ -110,7 +110,7 @@ pnpm matrix:check
 | G3 结果与收口责任 | R0、K1、K3、K4-V | Core 独立验收、单任务收口、Linux 验证隔离与受控提交已验证；Codex / DSH Worker 权限与静止已实测 | 新宿主仍须逐一证明同一边界；宿主能力归 G6 / G8 |
 | G4 持久性与恢复 | R0、K1、K3-L、K3-R | 设计已解决 | 实现锁 / CAS / pending intent / reconcile 与进程崩溃测试；不泛化断电保证 |
 | G5 DSH 等价范围 | R0、K6 | 用户已确认；映射清单与原始 Worker 三任务迁移验收已完成 | 旧流程与旧 Run 留在旧实现，版本升级后重新探测 |
-| G6 平台格式与能力 | R1、各平台任务 | 六类 fixture、六平台九包静态与 golden 已验证；Codex / DSH Executor 已通过，OpenCode / Antigravity 有不同程度原生安装或发现证据 | 继续完成 Cursor / OpenCode / Antigravity 宿主调用及独立能力证据 |
+| G6 平台格式与能力 | R1、各平台任务 | 六类 fixture、六平台九包静态与 golden 已验证；Codex / DSH Executor 已通过，OpenCode 双版本插件加载与包名安装、Antigravity 原生安装链已有证据 | 继续完成 Cursor / OpenCode / Antigravity 模型会话调用及独立能力证据 |
 | G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享来源锁、六平台本地 dry-run、九包摘要与矩阵已验证；分发许可材料仍缺 | 对外分发前取得项目许可与随包声明，重验已提交无漂移来源 |
 | G8 实测环境与证据 | R1、K3-L、K5、K6、K10 | WSL2 Codex / DSH Executor 通过；Antigravity 有部分原生安装链；原生 OS CI 与其余宿主未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
 

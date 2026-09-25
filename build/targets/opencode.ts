@@ -21,8 +21,15 @@ const digest = (files: ReadonlyMap<string, Uint8Array>) => [...files]
   .sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
   .map(([path, bytes]) => ({ path, sha256: sha256(bytes) }));
 
-const plugin = `/** OpenCode loads this named export at startup. Execution remains in shared dhr Core. */
+const plugin = `/** OpenCode 1 calls server(); OpenCode 2 calls setup(). Execution stays in dhr Core. */
 export const DevHarnessPlugin = async () => ({});
+export default {
+  id: 'dev-harness',
+  server: DevHarnessPlugin,
+  setup(ctx) {
+    if (!ctx.location?.directory) throw new Error('OpenCode plugin context has no directory');
+  },
+};
 `;
 const launcher = `#!/usr/bin/env node
 import { runCli } from './dhr.js';
@@ -90,8 +97,8 @@ export class OpenCodePackager implements PluginPackager {
     files.set(`${npmRoot}/dist/adapter.js`, adapter);
     files.set(`${localRoot}/.opencode/runtime/dhr.js`, runtime);
     files.set(`${localRoot}/.opencode/runtime/adapter.js`, adapter);
-    files.set(`${npmRoot}/README.md`, Buffer.from('# dev-harness-opencode npm package\n\nThis local tgz is a reproducible package, not a published registry release. After an authorized npm publish, add `dev-harness-opencode` to `opencode.json` `plugin` and restart OpenCode. OpenCode does not promise discovery of skills inside npm packages: copy `skills/<name>/SKILL.md` to the project `.opencode/skills/<name>/SKILL.md`, or install the separate local ZIP. Test the plugin and Skills separately. The bundled CLI is `node dist/cli.mjs`; automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
-    files.set(`${localRoot}/README.md`, Buffer.from('# dev-harness-opencode local plugin\n\nExtract `.opencode/plugins/dev-harness.js`, `.opencode/skills/` and `.opencode/runtime/` into an isolated project, then restart OpenCode. OpenCode loads JavaScript from `.opencode/plugins/` and discovers project Skills from `.opencode/skills/`. The bundled CLI is `node .opencode/runtime/cli.mjs`. Remove these exact installed files to uninstall. Do not install the npm and local plugin variants together: OpenCode loads both. Automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
+    files.set(`${npmRoot}/README.md`, Buffer.from('# dev-harness-opencode npm package\n\nThis local tgz is a reproducible package, not a published registry release. After an authorized npm publish, add `dev-harness-opencode` to OpenCode 1 `opencode.json` `plugin` or OpenCode 2 `opencode.json` `plugins` and restart OpenCode. OpenCode does not promise discovery of skills inside npm packages: copy `skills/<name>/SKILL.md` to the project `.opencode/skills/<name>/SKILL.md`, or install the separate local ZIP. Test the plugin and Skills separately. The bundled CLI is `node dist/cli.mjs`; automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
+    files.set(`${localRoot}/README.md`, Buffer.from('# dev-harness-opencode local plugin\n\nExtract `.opencode/plugins/dev-harness.js`, `.opencode/skills/` and `.opencode/runtime/` into an isolated project, then restart OpenCode. OpenCode 1 and 2 load JavaScript from `.opencode/plugins/` and discover project Skills from `.opencode/skills/`. The bundled CLI is `node .opencode/runtime/cli.mjs`. Remove these exact installed files to uninstall. Do not install the npm and local plugin variants together: OpenCode loads both. Automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
     const notice = await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path);
     files.set(`${npmRoot}/DISTRIBUTION_NOTICE.md`, notice);
     files.set(`${localRoot}/DISTRIBUTION_NOTICE.md`, notice);

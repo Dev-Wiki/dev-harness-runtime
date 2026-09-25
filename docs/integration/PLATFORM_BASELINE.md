@@ -19,7 +19,7 @@
 | Codex | 官网当前推荐 Agent Plugins 根 manifest；兼容格式仍受支持；市场目录另有 name、interface.displayName、plugins | `codex-portable/plugin.json`；`codex-compat/plugins/dev-harness-runtime-spec/.codex-plugin/plugin.json`；repo catalog | Portable 1.0.0；兼容格式没有独立数字 schema 版本，本机 validator 以摘要固定 |
 | DSH | npm `package.json` 的 `dsh.bundle.patch` 为必需字符串，相对包根 | `dsh/cordis.patch.yml`、`lib/index.js` | 本机 rc.1 启动器 + rc.2 组件；不是纯 rc.1 依赖图 |
 | Cursor Native | `.cursor-plugin/plugin.json` 必需 `name`；version 可选 | `cursor/`；`skills/<name>/SKILL.md` | Native 数字格式版本未声明；不能套用 Portable 1.0.0 |
-| OpenCode | JS/TS 导出插件函数，返回 hooks；npm 包另需自身 metadata 与入口 | `opencode-local/`；`opencode-npm/package/` + `consumer/opencode.json` | 官方页未声明数字 API schema 版本；本机宿主未找到 |
+| OpenCode | JS/TS 默认导出插件对象；1.18.31 调用 `server()`，2.0.15 调用 `setup()`；npm 包另需 metadata 与入口 | `opencode-local/`；`opencode-npm/package/` + `consumer/opencode.json` | 官方页未声明数字 API schema 版本；两个实际版本已分别验收加载 |
 | Antigravity | Google 教程采用 Portable 根 manifest | `antigravity/plugin.json`、`skills/` | 格式 1.0.0；本机 agy 输出 1.0.0，两个版本数字并不表示同一对象 |
 | Portable Agent Plugin | 根 `plugin.json` 必需 `$schema`、`name`；version 可选 | `portable/`；可选 `skills/`、`mcp.json` | Agent Plugins 1.0.0，schema dialect 2020-12；Agent Skills 页面未声明数字版本 |
 
@@ -63,7 +63,7 @@ K7 已生成含 Native manifest、三个 Skill、一个非全局 rule、一个 c
 
 OpenCode local 从 `.opencode/plugins/` 发现；npm 由 `opencode.json.plugin` 指定，宿主负责依赖安装。样例包名仅示意，未发布；Node 导入成功不等于 OpenCode 加载成功。官方没有保证 npm 包内 skills 自动发现，因此技能单独放 `.opencode/skills/<name>/SKILL.md`。来源：[Plugins](https://opencode.ai/docs/plugins/)、[Skills](https://opencode.ai/docs/skills/)。[SDK](https://opencode.ai/docs/sdk/) 有 session.create/prompt/abort 候选入口，尚无本项目 Session 生命周期证明。
 
-K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。虽当前 PATH 无 OpenCode，通过 `/tmp` 隔离安装的官方 1.18.31 宿主已在临时项目发现本地 ZIP 插件入口与三个 Skill，移除后均消失；npm tgz 已安装包内入口经 `file://` 配置也能被宿主发现。按 npm 包名自动安装、hook 与模型会话调用未验，见 [K8 验证记录](../verification/K8.md)。
+K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。复核发现早期仅列出入口路径时插件实际加载失败；现已修复默认导出，在 `/tmp` 隔离的官方 1.18.31 和本机 2.0.15 均完成插件加载与三个 Skill 发现。未发布 tgz 通过 localhost 模拟 registry 在两个版本中按包名安装；2.0.15 报告插件 active。模型会话内 Skill 调用未验，见 [K8 验证记录](../verification/K8.md)。
 
 ### Antigravity 与 Portable
 
