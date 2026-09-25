@@ -45,4 +45,6 @@ Codex RuntimeAdapter 已在合成临时 Git 项目中消费上述边界：先做
 
 DSH 侧现复用 Core 的命名空间控制器、模型代理、冻结读取目录与 Task 桥接策略。安装包的插件入口为自包含 bundle，隔离会话逐次复制并核对私有 headless profile 和插件 SHA-256，只读挂载冻结仓库镜像，不挂载宿主项目工作区、Git 私有目录或其他凭据；模型网络限定 `api.deepseek.com`。真实合成会话通过 `dhr_identity`、`dhr_list_paths`、`dhr_read_text`、`dhr_search_text` 与 `dhr_propose_delete`，Session 事件解码获得绑定请求的 `blocked` 结果，宿主控制器等待进程树静止且原文件未变。这个阶段先交付受限传输；Core 提案应用和持久宿主回执留给下一步 Adapter 验收。
 
-后续已注册仓库内可信 DSH RuntimeAdapter，但包内 CLI 尚未装配它。两次真实新 Session 加独立命名空间取消的合成 probe 通过；另一次真实 DSH Worker Session 在临时 Git 项目中交付文本提议，由 Core 精确应用后，Adapter 复核宿主持久回执，Run 结束为 `BLOCKED`。这些证据仍未覆盖真实 Run 的取消恢复、原始 Worker Skill、三任务依赖链或包内生产入口。
+随后注册仓库内可信 DSH RuntimeAdapter。两次真实新 Session 加独立命名空间取消的合成 probe 通过；另一次真实 DSH Worker Session 在临时 Git 项目中交付文本提议，由 Core 精确应用后，Adapter 复核宿主持久回执，Run 结束为 `BLOCKED`。这个阶段尚未验证包内生产入口、真实 Run 的取消恢复、原始 Worker Skill 或三任务依赖链。
+
+DSH 安装包现含锁定协议 / Worker / CLI / 插件字节的 `source.json` 和可信服务工厂；包内 `scripts/dhr.mjs` 能按授权门禁装配该 Adapter。新 profile 离线安装后的来源检查、服务工厂和版本入口通过，复制包并替换成重新锁定的合成 Worker 后，包内 CLI 的真实模型会话完成单个临时 Planning Task 提议，Core 应用后 Run 为 `BLOCKED`，HEAD / index 不变。未替换 Worker、真实 Run 的取消恢复和三任务链仍待验。

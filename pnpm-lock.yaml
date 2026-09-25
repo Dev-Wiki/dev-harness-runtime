@@ -72,6 +72,9 @@ importers:
 
   packages/adapter-dsh:
     dependencies:
+      '@dev-harness-runtime/adapter-codex':
+        specifier: workspace:*
+        version: link:../adapter-codex
       '@dev-harness-runtime/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -90,6 +93,9 @@ importers:
       '@dev-harness-runtime/adapter-codex':
         specifier: workspace:*
         version: link:../adapter-codex
+      '@dev-harness-runtime/adapter-dsh':
+        specifier: workspace:*
+        version: link:../adapter-dsh
       '@dev-harness-runtime/build':
         specifier: workspace:*
         version: link:../../build

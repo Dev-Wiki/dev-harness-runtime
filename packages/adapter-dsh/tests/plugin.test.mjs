@@ -29,7 +29,7 @@ test('DSH plugin registers and disposes its precheck, guard and Human Command', 
   assert.deepEqual(await registered[0][2]({ name: 'bash' }, async () => ({ kind: 'allow' })), { kind: 'allow' });
   const command = registered.find(([kind]) => kind === 'command')[1];
   assert.equal(command.name, 'dhr-status');
-  assert.match(command.handler().text, /not enabled/u);
+  assert.match(command.handler().text, /packaged CLI host probe/u);
   for (const [, dispose] of registered.filter(([kind]) => kind === 'effect')) dispose();
   assert.deepEqual(registered.slice(-3).map(([kind]) => kind), ['precheck-disposed', 'guard-disposed', 'command-disposed']);
 });

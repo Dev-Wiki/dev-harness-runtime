@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@dev-harness-runtime/adapter-codex": "workspace:*",
+    "@dev-harness-runtime/adapter-dsh": "workspace:*",
     "@dev-harness-runtime/build": "workspace:*",
     "@dev-harness-runtime/contracts": "workspace:*",
     "@dev-harness-runtime/core": "workspace:*"

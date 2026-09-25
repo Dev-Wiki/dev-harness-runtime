@@ -11,11 +11,23 @@ import { repositoryBuildInput } from './source.js';
 const id = 'dsh';
 const skills = ['run', 'status', 'worker'] as const;
 const patch = '- insert:\n    - id: dev-harness-runtime\n      name: dev-harness-runtime\n';
+const sourcePath = 'source.json';
 const json = (value: unknown): Uint8Array => Buffer.from(`${canonicalJson(value)}\n`, 'utf8');
 const digest = (files: ReadonlyMap<string, Uint8Array>) => [...files]
   .sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
   .map(([path, bytes]) => ({ path, sha256: sha256(bytes) }));
 const text = { type: 'string', minLength: 1 } as const;
+const hashText = { type: 'string', pattern: '^[a-f0-9]{64}$' } as const;
+const sourceFile = (path: string) => ({ type: 'object', additionalProperties: false,
+  required: ['path', 'sha256'], properties: { path: { type: 'string', const: path }, sha256: hashText } });
+const sourceManifest = (input: PluginBuildInput) => {
+  const worker = input.skills.find((skill) => skill.name === 'worker');
+  if (!worker) throw new Error('DSH package needs the locked Worker Skill');
+  return { schemaVersion: 1, protocolSource: input.protocolSource,
+    workerSkill: { path: 'skills/worker/SKILL.md', sha256: worker.sha256 },
+    runtimeBundle: { path: 'lib/dhr.js', sha256: input.runtimeBundle.sha256 },
+    pluginBundle: { path: 'lib/index.js', sha256: input.adapterBundle.sha256 } };
+};
 
 /** The target host is rc.1, but these are its actually resolved public components. */
 export const dshHostDependencies = Object.freeze({
@@ -25,19 +37,31 @@ export const dshHostDependencies = Object.freeze({
 });
 
 export const dshStaticSpec: StaticSpec = {
-  requiredFiles: ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/dhr.js', 'scripts/dhr.mjs',
+  requiredFiles: ['package.json', sourcePath, 'cordis.patch.yml', 'lib/index.js', 'lib/dhr.js', 'scripts/dhr.mjs',
     'README.md', 'DISTRIBUTION_NOTICE.md'],
-  allowedFiles: ['package.json', 'cordis.patch.yml', 'lib/index.js', 'lib/dhr.js', 'scripts/dhr.mjs',
+  allowedFiles: ['package.json', sourcePath, 'cordis.patch.yml', 'lib/index.js', 'lib/dhr.js', 'scripts/dhr.mjs',
     'README.md', 'DISTRIBUTION_NOTICE.md', ...skills.map((name) => `skills/${name}/SKILL.md`)],
   skillFiles: skills.map((name) => `skills/${name}/SKILL.md`),
   lockedBundles: { 'lib/index.js': 'adapterBundle', 'lib/dhr.js': 'runtimeBundle' },
-  manifests: [{ path: 'package.json', schema: { type: 'object', additionalProperties: false,
+  manifests: [{ path: sourcePath, schema: { type: 'object', additionalProperties: false,
+    required: ['schemaVersion', 'protocolSource', 'workerSkill', 'runtimeBundle', 'pluginBundle'], properties: {
+      schemaVersion: { type: 'integer', const: 1 },
+      protocolSource: { type: 'object', additionalProperties: false,
+        required: ['schemaVersion', 'repository', 'version', 'commit', 'files'], properties: {
+          schemaVersion: { type: 'integer', const: 1 }, repository: text, version: text,
+          commit: { type: 'string', pattern: '^(?:[a-f0-9]{40}|[a-f0-9]{64})$' },
+          files: { type: 'array', minItems: 1, items: { type: 'object', additionalProperties: false,
+            required: ['path', 'sha256'], properties: { path: text, sha256: hashText } } },
+        } },
+      workerSkill: sourceFile('skills/worker/SKILL.md'),
+      runtimeBundle: sourceFile('lib/dhr.js'), pluginBundle: sourceFile('lib/index.js'),
+    } } }, { path: 'package.json', schema: { type: 'object', additionalProperties: false,
     required: ['name', 'version', 'private', 'type', 'main', 'files', 'dsh', 'peerDependencies'],
     properties: {
       name: { type: 'string', const: 'dev-harness-runtime' }, version: text,
       private: { type: 'boolean', const: true }, type: { type: 'string', const: 'module' },
       main: { type: 'string', const: 'lib/index.js' },
-      files: { type: 'array', const: ['lib', 'skills', 'scripts', 'cordis.patch.yml', 'README.md', 'DISTRIBUTION_NOTICE.md'], items: text },
+      files: { type: 'array', const: ['lib', 'skills', 'scripts', 'cordis.patch.yml', 'source.json', 'README.md', 'DISTRIBUTION_NOTICE.md'], items: text },
       dsh: { type: 'object', additionalProperties: false, required: ['bundle'], properties: {
         bundle: { type: 'object', additionalProperties: false, required: ['patch'], properties: {
           patch: { type: 'string', const: './cordis.patch.yml' },
@@ -53,16 +77,31 @@ export const dshStaticSpec: StaticSpec = {
 };
 
 const launcher = `#!/usr/bin/env node
-import { runCli } from '../lib/dhr.js';
+import { runCli, createPackagedDshServices } from '../lib/dhr.js';
+import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 const controller = new AbortController();
 const cancel = () => controller.abort();
 process.on('SIGINT', cancel);
 process.on('SIGTERM', cancel);
 try {
-  process.exitCode = await runCli(process.argv.slice(2), {
+  const args = process.argv.slice(2);
+  const services = ['run', 'resume', 'reconcile'].includes(args[0] ?? '')
+    ? await createPackagedDshServices({ packageRoot: fileURLToPath(new URL('..', import.meta.url)),
+      ...(process.env.DHR_DSH_ENTRY ? { dshEntry: process.env.DHR_DSH_ENTRY } : {}),
+      ...(process.env.DHR_BWRAP ? { bubblewrapPath: process.env.DHR_BWRAP } : {}),
+      profileDirectory: join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', 'headless'),
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      upstreamProxy: process.env.HTTPS_PROXY }) : undefined;
+  process.exitCode = await runCli(args, {
     out: (value) => process.stdout.write(value),
     error: (value) => process.stderr.write(value),
-  }, { signal: controller.signal });
+  }, { signal: controller.signal, ...(services ? { services } : {}) });
+} catch (error) {
+  const code = error instanceof Error && 'code' in error ? String(error.code) : 'CAPABILITY_MISSING';
+  process.stderr.write(\`\${code}: \${error instanceof Error ? error.message : String(error)}\\n\`);
+  process.exitCode = code === 'CAPABILITY_MISSING' ? 2 : 5;
 } finally {
   process.off('SIGINT', cancel);
   process.off('SIGTERM', cancel);
@@ -78,13 +117,14 @@ export class DshPackager implements PluginPackager {
     const files = new Map<string, Uint8Array>();
     files.set('package.json', json({ name: 'dev-harness-runtime', version: input.releaseVersion,
       private: true, type: 'module', main: 'lib/index.js',
-      files: ['lib', 'skills', 'scripts', 'cordis.patch.yml', 'README.md', 'DISTRIBUTION_NOTICE.md'],
+      files: ['lib', 'skills', 'scripts', 'cordis.patch.yml', 'source.json', 'README.md', 'DISTRIBUTION_NOTICE.md'],
       dsh: { bundle: { patch: './cordis.patch.yml' } }, peerDependencies: dshHostDependencies }));
     files.set('cordis.patch.yml', Buffer.from(patch));
     files.set('lib/index.js', await readPinnedFile(this.#root, input.adapterBundle.path));
     files.set('lib/dhr.js', await readPinnedFile(this.#root, input.runtimeBundle.path));
+    files.set(sourcePath, json(sourceManifest(input)));
     files.set('scripts/dhr.mjs', Buffer.from(launcher));
-    files.set('README.md', Buffer.from('# dev-harness-runtime DSH bundle\n\nInstall the local tgz into an isolated profile with `dsh plugin --profile <name> add <absolute-tgz-path> --offline --ignore-scripts`. Use `dsh --profile <name> --dump-config` to inspect the Cordis row and `dsh plugin --profile <name> remove dev-harness-runtime` to uninstall. The bundled `node scripts/dhr.mjs` exposes the shared CLI; automatic task execution remains gated by a separate Executor probe.\n\nThis is a local build; see DISTRIBUTION_NOTICE.md before any external distribution.\n'));
+    files.set('README.md', Buffer.from('# dev-harness-runtime DSH bundle\n\nInstall the local tgz into an isolated headless profile with `dsh plugin --profile headless add <absolute-tgz-path> --offline --ignore-scripts`. Use `dsh --profile headless --dump-config` to inspect the Cordis row and `dsh plugin --profile headless remove dev-harness-runtime` to uninstall. The bundled `node scripts/dhr.mjs` exposes the shared CLI; task execution requires DSH 0.1.5-rc.1, `DEEPSEEK_API_KEY`, a trusted bubblewrap provider and a real isolated-host capability probe. Each ready Task also needs a bounded `dhr-runtime` declaration in its Planning packet.\n\nThis is a local build; see DISTRIBUTION_NOTICE.md before any external distribution.\n'));
     files.set('DISTRIBUTION_NOTICE.md', await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path));
     for (const skill of input.skills) files.set(skill.path, await readPinnedFile(this.#root, skill.path));
     return files;
@@ -105,6 +145,7 @@ export class DshPackager implements PluginPackager {
       dsh?: { bundle?: { patch?: string } }; peerDependencies?: Record<string, string>;
     };
     const yaml = await readFile(resolve(root, 'cordis.patch.yml'), 'utf8');
+    const source = await readFile(resolve(root, sourcePath), 'utf8');
     const checks: ValidationReport['checks'][number][] = [];
     const add = (code: string, path: string, message: string) => checks.push({ code, path, message, severity: 'error' });
     if (yaml !== patch || packageJson.dsh?.bundle?.patch !== './cordis.patch.yml') {
@@ -112,6 +153,9 @@ export class DshPackager implements PluginPackager {
     }
     if (canonicalJson(packageJson.peerDependencies) !== canonicalJson(dshHostDependencies)) {
       add('DSH_DEPENDENCIES', 'package.json', 'Declared peers differ from the observed rc.1 host component versions');
+    }
+    if (source !== `${canonicalJson(sourceManifest(input))}\n`) {
+      add('DSH_SOURCE', sourcePath, 'Package source manifest differs from the locked input');
     }
     if (generated.files.filter((file) => /^skills\/[^/]+\/SKILL\.md$/u.test(file.path)).length !== input.skills.length) {
       add('SKILL_COUNT', 'package.json', 'Generated Skill count differs from locked input');

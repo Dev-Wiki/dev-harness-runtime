@@ -188,6 +188,6 @@ export function apply(ctx: CommandContext): void {
   ctx.effect(() => ctx.commands.register({
     name: 'dhr-status',
     description: 'Report the installed dev-harness-runtime bundle status.',
-    handler: () => ({ kind: 'success', text: 'dev-harness-runtime bundle installed; task Executor is not enabled.' }),
+    handler: () => ({ kind: 'success', text: 'dev-harness-runtime bundle installed; task execution requires the packaged CLI host probe.' }),
   }), 'dev-harness-runtime: dhr-status');
 }

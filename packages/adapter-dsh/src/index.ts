@@ -3,6 +3,7 @@ import { CORE_PROTOCOL_VERSION, type AdapterDescriptor } from '@dev-harness-runt
 export { persistDshSessionProposals } from './executor/proposal-evidence.js';
 export { runConfinedDshSession, DshConfinedSessionError } from './executor/confined-session.js';
 export { createDshRuntimeAdapter, DshRuntimeError } from './runtime-adapter.js';
+export { createPackagedDshServices, loadDshPackageSource } from './runtime-services.js';
 
 /** Metadata only: no Executor, Packager or doctor claim. */
 export const adapter = Object.freeze({

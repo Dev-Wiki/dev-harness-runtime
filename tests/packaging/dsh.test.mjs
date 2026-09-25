@@ -1,15 +1,19 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 import { DshPackager, dshStaticSpec, dshHostDependencies } from '../../build/dist/targets/dsh.js';
 import { compareGolden } from '../../build/dist/manifests/golden.js';
 import { validateStatic } from '../../build/dist/validators/static.js';
 import { apply, inject, name } from '../../packages/adapter-dsh/dist/plugin.js';
+import { loadDshPackageSource } from '../../packages/adapter-dsh/dist/runtime-services.js';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
+const execute = promisify(execFile);
 const errors = (checks) => checks.filter((entry) => entry.severity === 'error').map((entry) => entry.code);
 
 async function fixture(t) {
@@ -32,7 +36,7 @@ async function fixture(t) {
   await mkdir(join(root, 'packages/adapter-dsh/dist'), { recursive: true });
   await mkdir(join(root, 'build/manifests'), { recursive: true });
   await writeFile(join(root, 'packages/cli/dist/bundle.js'), runtime);
-  await writeFile(join(root, 'packages/adapter-dsh/dist/plugin.js'), adapter);
+  await writeFile(join(root, 'packages/adapter-dsh/dist/plugin.bundle.js'), adapter);
   await writeFile(join(root, 'build/manifests/DISTRIBUTION_NOTICE.md'), notice);
   const input = { schemaVersion: 1, platform: 'dsh', releaseVersion: '0.1.0',
     adapterVersion: '0.1.0', coreProtocolVersion: 1,
@@ -40,7 +44,7 @@ async function fixture(t) {
       version: '1.11.8', commit: 'b'.repeat(40), files: [{ path: 'VERSION', sha256: hash('1.11.8\n') }] },
     skills, runtimeBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/cli/dist/bundle.js',
       sha256: hash(runtime), source },
-    adapterBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/adapter-dsh/dist/plugin.js',
+    adapterBundle: { schemaVersion: 1, version: '0.1.0', path: 'packages/adapter-dsh/dist/plugin.bundle.js',
       sha256: hash(adapter), source },
     metadata: { schemaVersion: 1, name: 'dev-harness', displayName: 'Dev Harness',
       description: 'Planning task runtime', author: 'Dev-Wiki', repository: source.repository,
@@ -60,6 +64,7 @@ test('DSH rc.1 bundle is locked to actual rc.2 components and packs a stable tgz
   const manifest = JSON.parse(value.files.get('package.json'));
   assert.deepEqual(manifest.peerDependencies, dshHostDependencies);
   assert.equal(manifest.dsh.bundle.patch, './cordis.patch.yml');
+  await execute(process.execPath, ['--check', join(value.root, value.generated.root, 'scripts/dhr.mjs')]);
   const first = (await value.packager.pack(value.generated, value.input))[0];
   const bytes = await readFile(join(value.root, 'dist', first.file));
   assert.deepEqual((await value.packager.pack(value.generated, value.input))[0], first);
@@ -85,10 +90,21 @@ test('DSH manifest, Cordis patch, paths, Skill identity and source-locked bundle
     ...JSON.parse(files.get('package.json')), files: ['lib'],
   }))))).includes('INVALID_MANIFEST'));
   assert.ok((await probe((files) => files.set('lib/index.js', Buffer.from('changed')))).includes('BUNDLE_DIGEST_MISMATCH'));
+  assert.ok((await probe((files) => files.delete('source.json'))).includes('MISSING_REQUIRED_FILE'));
   assert.ok((await probe((files) => files.set('skills/status/SKILL.md', Buffer.from(
     files.get('skills/status/SKILL.md').toString().replace('name: status', 'name: run'))))).includes('DUPLICATE_SKILL_NAME'));
   await writeFile(join(value.root, value.generated.root, 'cordis.patch.yml'), '- insert:\n    - id: wrong\n      name: wrong\n');
   assert.ok(errors((await value.packager.validate(value.generated, value.input)).checks).includes('DSH_PATCH'));
+});
+
+test('DSH installed package source pins Worker, runtime and plugin bytes', async (t) => {
+  const value = await fixture(t);
+  const root = join(value.root, value.generated.root);
+  const source = await loadDshPackageSource(root);
+  assert.equal(source.workerSkill.sha256, value.input.skills.find((skill) => skill.name === 'worker').sha256);
+  assert.equal(source.pluginSha256, value.input.adapterBundle.sha256);
+  await writeFile(join(root, 'lib/index.js'), 'tampered');
+  await assert.rejects(() => loadDshPackageSource(root), { code: 'CAPABILITY_MISSING' });
 });
 
 test('DSH Cordis plugin registers status and both Worker tool gates, then disposes them', () => {
@@ -107,7 +123,7 @@ test('DSH Cordis plugin registers status and both Worker tool gates, then dispos
   apply(ctx);
   assert.equal(command.name, 'dhr-status');
   assert.equal(command.handler().kind, 'success');
-  assert.match(command.handler().text, /Executor is not enabled/u);
+  assert.match(command.handler().text, /packaged CLI host probe/u);
   assert.equal(typeof guard, 'function');
   assert.equal(typeof precheck, 'function');
   assert.deepEqual(effects.map(({ label }) => label), ['dev-harness-runtime: worker pre-execute gate',
