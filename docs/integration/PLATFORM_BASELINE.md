@@ -67,7 +67,7 @@ K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm �
 
 ### Antigravity 与 Portable
 
-Google Plugin 教程加 `?hl=en` 后可读，补上初查缺口；文档给出 `agy plugin install` 和全局 `~/.gemini/config/plugins/<name>/`。独立 Skills 项目路径为 `.agents/skills/`，全局为 `~/.gemini/config/skills/`，插件内仍为 `skills/`。未证明项目级 plugin 安装路径或最低客户端版本。[Plugin 教程](https://codelabs.developers.google.com/cloud-dev-plugin-agy?hl=en)、[Skills 教程](https://codelabs.developers.google.com/getting-started-with-antigravity-skills)。
+Google Plugin 教程加 `?hl=en` 后可读；文档给出 `agy plugin install` 的全局导入。独立 Skills 项目路径为 `.agents/skills/`，全局为 `~/.gemini/config/skills/`，插件内仍为 `skills/`。[官方插件文档](https://www.antigravity.google/docs/plugins?tab=cli)另确认项目插件路径 `.agents/plugins/<name>/`；未声明最低客户端版本。[Plugin 教程](https://codelabs.developers.google.com/cloud-dev-plugin-agy?hl=en)、[Skills 教程](https://codelabs.developers.google.com/getting-started-with-antigravity-skills)。
 
 K9 已生成 Plugin、项目和 global Skills 三 ZIP；离线静态、golden 与本机 `agy plugin validate/install/list/uninstall` 通过。CLI 验证输出三个 Skill 已处理；没有模型会话内调用、独立 Skill 写入或 Executor 能力证明，见 [K9 验证记录](../verification/K9.md)。
 
