@@ -1,12 +1,13 @@
 # 本地产物 dry-run
 
-当前只支持本地构建、静态校验、打包与 manifest 核对；不会调用 npm publish、push、tag、GitHub Release、Marketplace 或 deploy。正式对外分发仍须先完成项目许可和随包第三方声明门禁，见 [PACKAGING](PACKAGING.md)。`dhr release --dry-run` 不表示 Codex / DSH 自动 Executor 已通过。
+当前只支持本地构建、静态校验、打包与 manifest 核对；不会调用 npm publish、push、tag、GitHub Release、Marketplace 或 deploy。正式对外分发仍须先完成项目许可和随包第三方声明门禁，见 [PACKAGING](PACKAGING.md)。Codex / DSH 自动 Executor 已由独立宿主验收；`dhr release --dry-run` 只验证本地分发链，不代替该验收或其余宿主的会话调用。
 
-在本仓根目录准备一个与 `protocol-lock.json` 固定提交完全一致、无工作区修改的 dev-harness checkout。以下以相邻目录作为例子，`--protocol-checkout` 可指向其他本地位置；它只参与来源核验，不进入产物路径。
+在本仓根目录准备一个与 `protocol-lock.json` 固定提交完全一致、无工作区修改的 dev-harness checkout，并把路径设为 `DHR_PROTOCOL_CHECKOUT`。当前相邻 `../dev-harness` 已漂移，不能用于锁定构建；协议路径只参与来源核验，不进入产物。
 
 ```bash
 pnpm build
-pnpm dhr release --dry-run --protocol-checkout ../dev-harness
+pnpm verify:protocol --source "$DHR_PROTOCOL_CHECKOUT"
+pnpm dhr release --dry-run --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
 pnpm matrix:check
 ```
 
@@ -15,9 +16,9 @@ pnpm matrix:check
 也可逐阶段运行：
 
 ```bash
-pnpm generate --protocol-checkout ../dev-harness
-pnpm validate:plugins --protocol-checkout ../dev-harness
-pnpm run pack --protocol-checkout ../dev-harness
+pnpm generate --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
+pnpm validate:plugins --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
+pnpm run pack --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
 ```
 
 `pnpm pack` 是 pnpm 自身的命令，因此本项目脚本须写成 `pnpm run pack`。仓库级单平台入口使用 `pnpm dhr build|validate|pack --platform <id> --protocol-checkout <path>`；已安装的独立 CLI 包没有注入仓库 Packager，保持 `CAPABILITY_MISSING` 门禁。源码提交或版本变更后，已有 manifest 可能不再属于当前输入。先显式执行 `pnpm artifacts:clean` 清除本地生成树，再编译和重跑；清理命令发现锁文件、符号链接或特殊文件时会拒绝。
