@@ -36,7 +36,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；用户已授权宿主会话调用，本机 CLI 复跑仍报认证缺失，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
-| **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线与全局原生安装链通过；项目插件路径依官方文档补齐并静态校验，模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
+| **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线与全局原生安装链通过；项目插件静态校验通过，用户已授权会话调用，但本机 `agy` 在加载前要求登录，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
 | **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 🚧 开发中 | [K5](archive/M2/K5.md)、[K6](archive/M2/K6.md)、[K7](tasks/K7.md)、[K8](archive/M3/K8.md)、[K9](tasks/K9.md)、[K10-G](archive/M3/K10-G.md) | 九包双构建摘要一致、本机全量与可选 DSH 测试通过；K7 / K9 宿主链和原生 CI 未验，详见[证据](../verification/K10.md) | [执行包](tasks/K10.md) |
 | **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](tasks/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
 
