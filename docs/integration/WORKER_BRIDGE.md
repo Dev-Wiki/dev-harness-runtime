@@ -48,3 +48,5 @@ DSH 侧现复用 Core 的命名空间控制器、模型代理、冻结读取目�
 随后注册仓库内可信 DSH RuntimeAdapter。两次真实新 Session 加独立命名空间取消的合成 probe 通过；另一次真实 DSH Worker Session 在临时 Git 项目中交付文本提议，由 Core 精确应用后，Adapter 复核宿主持久回执，Run 结束为 `BLOCKED`。这个阶段尚未验证包内生产入口、真实 Run 的取消恢复、原始 Worker Skill 或三任务依赖链。
 
 DSH 安装包现含锁定协议 / Worker / CLI / 插件字节的 `source.json` 和可信服务工厂；包内 `scripts/dhr.mjs` 能按授权门禁装配该 Adapter。新 profile 离线安装后的来源检查、服务工厂和版本入口通过，复制包并替换成重新锁定的合成 Worker 后，包内 CLI 的真实模型会话完成单个临时 Planning Task 提议，Core 应用后 Run 为 `BLOCKED`，HEAD / index 不变。未替换 Worker、真实 Run 的取消恢复和三任务链仍待验。
+
+合成 Core Run 的取消恢复现已验证：持久宿主启动记录出现后取消 DSH，Core 标记 `INTERRUPTED`，原文件不变；新 Adapter 实例从当前 revision 恢复到 attempt 2，经能力 probe 重新启动宿主，Core 应用新提议后 Run 为 `BLOCKED`。被取消 Session 的持久身份、未替换 Worker 和三任务链仍待验。

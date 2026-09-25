@@ -35,7 +35,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：隔离宿主、两次新 Session 与取消 probe、合成 Core 应用和包内 CLI 的合成任务链已通过。真实 Run 取消恢复、未替换 Worker、三任务链及逐任务提交未验；继续按门禁判定，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
+| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：隔离宿主、两次新 Session、合成 Core 应用、包内 CLI 和合成 Run 取消后新实例恢复已通过。未替换 Worker、三任务链及逐任务提交未验；继续按门禁判定，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；已授权的宿主 smoke 在 headless 认证门禁处停止，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证、npm 临时安装及 OpenCode 1.18.31 双变体入口发现通过；本地变体移除通过，模型调用与按包名安装未验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
@@ -133,4 +133,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-25（K6 已验证包内 CLI 的合成任务；原始 Worker 与完整链路继续验收）*
+*最后更新：2026-09-25（K6 合成 Run 的取消与新实例恢复通过；原始 Worker 与三任务链继续验收）*

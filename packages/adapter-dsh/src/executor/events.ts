@@ -144,8 +144,10 @@ export class DshSessionEventDecoder {
       || this.identityReceipt.snapshotHash !== request.snapshotHash)) {
       throw new DshEventError('INVALID_RESULT', 'DSH read identity differs from the Core request');
     }
+    const trimmed = this.finalText.trim();
+    const fenced = /^```json\r?\n([\s\S]*?)\r?\n```$/u.exec(trimmed);
     let raw: unknown;
-    try { raw = JSON.parse(this.finalText); }
+    try { raw = JSON.parse(fenced ? fenced[1]! : trimmed); }
     catch { throw new DshEventError('INVALID_RESULT', 'DSH final message is not JSON'); }
     return { sessionId: header.id, result: validateResultForRequest(request, raw) };
   }

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { ContractValidationError, parseContract, type ExecutorCapabilities, type TaskExecutionRequest } from '@dev-harness-runtime/contracts';
 import { runIsolatedModelHost, type WorkerReadCatalog } from '@dev-harness-runtime/core';
 import { runConfinedDshSession, type DshConfinedSessionOutput } from './confined-session.js';
+import { DshEventError } from './events.js';
 
 export interface DshProbeOptions {
   readonly dshEntry: string;
@@ -49,7 +50,7 @@ async function observedSession(options: DshProbeOptions, request: TaskExecutionR
     attempt: request.attempt, requestId: request.requestId, snapshotHash: request.snapshotHash,
     summary: 'Synthetic DSH capability probe.', verification: [], changedFiles: ['src/a.ts'],
     outcome: 'blocked', needsPlanning: false, reason: 'Synthetic capability probe only.' };
-  const prompt = `Synthetic confined DSH capability probe. Call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"} exactly once. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`;
+  const prompt = `Synthetic confined DSH capability probe. Call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"} exactly once. Do not use any other tool. Your final response must be one raw JSON object without markdown fences, comments or prose. Return exactly: ${JSON.stringify(result)}`;
   let starts = 0;
   const output = await runConfinedDshSession({ ...options, request, readCatalog, prompt,
     signal: AbortSignal.timeout(options.timeoutMs), timeoutMs: options.timeoutMs,
@@ -84,8 +85,20 @@ export async function probeDshRuntime(options: DshProbeOptions): Promise<Executo
     const readCatalog: WorkerReadCatalog = { repoRoot: root, runId: request.runId,
       requestId: request.requestId, snapshotHash: request.snapshotHash,
       files: [{ path: 'src/a.ts', sha256: hash('HELLO') }] };
-    const first = await observedSession(options, request, readCatalog);
-    const second = await observedSession(options, request, readCatalog);
+    const sessions: DshConfinedSessionOutput[] = [];
+    let attempts = 0;
+    let lastFormatError: unknown;
+    while (sessions.length < 2 && attempts < 3) {
+      attempts++;
+      try { sessions.push(await observedSession(options, request, readCatalog)); }
+      catch (error) {
+        if (!(error instanceof DshEventError || error instanceof ContractValidationError)) throw error;
+        lastFormatError = error;
+      }
+    }
+    if (sessions.length !== 2) throw lastFormatError ?? new Error('DSH did not complete two synthetic Sessions');
+    const [first, second] = sessions;
+    if (!first || !second) throw new Error('DSH capability probe lacks two completed Sessions');
     if (first.sessionId === second.sessionId || await readFile(join(root, 'src/a.ts'), 'utf8') !== 'HELLO') {
       throw new Error('DSH reused a Session or changed the synthetic worktree');
     }
@@ -101,7 +114,7 @@ export async function probeDshRuntime(options: DshProbeOptions): Promise<Executo
     const evidenceDirectory = await mkdtemp(join(tmpdir(), 'dhr-dsh-probe-evidence-'));
     const report = Buffer.from(`${JSON.stringify({ schemaVersion: 1, kind: 'dsh-capability-probe', observedAt,
       targetVersion: options.targetVersion, syntheticOnly: true,
-      sessions: [first, second].map((session) => ({ sessionId: session.sessionId,
+      attempts, sessions: [first, second].map((session) => ({ sessionId: session.sessionId,
         namespace: session.namespaceEvidence, broker: session.brokerAudit })),
       cancellation: { termination: cancelled.termination, quiescence: cancelled.quiescence,
         namespace: cancelled.evidence } })}\n`);
@@ -114,7 +127,7 @@ export async function probeDshRuntime(options: DshProbeOptions): Promise<Executo
     return { ...base, available: true, freshSession: true, structuredOutput: true,
       nonInteractive: true, cancellation: true, resumeRunWithFreshSession: true,
       authorizationEnforced: true,
-      reasons: [`Synthetic probe report: ${join(evidenceDirectory, 'report.json')}; plugin packaging is verified separately`],
+      reasons: [`Synthetic probe report: ${join(evidenceDirectory, 'report.json')}; ${attempts} attempts for two Sessions; plugin packaging is verified separately`],
       evidence };
   } catch (error) { return unavailable(error); }
   finally { await rm(root, { recursive: true, force: true }); }

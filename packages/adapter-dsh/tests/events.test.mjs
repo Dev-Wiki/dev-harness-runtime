@@ -39,6 +39,11 @@ test('DSH v3 Session binds fresh identity, proposal receipt and structured resul
   const withReasoning = transcript();
   withReasoning[5].data.message.content.unshift({ type: 'reasoning', text: 'Preparing result' });
   assert.deepEqual(decode(withReasoning).finish(request, header).result, blocked);
+  const fenced = transcript();
+  fenced[5].data.message.content[0].text = `\`\`\`json\n${JSON.stringify(blocked)}\n\`\`\``;
+  assert.deepEqual(decode(fenced).finish(request, header).result, blocked);
+  fenced[5].data.message.content[0].text += '\nExtra prose';
+  assert.throws(() => decode(fenced).finish(request, header), { code: 'INVALID_RESULT' });
   assert.throws(() => decoder.finish(request, { ...header, isSeeded: true }), { code: 'INVALID_RESULT' });
   assert.throws(() => decode(transcript({ ...blocked, requestId: 'other' })).finish(request, header), { code: 'INVALID_RESULT' });
 });

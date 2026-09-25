@@ -59,7 +59,8 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - `pnpm smoke:codex-plugin` 把当前生成的 Codex Marketplace 安装到带现有登录凭据副本的隔离临时配置。第一个新模型会话显式调用 `$dev-harness:status`，核对唯一 `run.json` 权威状态和禁止的 run / resume / reconcile 入口且不退回 shell / MCP 资源查找；第二个新会话显式调用 `$dev-harness:run` 的安装自检，从该 Skill 所在插件根解析并执行包内 `scripts/dhr.mjs --version`，核对版本 0.1.0。结束后清理临时配置。该显式 smoke 不进入常规 full。
 - `DHR_TEST_DSH_ENTRY=<absolute-rc.1-bin.js> DHR_TEST_DSH_PACKAGE=<absolute-local-tgz> DHR_TEST_BWRAP=<absolute> pnpm smoke:dsh-runtime` 还需可信环境中的 `DEEPSEEK_API_KEY`。它把本地包离线安装到临时 headless profile，核对包内插件摘要，以合成文件和 Task 在隔离的新 DSH Session 中依次调用身份、目录、读取、搜索、删除提议；检查精确主机模型代理、整个宿主静止和原文件未变。它不进入常规 `pnpm verify`，也不证明生产 RuntimeAdapter、Core 应用、取消恢复或 Planning 三任务验收；见 [K6 验证记录](docs/verification/K6.md)。
 - 同一命令加 `DHR_TEST_DSH_PROBE=1`，会追加两个真实新 Session 与独立命名空间取消的能力 probe；加 `DHR_TEST_DSH_CORE=1`，会让 RuntimeAdapter 在临时 Git 项目完成合成 Core 派发、提议精确应用和宿主回执复核。这些显式模式仍不代表包内 CLI、真实 Run 取消恢复或 Planning 三任务验收。
-- 加 `DHR_TEST_DSH_PACKAGE_CLI=1` 会先核验新安装包的锁定来源、可信服务工厂和包内 CLI，然后仅在临时复制包中替换并重新锁定合成 Worker Skill，用包内 `scripts/dhr.mjs run` 执行一个临时 Planning Task，核对 Core 应用提议、`BLOCKED` 状态和未改动的 HEAD / index。未替换 Worker、真实 Run 取消恢复和三任务链仍需单独验证。
+- 加 `DHR_TEST_DSH_PACKAGE_CLI=1` 会先核验新安装包的锁定来源、可信服务工厂和包内 CLI，然后仅在临时复制包中替换并重新锁定合成 Worker Skill，用包内 `scripts/dhr.mjs run` 执行一个临时 Planning Task，核对 Core 应用提议、`BLOCKED` 状态和未改动的 HEAD / index。此模式不验证未替换 Worker 或三任务链。
+- 加 `DHR_TEST_DSH_CANCEL_RESUME=1` 会在合成 Core Run 的持久宿主启动记录出现后取消 DSH Worker，核对 `INTERRUPTED`、原文件未变及锁释放，再用新 Adapter 实例恢复到 attempt 2 并核对 Core 应用提议。它不证明被取消 Session 的持久身份、原始 Worker 或三任务链。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

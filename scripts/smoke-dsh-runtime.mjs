@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { setTimeout as pause } from 'node:timers/promises';
 import { runConfinedDshSession } from '../packages/adapter-dsh/dist/executor/confined-session.js';
 import { probeDshRuntime } from '../packages/adapter-dsh/dist/executor/probe.js';
 import { createDshRuntimeAdapter } from '../packages/adapter-dsh/dist/index.js';
 import { Registry } from '../packages/core/dist/registry.js';
-import { dispatchTask, runtimeAdapter } from '../packages/core/dist/orchestrator/runtime.js';
+import { dispatchTask, handleRunFailure, runtimeAdapter } from '../packages/core/dist/orchestrator/runtime.js';
+import { resumeRuntimeRun } from '../packages/core/dist/orchestrator/recovery.js';
+import { releaseLock } from '../packages/core/dist/lock/index.js';
+import { recordName } from '../packages/core/dist/index.js';
 import { setupAcceptance } from '../packages/core/tests/result/helpers-acceptance.mjs';
 import { discoverProject } from '../packages/core/dist/discovery/index.js';
 import { inspectRun } from '../packages/core/dist/state/inspect.js';
@@ -60,7 +64,8 @@ try {
     dashboardPath: join(repoRoot, 'docs/plan/Dashboard.md'), taskPath: join(repoRoot, 'docs/plan/tasks/K1.md'),
     env: { ...requestFixture.env, DEV_HARNESS_ADAPTER: 'dsh' } };
   const result = { ...resultFixture, changedFiles: ['src/a.ts'] };
-  const coreMode = process.env.DHR_TEST_DSH_CORE === '1' || process.env.DHR_TEST_DSH_PACKAGE_CLI === '1';
+  const coreMode = ['DHR_TEST_DSH_CORE', 'DHR_TEST_DSH_PACKAGE_CLI', 'DHR_TEST_DSH_CANCEL_RESUME']
+    .some((name) => process.env[name] === '1');
   const prompt = coreMode
     ? `Synthetic confined DSH Task. Call dhr_propose_delete with {"path":"src/a.ts"} exactly once. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`
     : `Synthetic confined DSH Task. In order, call dhr_identity with {}, dhr_list_paths with {"prefix":"src","after":""}, dhr_read_text with {"path":"src/a.ts","offset":0}, dhr_search_text with {"query":"BEFORE","prefix":"src","after":""}, and dhr_propose_delete with {"path":"src/a.ts"}. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`;
@@ -100,37 +105,81 @@ try {
     assert.equal(probe.cancellation, true);
   }
   let coreRuntime;
-  if (process.env.DHR_TEST_DSH_CORE === '1') {
+  if (process.env.DHR_TEST_DSH_CORE === '1' || process.env.DHR_TEST_DSH_CANCEL_RESUME === '1') {
     const cleanups = [];
     try {
       const f = await setupAcceptance({ after: (cleanup) => cleanups.push(cleanup) },
         { adapter: 'dsh', initialFiles: { 'src/a.ts': 'HELLO' }, scopeFiles: ['src/a.ts'] });
-      const adapter = createDshRuntimeAdapter({ dshEntry, profileDirectory: join(stage, 'profiles/headless'),
+      const adapterOptions = { dshEntry, profileDirectory: join(stage, 'profiles/headless'),
         bubblewrap, nodeBinary, apiKey, pluginSha256, configHash: f.run.adapterConfigHash,
-        gitVersion: 'synthetic-fixture', targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 });
+        gitVersion: 'synthetic-fixture', targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 };
+      const adapter = createDshRuntimeAdapter(adapterOptions);
+      const cancelResume = process.env.DHR_TEST_DSH_CANCEL_RESUME === '1';
       const expected = { schemaVersion: 1, runId: f.request.runId, taskId: f.request.taskId,
         attempt: f.request.attempt, requestId: f.request.requestId, snapshotHash: f.request.snapshotHash,
         summary: 'Synthetic DSH Runtime integration smoke.', verification: [], changedFiles: ['src/a.ts'],
         outcome: 'blocked', needsPlanning: false, reason: 'Synthetic Runtime integration smoke only.' };
-      const skill = Buffer.from(`---\nname: worker\ndescription: synthetic DSH Runtime integration smoke\n---\n\nThis is a synthetic temporary project. Call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"} exactly once. Do not use other tools. Return exactly this JSON object: ${JSON.stringify(expected)}\n`);
+      const ending = cancelResume
+        ? 'Return one JSON object with schemaVersion=1 and the exact runId, taskId, attempt, requestId, snapshotHash from the current Core request JSON. Set summary="Synthetic DSH cancellation recovery", verification=[], changedFiles=["src/a.ts"], outcome="blocked", needsPlanning=false, reason="Synthetic cancellation recovery only". Do not reuse an earlier attempt identity.'
+        : `Return exactly this JSON object: ${JSON.stringify(expected)}`;
+      const skill = Buffer.from(`---\nname: worker\ndescription: synthetic DSH Runtime integration smoke\n---\n\nThis is a synthetic temporary project. Call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"} exactly once. Do not use other tools. ${ending}\n`);
       const adapters = new Registry(); adapters.register(adapter);
       const services = { protocolSource: f.run.protocolSource, adapterConfigHash: f.run.adapterConfigHash,
         workerSkill: { bytes: skill, sha256: createHash('sha256').update(skill).digest('hex') },
         adapters, acceptance: {} };
       const checked = await runtimeAdapter(services, f.project, 'dsh');
-      let state;
-      try {
-        state = await dispatchTask(f.handle, f.project, f.run, f.request, f.requestRef,
-          f.frozenInputsRef, services, checked);
-      } catch (error) {
-        const stderr = await readFile(f.attemptPaths.stderrPath, 'utf8').catch(() => '');
-        process.stderr.write(`${JSON.stringify({ coreStderr: stderr.slice(-4096) })}\n`);
-        throw error;
+      if (cancelResume) {
+        const controller = new AbortController();
+        const pending = dispatchTask(f.handle, f.project, f.run, f.request, f.requestRef,
+          f.frozenInputsRef, services, checked, controller.signal);
+        const settled = pending.then((value) => ({ value }), (error) => ({ error }));
+        const hostStart = join(f.project.stateRoot, f.run.runId, 'results/run-evidence',
+          `${recordName('host-start', f.request.requestId)}.json`);
+        let observed = false;
+        for (let index = 0; index < 200; index++) {
+          if (await access(hostStart).then(() => true, () => false)) { observed = true; break; }
+          await pause(50);
+        }
+        assert.equal(observed, true, 'DSH host did not publish a durable PID 1 start record');
+        await pause(300);
+        controller.abort();
+        const { error: interruption } = await settled;
+        assert.equal(interruption?.name, 'AbortError',
+          `Expected a cancelled DSH Session, got ${interruption?.name ?? 'completed'}`);
+        const stopped = await handleRunFailure(f.handle, f.run.runId, interruption, checked);
+        assert.equal(stopped.exitCode, 130);
+        assert.equal(stopped.state.status, 'INTERRUPTED');
+        assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'HELLO');
+        await releaseLock(f.handle);
+        const freshAdapters = new Registry(); freshAdapters.register(createDshRuntimeAdapter(adapterOptions));
+        const resumed = await resumeRuntimeRun({ cwd: f.root, runId: f.run.runId,
+          expectedRevision: stopped.state.revision }, { ...services, adapters: freshAdapters });
+        if (resumed.state.status !== 'BLOCKED') {
+          const stderr = await readFile(join(f.project.stateRoot, f.run.runId,
+            'attempts/A-2/stderr.log'), 'utf8').catch(() => '');
+          process.stderr.write(`${JSON.stringify({ resumedState: resumed.state,
+            resumedStderr: stderr.slice(-3000) }).slice(-6000)}\n`);
+        }
+        assert.equal(resumed.state.status, 'BLOCKED');
+        assert.equal(resumed.state.currentAttempt, 2);
+        assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'UPDATED');
+        coreRuntime = { status: resumed.state.status, interrupted: true,
+          resumedWithFreshAdapter: true, resumedAttempt: 2, coreAppliedProposal: true };
+      } else {
+        let state;
+        try {
+          state = await dispatchTask(f.handle, f.project, f.run, f.request, f.requestRef,
+            f.frozenInputsRef, services, checked);
+        } catch (error) {
+          const stderr = await readFile(f.attemptPaths.stderrPath, 'utf8').catch(() => '');
+          process.stderr.write(`${JSON.stringify({ coreStderr: stderr.slice(-4096) })}\n`);
+          throw error;
+        }
+        assert.equal(state.status, 'BLOCKED');
+        assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'UPDATED');
+        assert.equal(state.resultRefs.length, 1);
+        coreRuntime = { status: state.status, coreAppliedProposal: true, hostProbe: true };
       }
-      assert.equal(state.status, 'BLOCKED');
-      assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'UPDATED');
-      assert.equal(state.resultRefs.length, 1);
-      coreRuntime = { status: state.status, coreAppliedProposal: true, hostProbe: true };
     } finally { for (const cleanup of cleanups.reverse()) await cleanup(); }
   }
   let packagedCli;
@@ -175,6 +224,21 @@ try {
         child.on('close', (status, signal) => signal
           ? reject(new Error(`Packaged DSH CLI ended by ${signal}`)) : resolve(status));
       });
+      if (code !== 3) {
+        const lines = Buffer.concat(output).toString('utf8').split('\n').filter(Boolean);
+        let summary;
+        try { summary = JSON.parse(lines.at(-1)); } catch { /* Bounded output below still reports the failure. */ }
+        const project = await discoverProject(f.root);
+        const events = summary?.runId ? await readFile(join(project.stateRoot, summary.runId,
+          'attempts/A-1/events.jsonl'), 'utf8').catch(() => '') : '';
+        const messages = events.split('\n').filter(Boolean).flatMap((line) => {
+          try { const event = JSON.parse(line); return event.type === 'assistant/message'
+            ? [event.data?.message?.content?.filter((block) => block.type === 'text').map((block) => block.text).join('')]
+            : []; } catch { return []; }
+        });
+        process.stderr.write(`${JSON.stringify({ packagedStatus: summary?.status,
+          finalMessages: messages.slice(-2).map((value) => String(value).slice(-1000)) })}\n`);
+      }
       assert.equal(code, 3, JSON.stringify({ stderr: Buffer.concat(errors).toString('utf8').slice(-2000),
         stdout: Buffer.concat(output).toString('utf8').slice(-2000) }));
       const lines = Buffer.concat(output).toString('utf8').split('\n').filter(Boolean);
