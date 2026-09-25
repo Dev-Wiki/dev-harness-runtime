@@ -61,7 +61,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 - 同一命令加 `DHR_TEST_DSH_PROBE=1`，会追加两个真实新 Session 与独立命名空间取消的能力 probe；加 `DHR_TEST_DSH_CORE=1`，会让 RuntimeAdapter 在临时 Git 项目完成合成 Core 派发、提议精确应用和宿主回执复核。这些显式模式仍不代表包内 CLI、真实 Run 取消恢复或 Planning 三任务验收。
 - 加 `DHR_TEST_DSH_PACKAGE_CLI=1` 会先核验新安装包的锁定来源、可信服务工厂和包内 CLI，然后仅在临时复制包中替换并重新锁定合成 Worker Skill，用包内 `scripts/dhr.mjs run` 执行一个临时 Planning Task，核对 Core 应用提议、`BLOCKED` 状态和未改动的 HEAD / index。此模式不验证未替换 Worker 或三任务链。
 - 加 `DHR_TEST_DSH_CANCEL_RESUME=1` 会在合成 Core Run 的持久宿主启动记录出现后取消 DSH Worker，核对 `INTERRUPTED`、原文件未变及锁释放，再用新 Adapter 实例恢复到 attempt 2 并核对 Core 应用提议。它不证明被取消 Session 的持久身份、原始 Worker 或三任务链。
-- `DHR_TEST_DSH_ENTRY=<absolute-rc.1-bin.js> DHR_TEST_DSH_PACKAGE=<absolute-local-tgz> DHR_TEST_BWRAP=<absolute> pnpm smoke:dsh-autonomous` 从实际安装的包内 CLI 调用未替换的 Worker Skill，在临时 Git 项目自主完成一个 Planning Task、提交受控结果候选并由 Core 独立运行冻结检查；检查 `COMPLETED`、HEAD / index 未变。它不进入常规 `pnpm verify`，也不代表三任务依赖链或 commit-each 已验。
+- `DHR_TEST_DSH_ENTRY=<absolute-rc.1-bin.js> DHR_TEST_DSH_PACKAGE=<absolute-local-tgz> DHR_TEST_BWRAP=<absolute> pnpm smoke:dsh-autonomous` 从实际安装的包内 CLI 调用未替换的 Worker Skill，在临时 Git 项目自主完成一个 Planning Task、提交受控结果候选并由 Core 独立运行冻结检查。默认 `--no-commit` 检查 HEAD / index 未变；追加 `--commit-each` 检查 Core 恰好提交一次、提交标题与路径符合冻结工作流且工作区干净。它不进入常规 `pnpm verify`，也不代表三任务依赖链已验。
 - 公共 BuildPipeline 的 generate / validate / pack 阶段和 `dhr build|validate|pack --adapter ID` 已实现；仓库级固定来源工厂可为全部六个平台生成产物。独立 CLI 分发包仍不隐式读取项目可执行配置。分平台证据见 [能力矩阵](docs/PLATFORM_MATRIX.md)。
 
 ## 高风险目录

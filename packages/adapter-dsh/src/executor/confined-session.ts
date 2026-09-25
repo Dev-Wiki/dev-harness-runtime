@@ -187,7 +187,7 @@ export async function runConfinedDshSession(input: DshConfinedSessionInput): Pro
     if (raw.brokerAudit.allowedHosts.length !== 1 || raw.brokerAudit.allowedHosts[0] !== 'api.deepseek.com'
       || Object.keys(raw.brokerAudit.connected).some((host) => host !== 'api.deepseek.com')
       || !raw.brokerAudit.connected['api.deepseek.com'] || raw.brokerAudit.denied !== 0) {
-      fail('AUTHORIZATION_VIOLATION', 'DSH model traffic did not use the exact-host broker');
+      fail('AUTHORIZATION_VIOLATION', `DSH model traffic did not use the exact-host broker: ${JSON.stringify(raw.brokerAudit)}`);
     }
     const decoded = await decodeFreshDshExecution({ dshEntry: input.dshEntry, sessionsRoot: sessions,
       request, log: (bytes) => input.log('events', bytes) });

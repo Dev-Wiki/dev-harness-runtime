@@ -118,6 +118,11 @@ export function createDshSubmitTool(load: () => Promise<WorkerTaskBridgeView>): 
         for (const key of ['runId', 'taskId', 'attempt', 'requestId', 'snapshotHash'] as const) {
           if (result[key] !== view.policy.identity[key]) throw new Error(`${key} differs from Core identity`);
         }
+        if (result.outcome === 'completed' && result.commitIntent
+          && (Buffer.byteLength(result.commitIntent.message, 'utf8') > 256
+            || !/^[a-z]+(?:\([a-z0-9][a-z0-9-]*\))?: [^\r\n]*\p{Script=Han}[^\r\n]*\n$/u.test(result.commitIntent.message))) {
+          throw new Error('commitIntent.message needs one LF-terminated Conventional Commit subject with a lowercase scope and Chinese description');
+        }
         return `SUBMITTED ${createHash('sha256').update(JSON.stringify(raw)).digest('hex')}`;
       } catch (error) {
         const issues = error instanceof ContractValidationError

@@ -70,6 +70,24 @@ test('DSH result submission is receipt-bound and later tool calls are rejected',
   assert.throws(() => decode(laterCall), { code: 'INVALID_RESULT' });
 });
 
+test('DSH rejected bridge read may be corrected without accepting an effect', () => {
+  const corrected = transcript();
+  corrected.splice(3, 0,
+    event(3, 'tool/call', { turn: 1, step: 1, callId: 'bad_read', name: 'dhr_read_text',
+      arguments: JSON.stringify({ path: '../outside', offset: 0 }) }),
+    event(4, 'tool/result', { turn: 1, step: 1,
+      message: { content: [{ type: 'tool-result', toolCallId: 'bad_read', isError: true,
+        content: [{ type: 'text', text: 'Error: Read path is unsafe' }] }] } }, { sourceEventSeqs: [3] }));
+  for (let index = 5; index < corrected.length; index++) {
+    corrected[index].seq += 2;
+    if (corrected[index].type === 'tool/result') corrected[index].sourceEventSeqs = [5];
+  }
+  assert.deepEqual(decode(corrected).proposals(), [{ path: 'src/a.ts', content: 'HELLO' }]);
+  const altered = structuredClone(corrected);
+  altered[4].data.message.content[0].content[0].text = 'untrusted receipt';
+  assert.throws(() => decode(altered), { code: 'INVALID_RESULT' });
+});
+
 test('DSH Session decoder rejects foreign tool, altered receipt, gap, incomplete and repeated turns', () => {
   const foreign = transcript(); foreign[3].data.name = 'bash';
   assert.throws(() => decode(foreign), { code: 'AUTHORIZATION_VIOLATION' });

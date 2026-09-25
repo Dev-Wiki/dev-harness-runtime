@@ -17,13 +17,29 @@ const dshEntry = required('DHR_TEST_DSH_ENTRY');
 const artifact = required('DHR_TEST_DSH_PACKAGE');
 const bubblewrap = required('DHR_TEST_BWRAP');
 assert.ok(process.env.DEEPSEEK_API_KEY, 'Set DEEPSEEK_API_KEY in the trusted host environment');
-assert.equal(process.argv.length, 2);
+assert.ok(process.argv.length === 2 || (process.argv.length === 3 && process.argv[2] === '--commit-each'));
+const commitEach = process.argv[2] === '--commit-each';
 const cleanups = [];
 try {
   const f = await setupRuntimeFixture({ after: (cleanup) => cleanups.push(cleanup) });
   const command = 'node --test tests/feature.test.mjs';
   await writeFile(join(f.root, 'HARNESS.md'), '# HARNESS\n\n## 已确认命令\n\n| 用途 | 命令 | 状态 |\n|---|---|---|\n'
     + `| full | \`${command}\` | confirmed |\n`);
+  if (commitEach) await writeFile(join(f.root, 'docs/GIT_WORKFLOW.md'), `# Git 工作流契约
+
+## 提交规范
+
+使用 Conventional Commits：
+
+\`\`\`text
+<type>(<scope>): <中文描述>
+\`\`\`
+
+- \`feat\`
+- \`fix\`
+- \`test\`
+- \`docs\`
+`);
   const taskPath = join(f.root, 'docs/plan/tasks/A.md');
   const original = await readFile(taskPath, 'utf8');
   const task = original
@@ -44,7 +60,8 @@ try {
     verification: { sources: [], commands: [{ id: 'check', purpose: 'full', criteria: [1, 2],
       writableArtifacts: [] }], manual: [] } };
   await writeFile(taskPath, `${task}\n## Runtime 配置\n\n\`\`\`dhr-runtime\n${JSON.stringify(declaration)}\n\`\`\`\n`);
-  await git(f.root, 'add', '--', 'HARNESS.md', 'docs/plan/tasks/A.md');
+  await git(f.root, 'add', '--', 'HARNESS.md', 'docs/plan/tasks/A.md',
+    ...(commitEach ? ['docs/GIT_WORKFLOW.md'] : []));
   await git(f.root, 'commit', '--quiet', '--no-gpg-sign', '-m', 'fixture: define autonomous DSH Task A');
   const head = await git(f.root, 'rev-parse', 'HEAD');
   const stage = await mkdtemp(join(tmpdir(), 'dhr-dsh-autonomous-'));
@@ -55,7 +72,7 @@ try {
     DSH_HOME: stage }, maxBuffer: 1024 * 1024 });
   const launcher = join(stage, 'profiles/headless/node_modules/dev-harness-runtime/scripts/dhr.mjs');
   const child = spawn(process.execPath, [launcher, 'run', '--adapter', 'dsh', '--task', 'A',
-    '--project', f.root, '--no-commit'], { env: { ...process.env, DHR_DSH_ENTRY: dshEntry,
+    '--project', f.root, commitEach ? '--commit-each' : '--no-commit'], { env: { ...process.env, DHR_DSH_ENTRY: dshEntry,
       DHR_BWRAP: bubblewrap, DSH_HOME: stage }, stdio: ['ignore', 'pipe', 'pipe'] });
   const output = []; const errors = [];
   child.stdout.on('data', (bytes) => output.push(bytes));
@@ -85,14 +102,23 @@ try {
       stderr: Buffer.concat(errors).toString('utf8').slice(-1200),
       toolCalls, finalMessage: String(finals.at(-1) ?? '').slice(-1500), root: f.root }));
   }
-  assert.equal(await git(f.root, 'rev-parse', 'HEAD'), head);
   assert.equal(await git(f.root, 'diff', '--cached', '--name-only'), '');
+  if (commitEach) {
+    const finalHead = await git(f.root, 'rev-parse', 'HEAD');
+    assert.notEqual(finalHead, head);
+    assert.equal(await git(f.root, 'rev-list', '--count', `${head}..${finalHead}`), '1');
+    assert.equal(summary.commitSha, finalHead);
+    assert.match(await git(f.root, 'show', '-s', '--format=%s', finalHead),
+      /^(?:feat|fix|test|docs)(?:\([a-z0-9][a-z0-9-]*\))?: .*\p{Script=Han}/u);
+    assert.equal(await git(f.root, 'status', '--porcelain'), '');
+  } else assert.equal(await git(f.root, 'rev-parse', 'HEAD'), head);
   assert.ok((await readFile(join(f.root, 'src/feature.mjs'), 'utf8')).includes('greet'));
   assert.ok((await readFile(join(f.root, 'tests/feature.test.mjs'), 'utf8')).includes('node:test'));
   assert.deepEqual(run.completedTasks, ['A']);
   assert.equal(run.resultRefs.length, 1);
   process.stdout.write(`${JSON.stringify({ status: 'passed', packagedCli: true, packagedWorker: true,
-    autonomousTask: true, independentVerification: true, outcome: run.status, syntheticOnly: true })}\n`);
+    autonomousTask: true, independentVerification: true, commitEach,
+    outcome: run.status, syntheticOnly: true })}\n`);
 } finally {
   if (process.env.DHR_KEEP_SMOKE !== '1') for (const cleanup of cleanups.reverse()) await cleanup();
 }

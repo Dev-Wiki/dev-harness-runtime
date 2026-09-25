@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { apply, createDshProposalTool, guardUnbridgedWorkerTool, inject } from '../dist/plugin.js';
+import { apply, createDshProposalTool, createDshSubmitTool, guardUnbridgedWorkerTool, inject } from '../dist/plugin.js';
 
 test('DSH Worker denies model-facing tools until a controlled bridge is installed', () => {
   const worker = { DEV_HARNESS_WORKER: '1', DEV_HARNESS_ADAPTER: 'dsh' };
@@ -88,4 +89,16 @@ test('DSH Worker allows only its exact proposal definition and that tool has no 
     if (oldWorker === undefined) delete process.env.DEV_HARNESS_WORKER; else process.env.DEV_HARNESS_WORKER = oldWorker;
     if (oldAdapter === undefined) delete process.env.DEV_HARNESS_ADAPTER; else process.env.DEV_HARNESS_ADAPTER = oldAdapter;
   }
+});
+
+test('DSH result tool gives a correctable commit subject error before Core review', async () => {
+  const result = JSON.parse(readFileSync(new URL('../../contracts/fixtures/execution/result-completed-candidate.json', import.meta.url), 'utf8'));
+  result.commitIntent = { schemaVersion: 1, message: 'feat(A): 完成任务 A\n',
+    paths: result.changedFiles, workflow: { path: 'docs/GIT_WORKFLOW.md', sha256: 'a'.repeat(64) } };
+  const tool = createDshSubmitTool(async () => ({ policy: { identity: result } }));
+  const bad = await tool.execute({ result: JSON.stringify(result) }, { signal: new AbortController().signal });
+  assert.match(bad, /lowercase scope/u);
+  result.commitIntent.message = 'feat(a): 完成任务 A\n';
+  assert.match(await tool.execute({ result: JSON.stringify(result) }, { signal: new AbortController().signal }),
+    /^SUBMITTED [a-f0-9]{64}$/u);
 });

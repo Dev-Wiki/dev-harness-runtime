@@ -109,12 +109,19 @@ export class DshSessionEventDecoder {
         const call = this.pending.get(block.toolCallId);
         if (call === undefined || call.turn !== data.turn || call.step !== data.step
           || !Array.isArray(value.sourceEventSeqs) || value.sourceEventSeqs.length !== 1
-          || value.sourceEventSeqs[0] !== call.seq || block.isError === true
+          || value.sourceEventSeqs[0] !== call.seq
           || !Array.isArray(block.content) || block.content.length !== 1 || !record(block.content[0])
           || block.content[0].type !== 'text' || typeof block.content[0].text !== 'string') {
           throw new DshEventError('INVALID_RESULT', 'DSH proposal receipt does not match its call');
         }
         const response = block.content[0].text;
+        if (block.isError === true) {
+          if (!response.startsWith('Error: ') || Buffer.byteLength(response, 'utf8') > 4096) {
+            throw new DshEventError('INVALID_RESULT', 'DSH failed tool receipt is malformed');
+          }
+          this.pending.delete(block.toolCallId);
+          return;
+        }
         if (call.kind === 'submit') {
           if (response.startsWith('INVALID_RESULT: ')) {
             this.pending.delete(block.toolCallId);
