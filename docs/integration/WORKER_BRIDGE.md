@@ -43,4 +43,6 @@ Core 派发现在有可选提案入口：宿主静止后，Core 在原 Run revis
 
 Codex RuntimeAdapter 已在合成临时 Git 项目中消费上述边界：先做两次真实 Codex 会话和独立取消的能力探测，Core 随后派发合成 Worker Skill，Codex 通过受限 MCP 提议单文件更新；外层宿主静止后，Core 精确应用提案并保存回执，Adapter 对持久化宿主证据、模型代理审计和命名空间 init 静止进行复核。`pnpm smoke:codex-runtime` 输出 `hostProbe:true`、`coreAppliedProposal:true`、`outcome:BLOCKED`。这仍是显式合成用例；分发 CLI 装配、实际 Planning Task 和多任务 / 中断恢复验收未完成。
 
-DSH 侧现复用 Core 的命名空间控制器、模型代理、冻结读取目录与 Task 桥接策略。安装包的插件入口为自包含 bundle，隔离会话逐次复制并核对私有 headless profile 和插件 SHA-256，只读挂载冻结仓库镜像，不挂载宿主项目工作区、Git 私有目录或其他凭据；模型网络限定 `api.deepseek.com`。真实合成会话通过 `dhr_identity`、`dhr_list_paths`、`dhr_read_text`、`dhr_search_text` 与 `dhr_propose_delete`，Session 事件解码获得绑定请求的 `blocked` 结果，宿主控制器等待进程树静止且原文件未变。当前实现是可调用的受限传输，不是已注册 RuntimeAdapter；Core 提案应用、持久宿主回执、两会话能力 probe、取消恢复与三任务链须继续验收。
+DSH 侧现复用 Core 的命名空间控制器、模型代理、冻结读取目录与 Task 桥接策略。安装包的插件入口为自包含 bundle，隔离会话逐次复制并核对私有 headless profile 和插件 SHA-256，只读挂载冻结仓库镜像，不挂载宿主项目工作区、Git 私有目录或其他凭据；模型网络限定 `api.deepseek.com`。真实合成会话通过 `dhr_identity`、`dhr_list_paths`、`dhr_read_text`、`dhr_search_text` 与 `dhr_propose_delete`，Session 事件解码获得绑定请求的 `blocked` 结果，宿主控制器等待进程树静止且原文件未变。这个阶段先交付受限传输；Core 提案应用和持久宿主回执留给下一步 Adapter 验收。
+
+后续已注册仓库内可信 DSH RuntimeAdapter，但包内 CLI 尚未装配它。两次真实新 Session 加独立命名空间取消的合成 probe 通过；另一次真实 DSH Worker Session 在临时 Git 项目中交付文本提议，由 Core 精确应用后，Adapter 复核宿主持久回执，Run 结束为 `BLOCKED`。这些证据仍未覆盖真实 Run 的取消恢复、原始 Worker Skill、三任务依赖链或包内生产入口。

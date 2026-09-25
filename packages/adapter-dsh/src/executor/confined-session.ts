@@ -29,6 +29,8 @@ export interface DshConfinedSessionInput {
   readonly timeoutMs: number;
   readonly log: (stream: 'stdout' | 'stderr' | 'events', bytes: Uint8Array) => Promise<void>;
   readonly recordHostStart: (evidence: HostStartEvidence) => Promise<void>;
+  readonly onHostQuiescent?: (namespace: HostNamespaceResult['evidence'],
+    broker: IsolatedModelHostResult['brokerAudit']) => void;
 }
 
 export interface DshConfinedSessionOutput {
@@ -155,7 +157,7 @@ export async function runConfinedDshSession(input: DshConfinedSessionInput): Pro
     await writeFile(policyPath, `${JSON.stringify(policy)}\n`, { flag: 'wx', mode: 0o400 });
     const raw = await runIsolatedModelHost({
       bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
-      executable: '/dhr/dsh-node', argv: ['/dhr/setup.mjs', input.prompt],
+      executable: '/dhr/dsh-node', argv: ['/dhr/setup.mjs', `\n${input.prompt}`],
       cwd: request.repoRoot, timeoutMs: input.timeoutMs, signal: input.signal,
       environment: { HOME: '/dhr/home', DSH_HOME: '/dhr/home', PATH: '/usr/bin', LANG: 'C.UTF-8',
         DEEPSEEK_API_KEY: input.apiKey, DSH_PERMISSION_MODE: 'read-only', DSH_TELEMETRY_MODE: 'DISABLED',
@@ -173,6 +175,7 @@ export async function runConfinedDshSession(input: DshConfinedSessionInput): Pro
       ],
       onStarted: input.recordHostStart,
     }, { allowedHosts: ['api.deepseek.com'], ...(input.upstreamProxy ? { upstreamProxy: input.upstreamProxy } : {}) });
+    input.onHostQuiescent?.(raw.evidence, raw.brokerAudit);
     await input.log('stdout', raw.stdout);
     await input.log('stderr', raw.stderr);
     if (raw.termination === 'aborted' && input.signal.aborted) {

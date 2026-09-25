@@ -50,10 +50,10 @@ export async function setupAcceptance(t, options = {}) {
     adapterConfigHash: template.adapterConfigHash, currentTaskPath: join(root, taskPath) });
   // Discard the helper's synthetic captures; only these real Git captures may enter acceptance.
   planningFixture.before = before; delete planningFixture.after; delete planningFixture.closure;
-  handle = await acquireLock(project, { runId: template.runId, adapter: 'codex' });
+  handle = await acquireLock(project, { runId: template.runId, adapter: options.adapter ?? 'codex' });
   const { initialUserChangesRef: _i, initialUserChangesHash: _ih, acceptedSnapshotRef: _a, acceptedSnapshotHash: _ah, ...seed } = template;
   const createdAt = new Date(Date.now() - 1000).toISOString();
-  const initial = await initializeRun(handle, { ...seed, repoIdentity: before.snapshot.repoIdentity,
+  const initial = await initializeRun(handle, { ...seed, adapter: options.adapter ?? 'codex', repoIdentity: before.snapshot.repoIdentity,
     authorization: { ...seed.authorization, commit: options.commit ?? 'deny' },
     selectionMode: { mode: 'explicit', taskId: 'A' }, createdAt, updatedAt: createdAt }, before.snapshot);
   const identity = { runId: initial.runId, taskId: 'A', attempt: 1, requestId: 'request-a' };
@@ -76,7 +76,7 @@ export async function setupAcceptance(t, options = {}) {
     verificationPlan: { schemaVersion: 1, sources: ['HARNESS.md', taskPath, ...(options.verificationSources ?? [])].map((path) => ({ path, sha256: fileHash(before.snapshot, path) })),
       commands: [{ id: 'check', acceptanceIds: acceptance.map((criterion) => criterion.id), argv: command, cwd: '.', writableArtifacts: [...(options.writableArtifacts ?? [])] }],
       manual: options.manualReview ? [{ id: 'review', acceptanceIds: acceptance.map((criterion) => criterion.id), description: 'Fixture independent user review' }] : [] },
-    env: { DEV_HARNESS_WORKER: '1', DEV_HARNESS_RUN_ID: identity.runId, DEV_HARNESS_TASK_ID: 'A', DEV_HARNESS_ADAPTER: 'codex' } });
+    env: { DEV_HARNESS_WORKER: '1', DEV_HARNESS_RUN_ID: identity.runId, DEV_HARNESS_TASK_ID: 'A', DEV_HARNESS_ADAPTER: options.adapter ?? 'codex' } });
   const frozenInputsRef = await freezeAcceptanceInputs(handle, { expectedRevision: run.revision, request, acceptance });
   const requestRef = await ensureRunEvidence(handle, run.runId, run.revision, 'fixture-request', request);
   let finished = false;

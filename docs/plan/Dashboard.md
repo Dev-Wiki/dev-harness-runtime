@@ -35,7 +35,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：真实新 Session 已在隔离宿主中调用逐 Task 只读桥接与删除提议，模型仅经精确主机代理，宿主静止且原文件未变。生产 RuntimeAdapter、Core 受控应用、能力 probe、取消恢复与三任务链仍未验，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
+| **K6 — DSH Executor 与行为等价迁移** | 🔴 P0 | 🚧 开发中 | [R0](archive/M0/R0.md)、[R1](archive/M0/R1.md)、[K4](archive/M1/K4.md)、[K6-P](archive/M3/K6-P.md) | G5 / G6 / G8：隔离宿主的逐 Task 桥接、两次新 Session 与取消 probe 通过；RuntimeAdapter 已在合成 Core Run 中受控应用提议并复核宿主回执。包内 CLI 装配、真实 Run 取消恢复、原始 Worker 与三任务链未验，自动运行关闭，见[证据](../verification/K6.md) | [执行包](tasks/K6.md) |
 | **K7 — Cursor Native Plugin 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 离线构建、静态与 golden 通过；已授权的宿主 smoke 在 headless 认证门禁处停止，详见[证据](../verification/K7.md) | [执行包](tasks/K7.md) |
 | **K8 — OpenCode npm 与本地插件打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 双产物离线验证、npm 临时安装及 OpenCode 1.18.31 双变体入口发现通过；本地变体移除通过，模型调用与按包名安装未验，详见[证据](../verification/K8.md) | [执行包](tasks/K8.md) |
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | 🚧 开发中 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线及原生安装链通过；模型会话 Skill 调用未验，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
@@ -133,4 +133,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-25（K6 隔离 DSH 传输与逐 Task 桥接通过真实合成会话；生产 Executor 仍待连接）*
+*最后更新：2026-09-25（K6 RuntimeAdapter 在合成 Core Run 中通过受控应用；包内生产入口仍未开启）*

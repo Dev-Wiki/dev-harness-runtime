@@ -6,6 +6,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { runConfinedDshSession } from '../packages/adapter-dsh/dist/executor/confined-session.js';
+import { probeDshRuntime } from '../packages/adapter-dsh/dist/executor/probe.js';
+import { createDshRuntimeAdapter } from '../packages/adapter-dsh/dist/index.js';
+import { Registry } from '../packages/core/dist/registry.js';
+import { dispatchTask, runtimeAdapter } from '../packages/core/dist/orchestrator/runtime.js';
+import { setupAcceptance } from '../packages/core/tests/result/helpers-acceptance.mjs';
 
 const execute = promisify(execFile);
 const required = (name) => {
@@ -41,7 +46,10 @@ try {
     dashboardPath: join(repoRoot, 'docs/plan/Dashboard.md'), taskPath: join(repoRoot, 'docs/plan/tasks/K1.md'),
     env: { ...requestFixture.env, DEV_HARNESS_ADAPTER: 'dsh' } };
   const result = { ...resultFixture, changedFiles: ['src/a.ts'] };
-  const prompt = `Synthetic confined DSH Task. In order, call dhr_identity with {}, dhr_list_paths with {"prefix":"src","after":""}, dhr_read_text with {"path":"src/a.ts","offset":0}, dhr_search_text with {"query":"BEFORE","prefix":"src","after":""}, and dhr_propose_delete with {"path":"src/a.ts"}. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`;
+  const coreMode = process.env.DHR_TEST_DSH_CORE === '1';
+  const prompt = coreMode
+    ? `Synthetic confined DSH Task. Call dhr_propose_delete with {"path":"src/a.ts"} exactly once. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`
+    : `Synthetic confined DSH Task. In order, call dhr_identity with {}, dhr_list_paths with {"prefix":"src","after":""}, dhr_read_text with {"path":"src/a.ts","offset":0}, dhr_search_text with {"query":"BEFORE","prefix":"src","after":""}, and dhr_propose_delete with {"path":"src/a.ts"}. Do not use any other tool. Then return exactly this JSON object: ${JSON.stringify(result)}`;
   const starts = []; const logBytes = { stdout: 0, stderr: 0, events: 0 };
   let eventLog = '';
   const output = await runConfinedDshSession({ dshEntry,
@@ -67,11 +75,56 @@ try {
   assert.ok(logBytes.events > 0 && logBytes.stdout > 0);
   const toolCalls = eventLog.trim().split('\n').map((line) => JSON.parse(line))
     .filter((event) => event.type === 'tool/call').map((event) => event.data.name);
-  assert.deepEqual(toolCalls, ['dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text', 'dhr_propose_delete']);
+  assert.deepEqual(toolCalls, coreMode ? ['dhr_propose_delete']
+    : ['dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text', 'dhr_propose_delete']);
+  let probe;
+  if (process.env.DHR_TEST_DSH_PROBE === '1') {
+    probe = await probeDshRuntime({ dshEntry, profileDirectory: join(stage, 'profiles/headless'),
+      bubblewrap, nodeBinary, apiKey, pluginSha256, targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 });
+    assert.equal(probe.authorizationEnforced, true, probe.reasons.join('; '));
+    assert.equal(probe.freshSession, true);
+    assert.equal(probe.cancellation, true);
+  }
+  let coreRuntime;
+  if (process.env.DHR_TEST_DSH_CORE === '1') {
+    const cleanups = [];
+    try {
+      const f = await setupAcceptance({ after: (cleanup) => cleanups.push(cleanup) },
+        { adapter: 'dsh', initialFiles: { 'src/a.ts': 'HELLO' }, scopeFiles: ['src/a.ts'] });
+      const adapter = createDshRuntimeAdapter({ dshEntry, profileDirectory: join(stage, 'profiles/headless'),
+        bubblewrap, nodeBinary, apiKey, pluginSha256, configHash: f.run.adapterConfigHash,
+        gitVersion: 'synthetic-fixture', targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 });
+      const expected = { schemaVersion: 1, runId: f.request.runId, taskId: f.request.taskId,
+        attempt: f.request.attempt, requestId: f.request.requestId, snapshotHash: f.request.snapshotHash,
+        summary: 'Synthetic DSH Runtime integration smoke.', verification: [], changedFiles: ['src/a.ts'],
+        outcome: 'blocked', needsPlanning: false, reason: 'Synthetic Runtime integration smoke only.' };
+      const skill = Buffer.from(`---\nname: worker\ndescription: synthetic DSH Runtime integration smoke\n---\n\nThis is a synthetic temporary project. Call dhr_propose_text with {"path":"src/a.ts","content":"UPDATED"} exactly once. Do not use other tools. Return exactly this JSON object: ${JSON.stringify(expected)}\n`);
+      const adapters = new Registry(); adapters.register(adapter);
+      const services = { protocolSource: f.run.protocolSource, adapterConfigHash: f.run.adapterConfigHash,
+        workerSkill: { bytes: skill, sha256: createHash('sha256').update(skill).digest('hex') },
+        adapters, acceptance: {} };
+      const checked = await runtimeAdapter(services, f.project, 'dsh');
+      let state;
+      try {
+        state = await dispatchTask(f.handle, f.project, f.run, f.request, f.requestRef,
+          f.frozenInputsRef, services, checked);
+      } catch (error) {
+        const stderr = await readFile(f.attemptPaths.stderrPath, 'utf8').catch(() => '');
+        process.stderr.write(`${JSON.stringify({ coreStderr: stderr.slice(-4096) })}\n`);
+        throw error;
+      }
+      assert.equal(state.status, 'BLOCKED');
+      assert.equal(await readFile(join(f.root, 'src/a.ts'), 'utf8'), 'UPDATED');
+      assert.equal(state.resultRefs.length, 1);
+      coreRuntime = { status: state.status, coreAppliedProposal: true, hostProbe: true };
+    } finally { for (const cleanup of cleanups.reverse()) await cleanup(); }
+  }
   process.stdout.write(`${JSON.stringify({ sessionId: output.sessionId, outcome: output.result.outcome,
     proposals: output.proposals.length, hostStarted: starts.length,
     network: output.namespaceEvidence.network, quiescent: output.namespaceEvidence.monitorWaited,
-    modelConnections: output.brokerAudit.connected['api.deepseek.com'], toolCalls, logBytes })}\n`);
+    modelConnections: output.brokerAudit.connected['api.deepseek.com'], toolCalls, logBytes,
+    ...(probe ? { hostProbe: probe.authorizationEnforced, probeReport: probe.reasons[0] } : {}),
+    ...(coreRuntime ? { coreRuntime } : {}) })}\n`);
 } catch (error) {
   retain = error?.code === 'QUIESCENCE_UNKNOWN';
   if (diagnostic) process.stderr.write(diagnostic.slice(-8192));
