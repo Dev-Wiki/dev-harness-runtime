@@ -48,6 +48,28 @@ test('DSH v3 Session binds fresh identity, proposal receipt and structured resul
   assert.throws(() => decode(transcript({ ...blocked, requestId: 'other' })).finish(request, header), { code: 'INVALID_RESULT' });
 });
 
+test('DSH result submission is receipt-bound and later tool calls are rejected', () => {
+  const submitted = transcript();
+  const raw = JSON.stringify(blocked);
+  submitted[5] = event(5, 'tool/call', { turn: 1, step: 2, callId: 'call_2', name: 'dhr_submit_result',
+    arguments: JSON.stringify({ result: raw }) });
+  submitted[6] = event(6, 'tool/result', { turn: 1, step: 2,
+    message: { content: [{ type: 'tool-result', toolCallId: 'call_2',
+      content: [{ type: 'text', text: `SUBMITTED ${createHash('sha256').update(raw).digest('hex')}` }] }] } },
+  { sourceEventSeqs: [5] });
+  submitted.push(event(7, 'assistant/message', { turn: 1, step: 3,
+    message: { role: 'assistant', content: [{ type: 'text', text: 'Done.' }] } }));
+  submitted.push(event(8, 'turn/end', { turn: 1, reason: { kind: 'completed' } }));
+  assert.deepEqual(decode(submitted).finish(request, header).result, blocked);
+  const badReceipt = structuredClone(submitted);
+  badReceipt[6].data.message.content[0].content[0].text = 'SUBMITTED wrong';
+  assert.throws(() => decode(badReceipt), { code: 'INVALID_RESULT' });
+  const laterCall = structuredClone(submitted);
+  laterCall[7] = event(7, 'tool/call', { turn: 1, step: 3, callId: 'call_3', name: 'dhr_identity',
+    arguments: '{}' });
+  assert.throws(() => decode(laterCall), { code: 'INVALID_RESULT' });
+});
+
 test('DSH Session decoder rejects foreign tool, altered receipt, gap, incomplete and repeated turns', () => {
   const foreign = transcript(); foreign[3].data.name = 'bash';
   assert.throws(() => decode(foreign), { code: 'AUTHORIZATION_VIOLATION' });

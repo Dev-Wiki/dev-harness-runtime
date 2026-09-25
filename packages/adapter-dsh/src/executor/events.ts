@@ -8,7 +8,8 @@ export class DshEventError extends Error {
 }
 
 type Proposal = { path: string; content: string | null };
-type PendingCall = ({ kind: 'proposal' } & Proposal) | { kind: 'read'; name: string };
+type PendingCall = ({ kind: 'proposal' } & Proposal) | { kind: 'read'; name: string }
+  | { kind: 'submit'; raw: unknown; digest: string };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const receipt = (content: string): string => `PROPOSED ${createHash('sha256').update(content, 'utf8').digest('hex')}`;
 
@@ -23,6 +24,7 @@ export class DshSessionEventDecoder {
   private seenCalls = new Set<string>();
   private accepted: Proposal[] = [];
   private identityReceipt: Record<string, unknown> | undefined;
+  private submitted: unknown;
 
   consume(value: unknown): void {
     if (this.failed) throw new DshEventError('INVALID_RESULT', 'DSH Session was already rejected');
@@ -53,7 +55,9 @@ export class DshSessionEventDecoder {
         }
         const proposalCall = data.name === 'dhr_propose_text' || data.name === 'dhr_propose_delete';
         const readCall = ['dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text'].includes(String(data.name));
-        if (!proposalCall && !readCall) {
+        const submitCall = data.name === 'dhr_submit_result';
+        if (this.submitted !== undefined) throw new DshEventError('INVALID_RESULT', 'DSH called a tool after submitting its result');
+        if (!proposalCall && !readCall && !submitCall) {
           throw new DshEventError('AUTHORIZATION_VIOLATION', 'DSH called an unbridged tool');
         }
         this.seenCalls.add(data.callId);
@@ -61,6 +65,19 @@ export class DshSessionEventDecoder {
         let args: unknown;
         try { args = JSON.parse(String(data.arguments)); }
         catch { throw new DshEventError('INVALID_RESULT', 'DSH proposal arguments are not JSON'); }
+        if (submitCall) {
+          if (!record(args) || Object.keys(args).join(',') !== 'result' || typeof args.result !== 'string'
+            || Buffer.byteLength(args.result, 'utf8') > 1024 * 1024) {
+            throw new DshEventError('INVALID_RESULT', 'DSH submitted result arguments are malformed');
+          }
+          let raw: unknown;
+          try { raw = JSON.parse(args.result); }
+          catch { raw = undefined; }
+          this.pending.set(data.callId, { kind: 'submit', raw,
+            digest: raw === undefined ? '' : createHash('sha256').update(JSON.stringify(raw)).digest('hex'),
+            seq: value.seq as number, turn: this.turn, step: data.step as number });
+          return;
+        }
         if (readCall) {
           const keys = data.name === 'dhr_identity' ? '' : data.name === 'dhr_list_paths' ? 'after,prefix'
             : data.name === 'dhr_read_text' ? 'offset,path' : 'after,prefix,query';
@@ -98,7 +115,16 @@ export class DshSessionEventDecoder {
           throw new DshEventError('INVALID_RESULT', 'DSH proposal receipt does not match its call');
         }
         const response = block.content[0].text;
-        if (call.kind === 'proposal') {
+        if (call.kind === 'submit') {
+          if (response.startsWith('INVALID_RESULT: ')) {
+            this.pending.delete(block.toolCallId);
+            return;
+          }
+          if (call.raw === undefined || response !== `SUBMITTED ${call.digest}`) {
+            throw new DshEventError('INVALID_RESULT', 'DSH submitted result receipt does not match its call');
+          }
+          this.submitted = call.raw;
+        } else if (call.kind === 'proposal') {
           if (response !== (call.content === null
             ? `PROPOSED_DELETE ${createHash('sha256').update(call.path, 'utf8').digest('hex')}`
             : receipt(call.content))) {
@@ -144,11 +170,14 @@ export class DshSessionEventDecoder {
       || this.identityReceipt.snapshotHash !== request.snapshotHash)) {
       throw new DshEventError('INVALID_RESULT', 'DSH read identity differs from the Core request');
     }
-    const trimmed = this.finalText.trim();
-    const fenced = /^```json\r?\n([\s\S]*?)\r?\n```$/u.exec(trimmed);
     let raw: unknown;
-    try { raw = JSON.parse(fenced ? fenced[1]! : trimmed); }
-    catch { throw new DshEventError('INVALID_RESULT', 'DSH final message is not JSON'); }
+    if (this.submitted !== undefined) raw = this.submitted;
+    else {
+      const trimmed = this.finalText.trim();
+      const fenced = /^```json\r?\n([\s\S]*?)\r?\n```$/u.exec(trimmed);
+      try { raw = JSON.parse(fenced ? fenced[1]! : trimmed); }
+      catch { throw new DshEventError('INVALID_RESULT', 'DSH final message is not JSON'); }
+    }
     return { sessionId: header.id, result: validateResultForRequest(request, raw) };
   }
 

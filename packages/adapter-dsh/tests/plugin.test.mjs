@@ -38,18 +38,25 @@ test('DSH Worker allows only its exact proposal definition and that tool has no 
   const oldWorker = process.env.DEV_HARNESS_WORKER; const oldAdapter = process.env.DEV_HARNESS_ADAPTER;
   process.env.DEV_HARNESS_WORKER = '1'; process.env.DEV_HARNESS_ADAPTER = 'dsh';
   try {
-    const definitions = new Map(); let guard; let precheck;
+    const definitions = new Map(); let guard; let precheck; let onAgent;
+    const restrictions = [];
     const effects = [];
     const ctx = {
       commands: { register() { return () => {}; } },
       tools: { get(name) { return definitions.get(name); }, register(value) { definitions.set(value.name, value);
         return () => { definitions.delete(value.name); }; },
+        restrict(filter) { restrictions.push(filter); return () => {}; },
         guard(check) { guard = check; return () => { guard = undefined; }; } },
-      on(name, check, options) { assert.equal(name, 'tools/pre-execute'); assert.deepEqual(options, { prepend: true });
-        precheck = check; return () => { precheck = undefined; }; },
+      on(name, check, options) { if (name === 'agent/created') {
+        onAgent = check; return () => { onAgent = undefined; };
+      }
+      assert.equal(name, 'tools/pre-execute'); assert.deepEqual(options, { prepend: true });
+      precheck = check; return () => { precheck = undefined; }; },
       effect(register) { effects.push(register()); },
     };
     apply(ctx);
+    onAgent({ agent: { ctx } });
+    assert.deepEqual(restrictions, [{ allow: [] }]);
     assert.deepEqual([...definitions.keys()], ['dhr_propose_text', 'dhr_propose_delete']);
     let downstream = 0;
     const next = async () => { downstream++; return { kind: 'allow' }; };
@@ -76,7 +83,7 @@ test('DSH Worker allows only its exact proposal definition and that tool has no 
     await assert.rejects(deletion.execute({ path: '../outside' }, { signal: new AbortController().signal }));
     await assert.rejects(deletion.execute({ path: 'src/a.ts', extra: true }, { signal: new AbortController().signal }));
     for (const dispose of effects) dispose();
-    assert.equal(definitions.size, 0);
+    assert.equal(onAgent, undefined);
   } finally {
     if (oldWorker === undefined) delete process.env.DEV_HARNESS_WORKER; else process.env.DEV_HARNESS_WORKER = oldWorker;
     if (oldAdapter === undefined) delete process.env.DEV_HARNESS_ADAPTER; else process.env.DEV_HARNESS_ADAPTER = oldAdapter;

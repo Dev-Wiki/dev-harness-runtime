@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { ContractValidationError, parseContract } from '@dev-harness-runtime/contracts';
 import { createWorkerTaskBridgeView, type WorkerTaskBridgeView } from '@dev-harness-runtime/core';
 
 // Early syntax feedback only; Core's WorkerProposalCollector revalidates the authoritative scope.
@@ -26,14 +27,16 @@ interface CommandContext {
     get(name: string, scope?: unknown): ProposalTool | undefined;
     register(definition: ProposalTool): () => void;
     guard(check: (execution: { readonly name: string; readonly agent?: unknown }) => string | undefined): () => void;
+    restrict(filter: { allow: readonly string[] }): () => void;
   };
+  on(event: 'agent/created', listener: (event: { agent: { ctx: CommandContext } }) => void): () => void;
   on(event: 'tools/pre-execute', check: (execution: { readonly name: string; readonly agent?: unknown },
     next: () => Promise<{ kind: string; reason?: string }>) => Promise<{ kind: string; reason?: string }> | { kind: string; reason?: string },
   options: { prepend: true }): () => void;
   effect(register: () => () => void, label: string): void;
 }
 
-/** Until the scoped bridge exists, a DHR Worker cannot invoke other DSH model-facing tool bodies. */
+/** A DHR Worker cannot invoke other DSH model-facing tool bodies. */
 export function guardUnbridgedWorkerTool(environment: Readonly<Record<string, string | undefined>>,
   _execution: { readonly name: string }): string | undefined {
   if (environment.DEV_HARNESS_WORKER === '1' && environment.DEV_HARNESS_ADAPTER === 'dsh') {
@@ -92,6 +95,35 @@ export function createDshDeleteProposalTool(authorizePath?: (path: string) => Pr
       }
       await authorizePath?.(value.path);
       return `PROPOSED_DELETE ${createHash('sha256').update(value.path, 'utf8').digest('hex')}`;
+    },
+  };
+}
+
+/** Validate a candidate in the model's own turn so a malformed result can be corrected before the Session ends. */
+export function createDshSubmitTool(load: () => Promise<WorkerTaskBridgeView>): ProposalTool {
+  return {
+    name: 'dhr_submit_result',
+    description: 'Submit the final TaskExecutionResult as a JSON string after all proposals. Required completed closure: schemaVersion, taskId, taskPath, archivePath, archiveIndexPath, dashboardPath, summary, changes (exactly four {path,beforeHash,afterHash} entries). A schema error is returned for correction. Call this as the last tool.',
+    parameters: { type: 'object', properties: { result: { type: 'string' } },
+      required: ['result'], additionalProperties: false },
+    output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
+    async execute(args, exec) {
+      exec.signal.throwIfAborted();
+      if (!exact(args, ['result']) || typeof args.result !== 'string'
+        || Buffer.byteLength(args.result, 'utf8') > 1024 * 1024) return 'INVALID_RESULT: result must be a bounded JSON string';
+      try {
+        const raw: unknown = JSON.parse(args.result);
+        const result = parseContract('taskExecutionResult', raw);
+        const view = await load();
+        for (const key of ['runId', 'taskId', 'attempt', 'requestId', 'snapshotHash'] as const) {
+          if (result[key] !== view.policy.identity[key]) throw new Error(`${key} differs from Core identity`);
+        }
+        return `SUBMITTED ${createHash('sha256').update(JSON.stringify(raw)).digest('hex')}`;
+      } catch (error) {
+        const issues = error instanceof ContractValidationError
+          ? error.issues.slice(0, 16).map((issue) => `${issue.path || '/'} ${issue.message}`).join('; ') : '';
+        return `INVALID_RESULT: ${error instanceof Error ? error.message : 'malformed candidate'}${issues ? `; ${issues}` : ''}`.slice(0, 2400);
+      }
     },
   };
 }
@@ -171,7 +203,7 @@ export function apply(ctx: CommandContext): void {
     if (!(await load()).allowsProposal(path)) throw new Error('Proposal path is outside this Task scope');
   } : undefined;
   const proposalTools = [createDshProposalTool(authorizePath), createDshDeleteProposalTool(authorizePath),
-    ...(process.env.DHR_WORKER_POLICY_PATH ? createDshReadTools(load) : [])];
+    ...(process.env.DHR_WORKER_POLICY_PATH ? [...createDshReadTools(load), createDshSubmitTool(load)] : [])];
   const isOwnProposal = (execution: { readonly name: string; readonly agent?: unknown }) =>
     proposalTools.some((tool) => execution.name === tool.name && ctx.tools.get(execution.name, execution.agent) === tool);
   ctx.effect(() => ctx.on('tools/pre-execute', createDshWorkerPrecheck(process.env, isOwnProposal), { prepend: true }),
@@ -183,7 +215,13 @@ export function apply(ctx: CommandContext): void {
   }),
     'dev-harness-runtime: worker tool gate');
   if (process.env.DEV_HARNESS_WORKER === '1' && process.env.DEV_HARNESS_ADAPTER === 'dsh') {
-    for (const tool of proposalTools) ctx.effect(() => ctx.tools.register(tool), `dev-harness-runtime: ${tool.name}`);
+    ctx.effect(() => ctx.on('agent/created', ({ agent }) => {
+      // DSH's scoped restriction hides every inherited global tool from both
+      // model presentation and dispatch. Our bridge registrations live in the
+      // new Agent scope and therefore remain visible until that scope disposes.
+      agent.ctx.tools.restrict({ allow: [] });
+      for (const tool of proposalTools) agent.ctx.tools.register(tool);
+    }), 'dev-harness-runtime: scoped Worker tool catalog');
   }
   ctx.effect(() => ctx.commands.register({
     name: 'dhr-status',

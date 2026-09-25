@@ -168,7 +168,8 @@ export function createDshRuntimeAdapter(options: DshRuntimeOptions): RuntimeAdap
         || input.readCatalog.snapshotHash !== request.snapshotHash) {
         fail('AUTHORIZATION_VIOLATION', 'DSH invocation identity or frozen catalog differs from Core');
       }
-      prepared.set(keyOf(request), { request, prompt: input.invocation.prompt,
+      const outputInstruction = '\nDSH structured result channel: after every dhr_propose_text/dhr_propose_delete, call dhr_submit_result with {"result":"<one complete JSON TaskExecutionResult object>"}. This is the last tool call. The tool checks the contract and returns INVALID_RESULT details for correction; retry until SUBMITTED. For outcome completed, closure requires schemaVersion:1, taskId, taskPath, archivePath, archiveIndexPath, dashboardPath, summary, and changes with exactly four Planning paths and their beforeHash/afterHash (null for absent/deleted files). Include only contract fields; omit notes, deletedFiles and commitIntent when commitCandidate.allowed is false. After SUBMITTED, a brief final message is sufficient.\n';
+      prepared.set(keyOf(request), { request, prompt: `${input.invocation.prompt}${outputInstruction}`,
         readCatalog: input.readCatalog, log: input.log, recordHostStart: input.recordHostStart });
     },
     executor: {
