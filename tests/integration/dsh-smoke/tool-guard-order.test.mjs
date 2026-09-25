@@ -29,7 +29,7 @@ test('DSH rc.2 runs pre-execute listeners before a denying tool guard',
       { pre: 1, body: 0, isError: true, reason: 'DHR test denial' });
   });
 
-test('DSH rc.2 loads the actual DHR plugin precheck in a Worker context',
+test('DSH rc.2 keeps DHR tools out of global scope and denies unbridged Worker calls',
   { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH rc.1 launcher' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
@@ -45,20 +45,11 @@ test('DSH rc.2 loads the actual DHR plugin precheck in a Worker context',
         ? (await import(pathToFileURL(process.env.DHR_TEST_DSH_PLUGIN_ENTRY).href)).apply : apply;
       assert.equal(typeof pluginApply, 'function');
       pluginApply(context);
-      assert.equal(runtime.get('dhr_propose_text')?.name, 'dhr_propose_text');
-      assert.equal(runtime.get('dhr_propose_delete')?.name, 'dhr_propose_delete');
+      assert.equal(runtime.get('dhr_propose_text'), undefined);
+      assert.equal(runtime.get('dhr_propose_delete'), undefined);
       let later = 0;
       context.on('tools/pre-execute', async (_execution, next) => { later++; return next(); });
       const signal = new AbortController().signal;
-      const result = await runtime.execute({ name: 'dhr_propose_text', arguments: { path: 'src/a.ts', content: 'HELLO' },
-        callId: 'dhr-plugin-proposal', signal });
-      assert.equal(result.isError, false);
-      assert.equal(later, 0);
-      assert.equal(result.value, 'PROPOSED 3733cd977ff8eb18b987357e22ced99f46097f31ecb239e878ae63760e83e4d5');
-      const deletion = await runtime.execute({ name: 'dhr_propose_delete', arguments: { path: 'src/a.ts' },
-        callId: 'dhr-plugin-delete', signal });
-      assert.equal(deletion.isError, false);
-      assert.match(deletion.value, /^PROPOSED_DELETE [a-f0-9]{64}$/u);
       const denied = await runtime.execute({ name: 'not_registered', arguments: {}, callId: 'dhr-plugin-denied', signal });
       assert.equal(denied.isError, true);
       assert.equal(denied.error?.message, 'DHR Worker tool execution requires a controlled Task bridge');

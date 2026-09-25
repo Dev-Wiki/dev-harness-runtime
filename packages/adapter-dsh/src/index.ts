@@ -5,7 +5,7 @@ export { runConfinedDshSession, DshConfinedSessionError } from './executor/confi
 export { createDshRuntimeAdapter, DshRuntimeError } from './runtime-adapter.js';
 export { createPackagedDshServices, loadDshPackageSource } from './runtime-services.js';
 
-/** Metadata only: no Executor, Packager or doctor claim. */
+/** Registry metadata only; executable capability is established by the packaged service probe. */
 export const adapter = Object.freeze({
   id: 'dsh',
   implemented: false,

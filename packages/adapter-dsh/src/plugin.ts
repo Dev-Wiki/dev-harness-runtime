@@ -11,7 +11,7 @@ function portableRepoPath(value: string): boolean {
     && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part));
 }
 
-/** DSH host surface. Task execution remains disabled until K6 proves its session and permission boundary. */
+/** DSH host surface; packaged CLI enables execution only after the real host probe. */
 export const name = 'dev-harness-runtime';
 export const inject = ['commands', 'tools'];
 

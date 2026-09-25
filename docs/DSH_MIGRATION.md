@@ -45,13 +45,13 @@ Runtime 不读取或自动转换历史 Run。旧 Run schema v5 不作为新协�
 | 验证工作区边界 | `verification.test.mjs`：`rejects verification worktree mutations and retains the OPEN lease` | packages/core/tests/result；明确允许生成物，拒绝源码、计划与 index 变化 |
 | 不一致成功声明 | `report.test.mjs`：`refuses incomplete QA, verification, reconciliation, and inconsistent overall claims` | packages/core/tests/result；改用 Task acceptance + Planning closure，不要求旧 QA / Finding 字段 |
 
-本表逐项记录保持性质、旧入口、新位置和新模型差异；旧、新测试运行数量分别记录在 [K6 当前验证](verification/K6.md)。旧测试通过与新 Core 测试通过不能代替 rc.1 宿主 Task Executor parity，尤其不能把旧测试数量直接继承给新 Adapter。
+本表逐项记录保持性质、旧入口、新位置和新模型差异；旧、新测试运行数量及后续 rc.1 宿主 Task Executor parity 分别记录在 [K6 验证](verification/K6.md)。旧测试数量不能直接继承给新 Adapter；新宿主已另以未替换 Worker Skill 跑通合成 A→B→C 依赖链、三个独立 Session 和三次 Core 受控提交。
 
 ## 4. 留在 Adapter 的宿主逻辑
 
 - Cordis plugin 注入、注册和 lifecycle / disposer。
 - DSH Human Command、Agent / Session 创建、取消、等待静止、事件转换。
-- 经证实需要的 Workflow API 桥接，不用 Workflow 自己再建产品状态机。
+- Workflow API 的宿主差异由 Adapter 评估；当前 Worker 作用域不暴露原生 Workflow 工具，Task 顺序和恢复由 Core 实现，不另建产品状态机。
 - DSH host detection、`0.1.5-rc.1` 能力探测、结构化结果翻译和 Session 身份证据。
 - Bundle / manifest、实际组件依赖和安装卸载机制。
 

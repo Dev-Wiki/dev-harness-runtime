@@ -41,7 +41,7 @@ Codex 的可信入口为 `createCodexBuildPipeline(root, protocolCheckout)`，�
 
 编译后的 CLI bundle 包含校验器源码中的占位词正则和依赖库注释，普通文本 lint 会把它们误报为包内容。Codex StaticSpec 仅对与 `PluginBuildInput` SHA-256 完全相同的两个源码锁定 bundle 跳过词法文本 lint；任一字节漂移直接报 `BUNDLE_DIGEST_MISMATCH`。manifest、Skill、README、脚本和声明仍按公共静态规则扫描。这个例外只用于已锁定的代码字节，不授予任意生成文件豁免。
 
-DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `package.json`、`cordis.patch.yml`、已编译 Cordis plugin / CLI、三个 Skill 和本地声明，最终在 `dist/dsh/` 生成版本化 tgz；准确文件名由 [DSH Packager](../build/targets/dsh.ts) 定义，并记录在 `dist/manifest.json`。`package.json.dsh.bundle.patch` 指向相对包根的 YAML，peer 精确标注本机 rc.1 启动器实际解析的 Cordis 4.0.2 与 dsh-commands rc.2。插件只注册可读 `/dhr-status`，Executor 继续关闭；安装、公开 CommandRuntime 调用与卸载见 [K6-P 验证记录](verification/K6-P.md)。DSH 的两个已锁定 JS bundle 同样走 SHA-256 绑定例外，其余文本继续接受公共 lint。
+DSH 对应入口为 `createDshBuildPipeline(root, protocolCheckout)`；生成 `package.json`、`cordis.patch.yml`、已编译 Cordis plugin / CLI、三个 Skill、锁定来源 `source.json` 和本地声明，最终在 `dist/dsh/` 生成版本化 tgz；准确文件名由 [DSH Packager](../build/targets/dsh.ts) 定义，并记录在 `dist/manifest.json`。`package.json.dsh.bundle.patch` 指向相对包根的 YAML，peer 精确标注本机 rc.1 启动器实际解析的 Cordis 4.0.2 与 dsh-commands rc.2。插件提供可读 `/dhr-status` 及 Worker 作用域内的受控工具；包内 CLI 在真实宿主能力 probe 通过后可启用 Executor。安装、CommandRuntime 调用与卸载见 [K6-P](verification/K6-P.md)，原始 Worker 与三任务执行证据见 [K6](verification/K6.md)。DSH 的两个已锁定 JS bundle 同样走 SHA-256 绑定例外，其余文本继续接受公共 lint。
 
 Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生成 Native `.cursor-plugin/plugin.json`、三个共享 Skill、一个可请求 rule、一个只读状态 command 与包内 CLI，输出 `dist/cursor/dev-harness-cursor-v<version>.zip`。ZIP 顶层为 `dev-harness/`，按 Cursor 官方本地插件目录放置并重新加载。离线内容和包内 CLI 验证已通过；用户授权后的宿主 `--plugin-dir` headless 调用在加载前因认证缺失退出，不能记为安装 smoke 或 Executor 能力。见 [K7 验证记录](verification/K7.md)。
 

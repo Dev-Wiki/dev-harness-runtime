@@ -1,6 +1,6 @@
-# Codex / DSH Worker 受控桥接候选方案
+# Codex / DSH Worker 受控桥接实施记录
 
-本文件是 K5 / K6 的实施方案，不改变 [公共契约](../CONTRACTS.md)中的授权或验收语义。桥接完成真实对抗验证以前，两个 Executor 均保持未注册；合成会话和元数据不能作为 `authorizationEnforced:true` 的依据。
+本文件保留 K5 / K6 从候选方案到宿主验收的实施顺序，不改变 [公共契约](../CONTRACTS.md)中的授权或验收语义。当前结果以 [K5](../verification/K5.md) 和 [K6](../verification/K6.md) 的真实宿主记录为准；下文早期阶段的“仍未注册”仅描述当时的状态。
 
 ## 为什么需要桥接
 
@@ -23,7 +23,7 @@ DSH rc.2 的 `tools.guard` 在 `tools/pre-execute` waterfall **之后**运行；
 - 然后分别在 Codex 0.154.0 与 DSH 0.1.5-rc.1 的隔离空工作区验证工具目录、正向编辑和每项禁止副作用。对 DSH，loopback 请求必须由工具门禁拒绝；对 Codex，原生工具与非白名单 MCP 必须拒绝。
 - 最后连接 Core 的证据与结果协议，跑同一三 Task 序列、fresh Session、取消与恢复；通过后才注册生产 Executor 并进行最终全量回归。
 
-这是一条待实现的路径，不是现有能力声明。现阶段保留 [Dashboard](../plan/Dashboard.md)中 K5 / K6 的阻塞和未完成状态。
+以上为最初的实施顺序；K5 / K6 后续宿主验收已完成，现行能力状态见 [Dashboard](../plan/Dashboard.md)。
 
 当前已落地 `createWorkerWritePolicy` 这一纯路径判定，并让 Core 的最终快照所有权检查复用它；专项 17/17 通过。`WorkerProposalCollector` 进一步把请求和完整执行前快照绑定，按同一判定暂存文件写入/删除提议，复制字节并限制大小，拒绝 symlink/gitlink；恢复原始内容会消去无效提议，最终提议路径必须与结构化结果的 `changedFiles` 完全一致。它可导出带请求身份、原始哈希和内容的独立记录，并在读取时重新验证身份、顺序、字节及摘要；单组最多 1024 个文件。结束快照还须与提议的文件集合、内容、模式和未变 Git index 一致。Core 的 `persistWorkerProposals` 现在从权威 Run 读取 pending operation 和冻结前快照，检查真实工作区仍处于该边界，只在当前 RUNNING/EXECUTE revision 将提议以不可变记录写入 `results/run-evidence/`，然后回读并重验身份、字节、范围和结果声明；同字节重试复用记录，异字节重试拒绝。该记录不修改工作树，也不提供生产进程控制、文件系统竞态防护或宿主工具目录证明，不能单独作为桥接权限证据。
 
@@ -50,3 +50,5 @@ DSH 侧现复用 Core 的命名空间控制器、模型代理、冻结读取目�
 DSH 安装包现含锁定协议 / Worker / CLI / 插件字节的 `source.json` 和可信服务工厂；包内 `scripts/dhr.mjs` 能按授权门禁装配该 Adapter。新 profile 离线安装后的来源检查、服务工厂和版本入口通过，复制包并替换成重新锁定的合成 Worker 后，包内 CLI 的真实模型会话完成单个临时 Planning Task 提议，Core 应用后 Run 为 `BLOCKED`，HEAD / index 不变。未替换 Worker、真实 Run 的取消恢复和三任务链仍待验。
 
 合成 Core Run 的取消恢复现已验证：持久宿主启动记录出现后取消 DSH，Core 标记 `INTERRUPTED`，原文件不变；新 Adapter 实例从当前 revision 恢复到 attempt 2，经能力 probe 重新启动宿主，Core 应用新提议后 Run 为 `BLOCKED`。被取消 Session 的持久身份、未替换 Worker 和三任务链仍待验。
+
+K6 后续在每个 DSH Agent 作用域遮蔽继承的原生工具目录，仅注册 DHR 读取、提议和结果提交工具；原有前置门禁及 guard 继续拒绝非桥接调用。实际安装包的未替换 Worker Skill 在合成临时 Git 项目中自主完成一个 Task 的 `--no-commit` 和 `--commit-each`，Core 独立验收与单次提交均通过。再以 A→B→C 三任务 `--all-ready --commit-each` 验证三次全新 Session、逐任务 Core 验收、三次受控提交及最终干净工作区。完整失败与通过记录见 [K6 验证](../verification/K6.md)。
