@@ -57,10 +57,15 @@ test('OpenCode npm and local variants have distinct native layouts and determini
   const value = await fixture(t);
   assert.deepEqual(errors(await validateStatic(value.files, value.input, opencodeStaticSpec)), []);
   assert.equal((await value.packager.validate(value.generated, value.input)).valid, true);
-  assert.equal(value.files.size, 19);
+  assert.equal(value.files.size, 22);
   assert.deepEqual(JSON.parse(value.files.get(manifestPath)).exports, { '.': './dist/index.js' });
+  assert.equal(JSON.parse(value.files.get('local/.opencode/package.json')).version, '0.1.0');
+  assert.deepEqual(JSON.parse(value.files.get(manifestPath)).files,
+    ['dist', 'scripts', 'skills', 'README.md', 'DISTRIBUTION_NOTICE.md']);
   assert.match(value.files.get('local/.opencode/plugins/dev-harness.js').toString(), /export const DevHarnessPlugin/u);
   assert.match(value.files.get('local/.opencode/plugins/dev-harness.js').toString(), /export default \{\s+id: 'dev-harness',\s+server: DevHarnessPlugin,\s+setup\(ctx\)/u);
+  assert.match(value.files.get('npm/scripts/dhr.mjs').toString(), /from '\.\.\/dist\/dhr\.js'/u);
+  assert.match(value.files.get('local/.opencode/scripts/dhr.mjs').toString(), /from '\.\.\/runtime\/dhr\.js'/u);
   const first = await value.packager.pack(value.generated, value.input);
   const firstBytes = await Promise.all(first.map((artifact) => readFile(join(value.root, 'dist', artifact.file))));
   assert.deepEqual(first.map((artifact) => artifact.variant), ['npm', 'local']);
@@ -79,6 +84,8 @@ test('OpenCode rejects missing, unsupported, unsafe, duplicate and inconsistent 
   const probe = async (change) => { const files = new Map(value.files); change(files);
     return errors(await validateStatic(files, value.input, opencodeStaticSpec)); };
   assert.ok((await probe((files) => files.delete('local/.opencode/plugins/dev-harness.js'))).includes('MISSING_REQUIRED_FILE'));
+  assert.ok((await probe((files) => files.delete('local/.opencode/package.json'))).includes('MISSING_REQUIRED_FILE'));
+  assert.ok((await probe((files) => files.delete('local/.opencode/scripts/dhr.mjs'))).includes('MISSING_REQUIRED_FILE'));
   assert.ok((await probe((files) => files.set(manifestPath, Buffer.from(JSON.stringify({
     ...JSON.parse(files.get(manifestPath)), unsupported: true,
   }))))).includes('UNSUPPORTED_MANIFEST_FIELD'));

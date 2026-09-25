@@ -63,7 +63,7 @@ K7 已生成含 Native manifest、三个 Skill、一个非全局 rule、一个 c
 
 OpenCode local 从 `.opencode/plugins/` 发现；npm 由 `opencode.json.plugin` 指定，宿主负责依赖安装。样例包名仅示意，未发布；Node 导入成功不等于 OpenCode 加载成功。官方没有保证 npm 包内 skills 自动发现，因此技能单独放 `.opencode/skills/<name>/SKILL.md`。来源：[Plugins](https://opencode.ai/docs/plugins/)、[Skills](https://opencode.ai/docs/skills/)。[SDK](https://opencode.ai/docs/sdk/) 有 session.create/prompt/abort 候选入口，尚无本项目 Session 生命周期证明。
 
-K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。复核发现早期仅列出入口路径时插件实际加载失败；现已修复默认导出，在 `/tmp` 隔离的官方 1.18.31 和本机 2.0.15 均完成插件加载与三个 Skill 发现。未发布 tgz 通过 localhost 模拟 registry 在两个版本中按包名安装；2.0.15 报告插件 active。模型会话内 Skill 调用未验，见 [K8 验证记录](../verification/K8.md)。
+K8 已生成 npm tgz 与项目本地 ZIP；离线静态、golden、临时 npm 安装、双入口 Node 导入及包内 CLI 通过。复核发现早期仅列出入口路径时插件实际加载失败；现已修复默认导出，并补齐 Skill 所用固定脚本与版本 manifest。在 `/tmp` 隔离的官方 1.18.31 和本机 2.0.15 均完成插件加载与三个 Skill 发现。未发布 tgz 通过 localhost 模拟 registry 在两个版本中按包名安装；2.0.15 报告插件 active，真实模型会话通过宿主 `skill(status)` 加载共享 Skill，见 [K8 验证记录](../verification/K8.md)。
 
 ### Antigravity 与 Portable
 

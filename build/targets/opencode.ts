@@ -13,6 +13,7 @@ const skillNames = ['run', 'status', 'worker'] as const;
 const npmRoot = 'npm';
 const localRoot = 'local';
 const npmManifest = `${npmRoot}/package.json`;
+const localManifest = `${localRoot}/.opencode/package.json`;
 const npmEntry = `${npmRoot}/dist/index.js`;
 const localEntry = `${localRoot}/.opencode/plugins/dev-harness.js`;
 const string = { type: 'string', minLength: 1 } as const;
@@ -31,8 +32,8 @@ export default {
   },
 };
 `;
-const launcher = `#!/usr/bin/env node
-import { runCli } from './dhr.js';
+const launcher = (runtimeImport: string) => `#!/usr/bin/env node
+import { runCli } from '${runtimeImport}';
 const controller = new AbortController();
 const cancel = () => controller.abort();
 process.on('SIGINT', cancel);
@@ -50,13 +51,13 @@ try {
 
 export const opencodeStaticSpec: StaticSpec = {
   requiredFiles: [npmManifest, npmEntry, `${npmRoot}/dist/dhr.js`, `${npmRoot}/dist/adapter.js`,
-    `${npmRoot}/dist/cli.mjs`, `${npmRoot}/README.md`, `${npmRoot}/DISTRIBUTION_NOTICE.md`,
-    localEntry, `${localRoot}/.opencode/runtime/dhr.js`, `${localRoot}/.opencode/runtime/adapter.js`,
-    `${localRoot}/.opencode/runtime/cli.mjs`, `${localRoot}/README.md`, `${localRoot}/DISTRIBUTION_NOTICE.md`],
+    `${npmRoot}/dist/cli.mjs`, `${npmRoot}/scripts/dhr.mjs`, `${npmRoot}/README.md`, `${npmRoot}/DISTRIBUTION_NOTICE.md`,
+    localManifest, localEntry, `${localRoot}/.opencode/runtime/dhr.js`, `${localRoot}/.opencode/runtime/adapter.js`,
+    `${localRoot}/.opencode/runtime/cli.mjs`, `${localRoot}/.opencode/scripts/dhr.mjs`, `${localRoot}/README.md`, `${localRoot}/DISTRIBUTION_NOTICE.md`],
   allowedFiles: [npmManifest, npmEntry, `${npmRoot}/dist/dhr.js`, `${npmRoot}/dist/adapter.js`,
-    `${npmRoot}/dist/cli.mjs`, `${npmRoot}/README.md`, `${npmRoot}/DISTRIBUTION_NOTICE.md`,
-    localEntry, `${localRoot}/.opencode/runtime/dhr.js`, `${localRoot}/.opencode/runtime/adapter.js`,
-    `${localRoot}/.opencode/runtime/cli.mjs`, `${localRoot}/README.md`, `${localRoot}/DISTRIBUTION_NOTICE.md`,
+    `${npmRoot}/dist/cli.mjs`, `${npmRoot}/scripts/dhr.mjs`, `${npmRoot}/README.md`, `${npmRoot}/DISTRIBUTION_NOTICE.md`,
+    localManifest, localEntry, `${localRoot}/.opencode/runtime/dhr.js`, `${localRoot}/.opencode/runtime/adapter.js`,
+    `${localRoot}/.opencode/runtime/cli.mjs`, `${localRoot}/.opencode/scripts/dhr.mjs`, `${localRoot}/README.md`, `${localRoot}/DISTRIBUTION_NOTICE.md`,
     ...skillNames.flatMap((name) => [`${npmRoot}/skills/${name}/SKILL.md`,
       `${localRoot}/.opencode/skills/${name}/SKILL.md`])],
   // The local set is the authoritative frontmatter set; npm copies are checked byte-for-byte below.
@@ -73,7 +74,12 @@ export const opencodeStaticSpec: StaticSpec = {
       main: { type: 'string', const: './dist/index.js' },
       exports: { type: 'object', additionalProperties: false, required: ['.'],
         properties: { '.': { type: 'string', const: './dist/index.js' } } },
-      files: { type: 'array', const: ['dist', 'skills', 'README.md', 'DISTRIBUTION_NOTICE.md'], items: string },
+      files: { type: 'array', const: ['dist', 'scripts', 'skills', 'README.md', 'DISTRIBUTION_NOTICE.md'], items: string },
+    } }, versionFields: { version: 'releaseVersion' } },
+  { path: localManifest, schema: { type: 'object', additionalProperties: false,
+    required: ['name', 'version', 'private', 'type'], properties: {
+      name: { type: 'string', const: 'dev-harness-opencode-local' }, version: string,
+      private: { type: 'boolean', const: true }, type: { type: 'string', const: 'module' },
     } }, versionFields: { version: 'releaseVersion' } }],
 };
 
@@ -86,19 +92,23 @@ export class OpenCodePackager implements PluginPackager {
     const files = new Map<string, Uint8Array>();
     files.set(npmManifest, json({ name: 'dev-harness-opencode', version: input.releaseVersion,
       private: false, type: 'module', main: './dist/index.js', exports: { '.': './dist/index.js' },
-      files: ['dist', 'skills', 'README.md', 'DISTRIBUTION_NOTICE.md'] }));
+      files: ['dist', 'scripts', 'skills', 'README.md', 'DISTRIBUTION_NOTICE.md'] }));
+    files.set(localManifest, json({ name: 'dev-harness-opencode-local', version: input.releaseVersion,
+      private: true, type: 'module' }));
     files.set(npmEntry, Buffer.from(plugin));
     files.set(localEntry, Buffer.from(plugin));
-    files.set(`${npmRoot}/dist/cli.mjs`, Buffer.from(launcher));
-    files.set(`${localRoot}/.opencode/runtime/cli.mjs`, Buffer.from(launcher));
+    files.set(`${npmRoot}/dist/cli.mjs`, Buffer.from(launcher('./dhr.js')));
+    files.set(`${localRoot}/.opencode/runtime/cli.mjs`, Buffer.from(launcher('./dhr.js')));
+    files.set(`${npmRoot}/scripts/dhr.mjs`, Buffer.from(launcher('../dist/dhr.js')));
+    files.set(`${localRoot}/.opencode/scripts/dhr.mjs`, Buffer.from(launcher('../runtime/dhr.js')));
     const runtime = await readPinnedFile(this.#root, input.runtimeBundle.path);
     const adapter = await readPinnedFile(this.#root, input.adapterBundle.path);
     files.set(`${npmRoot}/dist/dhr.js`, runtime);
     files.set(`${npmRoot}/dist/adapter.js`, adapter);
     files.set(`${localRoot}/.opencode/runtime/dhr.js`, runtime);
     files.set(`${localRoot}/.opencode/runtime/adapter.js`, adapter);
-    files.set(`${npmRoot}/README.md`, Buffer.from('# dev-harness-opencode npm package\n\nThis local tgz is a reproducible package, not a published registry release. After an authorized npm publish, add `dev-harness-opencode` to OpenCode 1 `opencode.json` `plugin` or OpenCode 2 `opencode.json` `plugins` and restart OpenCode. OpenCode does not promise discovery of skills inside npm packages: copy `skills/<name>/SKILL.md` to the project `.opencode/skills/<name>/SKILL.md`, or install the separate local ZIP. Test the plugin and Skills separately. The bundled CLI is `node dist/cli.mjs`; automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
-    files.set(`${localRoot}/README.md`, Buffer.from('# dev-harness-opencode local plugin\n\nExtract `.opencode/plugins/dev-harness.js`, `.opencode/skills/` and `.opencode/runtime/` into an isolated project, then restart OpenCode. OpenCode 1 and 2 load JavaScript from `.opencode/plugins/` and discover project Skills from `.opencode/skills/`. The bundled CLI is `node .opencode/runtime/cli.mjs`. Remove these exact installed files to uninstall. Do not install the npm and local plugin variants together: OpenCode loads both. Automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
+    files.set(`${npmRoot}/README.md`, Buffer.from('# dev-harness-opencode npm package\n\nThis local tgz is a reproducible package, not a published registry release. After an authorized npm publish, add `dev-harness-opencode` to OpenCode 1 `opencode.json` `plugin` or OpenCode 2 `opencode.json` `plugins` and restart OpenCode. OpenCode does not promise discovery of skills inside npm packages: copy the package `skills/`, `scripts/`, `dist/` and `package.json` under the project `.opencode/` directory so each Skill resolves its bundled `../../scripts/dhr.mjs` entry, that script resolves `../dist/dhr.js`, and Core reads the package version. Do not also copy the local ZIP plugin entry into `.opencode/plugins/`, since that would load a second plugin. Test the plugin and Skills separately. `node dist/cli.mjs` is also available in the package. Automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
+    files.set(`${localRoot}/README.md`, Buffer.from('# dev-harness-opencode local plugin\n\nExtract `.opencode/package.json`, `.opencode/plugins/dev-harness.js`, `.opencode/skills/`, `.opencode/scripts/` and `.opencode/runtime/` into an isolated project, then restart OpenCode. OpenCode 1 and 2 load JavaScript from `.opencode/plugins/` and discover project Skills from `.opencode/skills/`. The packaged Skill resolves `node .opencode/scripts/dhr.mjs`; `node .opencode/runtime/cli.mjs` is also available. Remove these exact installed files to uninstall. Do not install the npm and local plugin variants together: OpenCode loads both. Automatic Task execution needs a proven Executor and remains disabled. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
     const notice = await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path);
     files.set(`${npmRoot}/DISTRIBUTION_NOTICE.md`, notice);
     files.set(`${localRoot}/DISTRIBUTION_NOTICE.md`, notice);

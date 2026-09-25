@@ -7,7 +7,7 @@
 | Codex | 1 | SHA-256 已核对 | 未注册 | 关闭 | [K5-P](plan/archive/M3/K5-P.md) / [验证](verification/K5-P.md) |
 | DSH | 1 | SHA-256 已核对 | 未注册 | 关闭 | [K6-P](plan/archive/M3/K6-P.md) / [验证](verification/K6-P.md) |
 | Cursor | 1 | SHA-256 已核对 | 未注册 | 关闭 | [K7](plan/tasks/K7.md) / [验证](verification/K7.md) |
-| OpenCode | 2 | SHA-256 已核对 | 未注册 | 关闭 | [K8](plan/tasks/K8.md) / [验证](verification/K8.md) |
+| OpenCode | 2 | SHA-256 已核对 | 未注册 | 关闭 | [K8](plan/archive/M3/K8.md) / [验证](verification/K8.md) |
 | Antigravity | 3 | SHA-256 已核对 | 未注册 | 关闭 | [K9](plan/tasks/K9.md) / [验证](verification/K9.md) |
 | Portable Agent Plugin | 1 | SHA-256 已核对 | 无独立 Executor | 关闭 | [K10-G](plan/archive/M3/K10-G.md) / [验证](verification/K10-G.md) |
 

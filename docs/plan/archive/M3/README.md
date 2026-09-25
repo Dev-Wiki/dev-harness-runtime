@@ -8,5 +8,6 @@
 | K5-P | Codex Plugin 与 Marketplace 打包 | 2026-09-17 | 11 文件真实包、34 项打包专项、Codex 0.154.0 隔离安装与卸载通过；后续 K5 会话调用已验 | [K5-P](K5-P.md) |
 | K6-P | DSH Bundle 打包 | 2026-09-17 | 10 文件真实 tgz、37 项打包专项、DSH rc.1/rc.2 隔离安装和 CommandRuntime 调用通过；Executor 待 K6 | [K6-P](K6-P.md) |
 | K10-G | Portable Agent Plugin 打包 | 2026-09-17 | 六文件平台中立 ZIP、50 项打包专项、无 Executor 的 `CAPABILITY_MISSING` 门禁通过 | [K10-G](K10-G.md) |
+| K8 | OpenCode npm 与本地插件打包 | 2026-09-25 | 双版本插件加载、包名安装、包内 CLI、真实会话 Skill 调用和移除通过 | [K8](K8.md) |
 
-完整证据见各归档任务所链验证记录。其余平台 Packager 与真实宿主 Executor 尚需后续任务验收。
+完整证据见各归档任务所链验证记录。Cursor、Antigravity 的宿主调用及 K10 收口尚需后续验收。
