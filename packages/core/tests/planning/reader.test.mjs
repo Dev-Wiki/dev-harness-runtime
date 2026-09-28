@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
@@ -25,7 +25,7 @@ async function write(project, path, content) {
   await writeFile(target, content, 'utf8');
 }
 async function makeProject(t, { rows = defaultRows, order, content } = {}) {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'dhr-planning-reader-'));
+  const repoRoot = await realpath(await mkdtemp(join(tmpdir(), 'dhr-planning-reader-')));
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const project = { repoRoot, docsRoot: join(repoRoot, 'docs'), dashboardPath: join(repoRoot, 'docs/plan/Dashboard.md') };
   await write(project, 'docs/plan/Dashboard.md', content ?? (rows === defaultRows && order === undefined ? await fixture('dashboard-ready.md') : dashboard(rows, order)));
