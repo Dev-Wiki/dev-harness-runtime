@@ -17,7 +17,8 @@ async function request(socketPath, firstLine, payload = '') {
   });
 }
 
-test('model broker forwards only exact HTTPS CONNECT destinations through a trusted upstream', async () => {
+test('model broker forwards only exact HTTPS CONNECT destinations through a trusted upstream',
+  { skip: process.platform === 'win32' ? 'Unix socket broker is supported on Linux only' : false }, async () => {
   const seen = [];
   const upstream = createServer((socket) => {
     let pending = '';
@@ -37,9 +38,10 @@ test('model broker forwards only exact HTTPS CONNECT destinations through a trus
   await new Promise((resolve) => upstream.listen(0, '127.0.0.1', resolve));
   const address = upstream.address();
   assert.ok(address && typeof address !== 'string');
-  const broker = await createCodexModelBroker({ allowedHosts: ['model.example'],
-    upstreamProxy: `http://127.0.0.1:${address.port}` });
+  let broker;
   try {
+    broker = await createCodexModelBroker({ allowedHosts: ['model.example'],
+      upstreamProxy: `http://127.0.0.1:${address.port}` });
     assert.equal((await stat(broker.directory)).mode & 0o077, 0);
     const allowed = await request(broker.socketPath, 'CONNECT model.example:443 HTTP/1.1', 'PING');
     assert.match(allowed, /^HTTP\/1\.1 200 Connection Established/u);
@@ -53,7 +55,7 @@ test('model broker forwards only exact HTTPS CONNECT destinations through a trus
     assert.deepEqual(broker.audit(), { allowedHosts: ['model.example'], connected: { 'model.example': 1 }, denied: 3 });
     assert.equal(seen.length, 1);
   } finally {
-    await broker.close();
+    await broker?.close();
     await new Promise((resolve) => upstream.close(resolve));
   }
   await assert.rejects(stat(broker.directory), { code: 'ENOENT' });
