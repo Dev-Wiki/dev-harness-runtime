@@ -1,0 +1,56 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 保留协议与 Skill 的原始 LF 字节
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+        with:
+          path: runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: Dev-Wiki/dev-harness
+          ref: 1ed830aa0d696b52dbd666118ced475f4d6e8f79
+          path: protocol-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装固定版本 pnpm
+        run: npm install --global pnpm@11.1.0
+      - name: 安装锁定依赖
+        working-directory: runtime
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: 验证源码、协议和产物
+        working-directory: runtime
+        run: |
+          pnpm verify:protocol --source ../protocol-source
+          pnpm verify
+          pnpm dhr release --dry-run --protocol-checkout ../protocol-source
+          pnpm matrix:check
+          node scripts/check-release.mjs "${{ github.ref_name }}"
+          node scripts/release-notes.mjs "${{ github.ref_name }}" > dist/release-notes.md
+      - name: 上传九个产物并发布
+        working-directory: runtime
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mapfile -t assets < <(node -e 'const m = require("./dist/manifest.json"); for (const a of m.artifacts) console.log(`dist/${a.file}`)')
+          test "${#assets[@]}" -eq 9
+          gh release create "${{ github.ref_name }}" "${assets[@]}" \
+            --repo "${{ github.repository }}" \
+            --title "dev-harness-runtime ${{ github.ref_name }}" \
+            --notes-file dist/release-notes.md \
+            --verify-tag

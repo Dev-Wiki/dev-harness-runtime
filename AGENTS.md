@@ -8,7 +8,7 @@
 - Git 工作流：`docs/GIT_WORKFLOW.md`
 - 代码规范：Unknown
 - 发布规范：`docs/GIT_WORKFLOW.md`
-- 变更日志：Unknown
+- 变更日志：`CHANGELOG.md`
 
 ## 构建与验证契约（AI 必读）
 
@@ -27,7 +27,7 @@
 ## 1. 项目上下文速查
 
 - **语言/框架**: Node 24.15.0、pnpm 11.1.0、TypeScript 6.0.3、Oxlint 1.76.0；node:test 验证编译后的 ESM，esbuild 0.28.0 将 Core / Contracts 及依赖打入独立 CLI bundle。
-- **架构模式**: 公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；统一 PlatformRegistry 显式注册 RuntimeAdapter 和 PluginPackager，分发平台描述符尚无真实 Executor 或 Packager 实例。
+- **架构模式**: 公共 Core / Adapter / Build 分层；contracts 定义版本化 Schema，Core 组合 discovery、planning、snapshot、state / lock、recovery、result、authorization、worker 与 orchestrator；统一 PlatformRegistry 显式注册 RuntimeAdapter 和 PluginPackager。默认独立 CLI 不注入宿主 Executor 或 Packager，仓库构建入口注入六平台 Packager，Codex / DSH 包内入口可在真实 probe 后装配 Executor。
 - **核心入口**: packages/cli/bin/dhr.mjs → 编译生成的 dist/bundle.js → packages/cli/src/index.ts；公共 API 入口为 packages/core/src/index.ts，构建目标注册入口为 build/targets/index.ts。
 - **核心调用链**: CLI 解析 doctor / status / run / resume / reconcile / build / validate / pack；doctor 只读诊断，status 从 run.json 及证据投影紧凑结果。可信 RuntimeServices 注入后，startRuntimeRun 经能力 probe、锁与旧 Run 门禁初始化状态；runLoop 重读 Planning、选择一个任务、冻结请求和验收输入、派发独立 Worker、验证结束证据、独立验收并按 Run 授权收尾。all-ready 每次接受后重读计划；恢复复用持久证据或以新 attempt / request / Session 继续。BuildPipeline 只从显式注册 Packager、锁定来源和共享元数据生成、校验、打包。通用独立 CLI 未配置宿主服务或平台 Packager 时明确 CAPABILITY_MISSING；Codex 插件 launcher 可从包内锁定来源装配 RuntimeServices。partial 保存 Worker-ended 后停止为 INTERRUPTED；noncompleted ending 不能通过 resume 自动继续，只有可信 worker-checkpoint 支持继续剩余工作，未改变的取消边界可新建 attempt 重试。
 - **版本识别依据**: 工程 package version 为 0.1.0；CORE_PROTOCOL_VERSION=1；protocol-lock.json 固定上游提交和文件摘要。
@@ -88,9 +88,9 @@ Core / 受控 Adapter 将 stdout、stderr、events 写入 worktree 私有 dev-ha
 
 ## 12. 需人工确认
 
-- 通用独立 CLI 没有预装宿主 Executor；Codex 插件已能离仓装配可信服务，真实 Task 自动执行及跨进程恢复仍待验收。
+- 通用独立 CLI 没有预装宿主 Executor；Codex 与 DSH 包内入口的原始 Worker 三任务、受控提交和恢复已分别验收，其他平台不据此取得自动 Executor 能力。
 - 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
-- 原生 Windows / Linux、真实插件安装和模型 Session 尚未取得本轮运行证据。
+- Ubuntu / Windows 原生 CI 已验证离线构建和九产物 dry-run；宿主安装与模型 Session 仍按逐平台验证记录区分，Antigravity 模型会话调用经用户豁免，未实测。
 
 ## 13. 代码风格示例（仓库抽样）
 

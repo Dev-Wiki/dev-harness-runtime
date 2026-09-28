@@ -6,7 +6,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 ## 当前阶段
 
-公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。Codex Executor 已通过真实 Worker、自主 Task、独立验收、逐任务提交及跨进程恢复，并可由本机安装的 Codex 插件显式调用；DSH 和其他平台仍按开发看板推进。
+公共 Core 已接通串行任务编排、独立验收、状态与恢复；共享 run / status / worker Skill 已建立。`dhr` 提供只读 doctor / status 和运行命令的可信服务入口。Codex 与 DSH Executor 已通过原始 Worker、三任务链、独立验收、逐任务提交及恢复验收。Codex、DSH、Cursor、OpenCode、Antigravity 和 Portable 的九个本地产物已通过统一打包验证；Antigravity 模型会话内 Skill 调用经用户豁免，尚未实测。各平台能力边界见[能力矩阵](docs/PLATFORM_MATRIX.md)及逐平台验证记录。
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`
@@ -35,7 +35,7 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - packages/core/src/worker：共享 Worker 请求构造、递归保护与紧凑父上下文投影。
 - packages/core/src/orchestrator：可信 RuntimeAdapter 注册接入、任务执行循环、接受后重读计划及 resume / reconcile 桥接。
 - packages/cli：参数、退出码与信号边界；doctor / status 只读入口，以及显式 RuntimeServices / BuildPipeline 注入入口；构建生成独立 bundle。
-- packages/adapter-* / build/targets：统一 PlatformRegistry 为 run 和 build / validate / pack 提供同一平台注册表；现有描述符没有真实宿主 Executor / Packager。
+- packages/adapter-* / build/targets：统一 PlatformRegistry 为 run 和 build / validate / pack 提供同一平台注册表；可信宿主 Executor 仅在真实 probe 通过后注册，六平台 Packager 已接通。
 - build/manifests、build/validators、build/transforms：来源与共享元数据校验、静态包检查、受限 Skill 转换和确定性归档。
 - skills/run、skills/status、skills/worker：唯一共享 Skill 业务源码，平台差异留给后续转换。
 
@@ -97,6 +97,6 @@ pnpm verify
 pnpm dhr --help
 ```
 
-已验证环境为 WSL2；Windows / 原生 Linux 的 CI 已配置，尚无远端运行结果。构建、测试及命令语义以 [HARNESS](HARNESS.md) 为准；模块边界见 [ARCHITECTURE](ARCHITECTURE.md)。
+WSL2 已完成本机验证；Ubuntu / Windows 原生 CI 的离线验证与九产物 dry-run 已通过，见 [CI run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252)。构建、测试及命令语义以 [HARNESS](HARNESS.md) 为准；模块边界见 [ARCHITECTURE](ARCHITECTURE.md)。
 
 `protocol-lock.json` 固定上游提交和文件摘要。需要验证上游 checkout 时运行 `pnpm verify:protocol --source <checkout>`，不会自动下载或更新协议。

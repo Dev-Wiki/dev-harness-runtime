@@ -5,7 +5,7 @@
 
 ## 项目类型
 
-TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 有隔离安装证据，Antigravity 有原生安装 / 发现 / 卸载证据，Cursor / OpenCode 仍缺完整宿主调用。Codex 包内 CLI 与原始 Worker Skill 已在临时 Git 项目自主完成一个合成 Planning Task，并通过 Core 独立验证、逐任务提交、跨进程检查点恢复及隔离插件会话显式 Skill 调用。
+TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI。六平台 Packager 均可从固定来源生成本地包；Codex / DSH 已通过原始 Worker 三任务链，Cursor / OpenCode 已通过会话 Skill 调用，Antigravity 已通过原生安装 / 发现 / 卸载，模型会话调用经用户豁免且未实测。Ubuntu / Windows 原生 CI 已通过离线验证与九产物 dry-run。
 
 ## 编译与启动问题排查
 
@@ -83,7 +83,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 - 通用独立 CLI 未预装宿主 Executor；Codex 插件已通过包内原始 Worker Skill 的自主合成 Task、逐任务提交、跨进程检查点恢复与会话内显式 Skill 调用。
 - 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
-- 原生 Windows 已有 Codex 插件安装和 `$dev-harness:status` 自检 Session，尚无 Runtime Task 执行证据；原生 Linux 尚未取得本轮运行证据。WSL2 Codex 已通过完整任务链，其余平台按各自任务记录边界。
+- 原生 Windows 已有 Codex 插件安装和 `$dev-harness:status` 自检 Session，尚无 Runtime Task 执行证据；Ubuntu / Windows CI 已通过离线验证与九产物 dry-run，不能据此推断原生 Linux 宿主模型会话能力。WSL2 Codex / DSH 已通过完整任务链，其余平台按各自任务记录边界。
 
 ## K4-V 实际隔离专项
 
