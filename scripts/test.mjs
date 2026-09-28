@@ -23,10 +23,18 @@ function run(args, timeout) {
 if (windows) {
   const guard = resolve('packages/core/tests/snapshot/guard.test.mjs');
   if (!sorted.includes(guard)) throw new Error('Snapshot guard tests not discovered');
-  const options = ['--test', '--test-force-exit', '--test-timeout=120000'];
-  const guardStatus = run([...options, guard], 300_000);
+  const slow = ['recovery/reconcile', 'recovery/resume', 'worker/apply-proposals']
+    .map((name) => resolve(`packages/core/tests/${name}.test.mjs`));
+  if (slow.some((file) => !sorted.includes(file))) throw new Error('Recovery or proposal tests not discovered');
+  const options = ['--test', '--test-force-exit'];
+  const guardStatus = run([...options, '--test-timeout=120000', guard], 300_000);
   if (guardStatus !== 0) process.exitCode = guardStatus;
-  else process.exitCode = run([...options, '--test-concurrency=8', ...sorted.filter((file) => file !== guard)], 1_800_000);
+  else {
+    const slowStatus = run([...options, '--test-timeout=300000', '--test-concurrency=3', ...slow], 900_000);
+    if (slowStatus !== 0) process.exitCode = slowStatus;
+    else process.exitCode = run([...options, '--test-timeout=120000', '--test-concurrency=8',
+      ...sorted.filter((file) => file !== guard && !slow.includes(file))], 1_800_000);
+  }
 } else {
   process.exitCode = run(['--test', ...sorted]);
 }
