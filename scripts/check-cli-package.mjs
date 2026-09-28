@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -8,7 +8,7 @@ import { createPlanningFixture } from '../packages/core/tests/result/helpers-pla
 // Run through pnpm so npm_execpath identifies the already-selected pnpm version.
 const pnpm = process.env.npm_execpath;
 if (!pnpm || !/pnpm/i.test(pnpm)) throw new Error('Use pnpm test:cli-package');
-const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'dhr-cli-package-')));
+const scratch = mkdtempSync(join(tmpdir(), 'dhr-cli-package-'));
 function run(args, cwd) {
   const result = spawnSync(process.execPath, [pnpm, ...args], { cwd, encoding: 'utf8', timeout: 60_000 });
   if (result.error) throw result.error;
@@ -47,7 +47,14 @@ try {
   const doctor = spawnSync(process.execPath, [entry, 'doctor', '--project', fixtureRoot], { cwd: dirname(scratch), encoding: 'utf8' });
   assert.ifError(doctor.error); assert.equal(doctor.status, 2, doctor.stderr); assert.equal(doctor.stderr, '');
   const report = JSON.parse(doctor.stdout);
-  assert.equal(report.project, fixtureRoot); assert.equal(report.planning.tasks, 3);
+  const actualProject = statSync(report.project, { bigint: true });
+  const expectedProject = statSync(fixtureRoot, { bigint: true });
+  assert.deepEqual(
+    [actualProject.dev, actualProject.ino],
+    [expectedProject.dev, expectedProject.ino],
+    'doctor must select the requested project directory',
+  );
+  assert.equal(report.planning.tasks, 3);
   assert.ok(report.issues.some((issue) => issue.code === 'CAPABILITY_MISSING'));
   assert.ok(report.adapters.every((adapter) => adapter.available === false));
   const refused = spawnSync(process.execPath, [entry, 'run', '--adapter', 'codex', '--next'], { cwd: fixtureRoot, encoding: 'utf8' });
