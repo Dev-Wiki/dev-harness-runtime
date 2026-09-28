@@ -39,7 +39,7 @@ test('Codex output schema is private during one invocation and removed afterward
   await withCodexResultSchema(async (path) => {
     savedPath = path;
     assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), CODEX_RESULT_SCHEMA);
-    assert.equal((await stat(path)).mode & 0o077, 0);
+    if (process.platform !== 'win32') assert.equal((await stat(path)).mode & 0o077, 0);
   });
   assert.equal(existsSync(savedPath), false);
   await assert.rejects(withCodexResultSchema(async () => { throw new Error('failed invocation'); }), /failed invocation/u);
