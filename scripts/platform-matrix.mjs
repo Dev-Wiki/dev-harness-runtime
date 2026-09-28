@@ -9,7 +9,7 @@ import { distributionPlatforms } from '../build/dist/targets/repository.js';
 const references = Object.freeze({
   codex: ['Codex', 'K5-P', 'plan/archive/M3/K5-P.md', 'verification/K5-P.md'],
   dsh: ['DSH', 'K6-P', 'plan/archive/M3/K6-P.md', 'verification/K6-P.md'],
-  cursor: ['Cursor', 'K7', 'plan/tasks/K7.md', 'verification/K7.md'],
+  cursor: ['Cursor', 'K7', 'plan/archive/M3/K7.md', 'verification/K7.md'],
   opencode: ['OpenCode', 'K8', 'plan/archive/M3/K8.md', 'verification/K8.md'],
   antigravity: ['Antigravity', 'K9', 'plan/tasks/K9.md', 'verification/K9.md'],
   'agent-plugin': ['Portable Agent Plugin', 'K10-G', 'plan/archive/M3/K10-G.md', 'verification/K10-G.md'],

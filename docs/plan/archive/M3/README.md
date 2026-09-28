@@ -9,5 +9,6 @@
 | K6-P | DSH Bundle 打包 | 2026-09-17 | 10 文件真实 tgz、37 项打包专项、DSH rc.1/rc.2 隔离安装和 CommandRuntime 调用通过；Executor 待 K6 | [K6-P](K6-P.md) |
 | K10-G | Portable Agent Plugin 打包 | 2026-09-17 | 六文件平台中立 ZIP、50 项打包专项、无 Executor 的 `CAPABILITY_MISSING` 门禁通过 | [K10-G](K10-G.md) |
 | K8 | OpenCode npm 与本地插件打包 | 2026-09-25 | 双版本插件加载、包名安装、包内 CLI、真实会话 Skill 调用和移除通过 | [K8](K8.md) |
+| K7 | Cursor Native Plugin 打包 | 2026-09-28 | 12 文件 ZIP、静态与 golden、已认证 Cursor Agent CLI 的包内 `status` Skill 只读调用通过 | [K7](K7.md) |
 
-完整证据见各归档任务所链验证记录。Cursor、Antigravity 的宿主调用及 K10 收口尚需后续验收。
+完整证据见各归档任务所链验证记录。Antigravity 的宿主调用及 K10 收口尚需后续验收。
