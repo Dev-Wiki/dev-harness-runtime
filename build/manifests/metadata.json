@@ -6,7 +6,8 @@
   "author": "Dev-Wiki",
   "repository": "https://github.com/Dev-Wiki/dev-harness-runtime",
   "distribution": {
-    "external": false,
-    "reason": "Project license and bundled third-party notices have not been approved"
+    "external": true,
+    "license": "MIT",
+    "notice": "build/manifests/DISTRIBUTION_NOTICE.md"
   }
 }

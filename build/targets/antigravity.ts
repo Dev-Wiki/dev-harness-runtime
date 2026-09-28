@@ -39,11 +39,13 @@ export const antigravityStaticSpec: StaticSpec = {
   requiredFiles: [manifest, 'plugin/README.md', 'plugin/DISTRIBUTION_NOTICE.md',
     'plugin/package.json', 'plugin/scripts/dhr.mjs', 'plugin/runtime/dhr.js',
     'plugin/runtime/adapter.js', 'project-skills/README.md', 'global-skills/README.md',
+    'project-skills/.agents/skills/DISTRIBUTION_NOTICE.md', 'global-skills/skills/DISTRIBUTION_NOTICE.md',
     ...skillNames.flatMap((name) => [`project-skills/.agents/skills/${name}/SKILL.md`,
       `global-skills/skills/${name}/SKILL.md`])],
   allowedFiles: [manifest, 'plugin/README.md', 'plugin/DISTRIBUTION_NOTICE.md',
     'plugin/package.json', 'plugin/scripts/dhr.mjs', 'plugin/runtime/dhr.js',
     'plugin/runtime/adapter.js', 'project-skills/README.md', 'global-skills/README.md',
+    'project-skills/.agents/skills/DISTRIBUTION_NOTICE.md', 'global-skills/skills/DISTRIBUTION_NOTICE.md',
     ...skillNames.flatMap((name) => [`plugin/skills/${name}/SKILL.md`,
       `project-skills/.agents/skills/${name}/SKILL.md`, `global-skills/skills/${name}/SKILL.md`])],
   skillFiles: skillNames.map((name) => `plugin/skills/${name}/SKILL.md`),
@@ -81,7 +83,10 @@ export class AntigravityPackager implements PluginPackager {
     files.set('plugin/runtime/dhr.js', await readPinnedFile(this.#root, input.runtimeBundle.path));
     files.set('plugin/runtime/adapter.js', await readPinnedFile(this.#root, input.adapterBundle.path));
     files.set('plugin/README.md', Buffer.from('# dev-harness Antigravity Agent Plugin\n\nFor a global CLI installation, unpack the plugin ZIP, then run `agy plugin install <unpacked-plugin-directory>`. Use `agy plugin list` to confirm its imported skills component and `agy plugin uninstall dev-harness` to remove it. For one workspace, extract the ZIP so the manifest is at `<project>/.agents/plugins/dev-harness/plugin.json`; this is the documented project plugin location, while `agy plugin list` tracks globally imported plugins. The bundled CLI is `node scripts/dhr.mjs`. This plugin does not enable automatic Task execution without a proven Executor. For standalone Skills, use the separate project or global ZIP, not both alongside the plugin. See DISTRIBUTION_NOTICE.md before external distribution.\n'));
-    files.set('plugin/DISTRIBUTION_NOTICE.md', await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path));
+    const notice = await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path);
+    files.set('plugin/DISTRIBUTION_NOTICE.md', notice);
+    files.set('project-skills/.agents/skills/DISTRIBUTION_NOTICE.md', notice);
+    files.set('global-skills/skills/DISTRIBUTION_NOTICE.md', notice);
     files.set('project-skills/README.md', Buffer.from('# Antigravity project Skills\n\nExtract `.agents/skills/` into the chosen project. These are standalone Skills, not an automatically enabled Runtime Executor.\n'));
     files.set('global-skills/README.md', Buffer.from('# Antigravity global Skills\n\nCopy the `skills/` contents to the Antigravity global Skills directory only when explicitly selected by the user. These are standalone Skills, not an automatically enabled Runtime Executor.\n'));
     for (const skill of input.skills) {
@@ -105,6 +110,14 @@ export class AntigravityPackager implements PluginPackager {
   async validate(generated: GeneratedPlugin, input: PluginBuildInput): Promise<ValidationReport> {
     const root = resolve(this.#root, generated.root);
     const checks: ValidationReport['checks'][number][] = [];
+    const notice = await readFile(resolve(root, 'plugin/DISTRIBUTION_NOTICE.md'));
+    for (const path of ['project-skills/.agents/skills/DISTRIBUTION_NOTICE.md',
+      'global-skills/skills/DISTRIBUTION_NOTICE.md']) {
+      if (!notice.equals(await readFile(resolve(root, path)))) checks.push({
+        code: 'ANTIGRAVITY_NOTICE_MISMATCH', path,
+        message: 'Standalone Skills must carry the same distribution notice as the Plugin', severity: 'error',
+      });
+    }
     for (const skill of input.skills) {
       const plugin = await readFile(resolve(root, 'plugin', skill.path));
       const project = await readFile(resolve(root, 'project-skills/.agents', skill.path));

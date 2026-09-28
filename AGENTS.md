@@ -89,7 +89,7 @@ Core / 受控 Adapter 将 stdout、stderr、events 写入 worktree 私有 dev-ha
 ## 12. 需人工确认
 
 - 通用独立 CLI 没有预装宿主 Executor；Codex 与 DSH 包内入口的原始 Worker 三任务、受控提交和恢复已分别验收，其他平台不据此取得自动 Executor 能力。
-- 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
+- 项目采用 MIT 许可并附第三方声明；独立 CLI tarball 仍保持 private，本轮只将九个平台产物作为 GitHub Release 附件分发。
 - Ubuntu / Windows 原生 CI 已验证离线构建和九产物 dry-run；宿主安装与模型 Session 仍按逐平台验证记录区分，Antigravity 模型会话调用经用户豁免，未实测。
 
 ## 13. 代码风格示例（仓库抽样）

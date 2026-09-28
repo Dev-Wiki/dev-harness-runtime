@@ -59,7 +59,10 @@ test('Antigravity Plugin, project Skills and global Skills have stable independe
   assert.equal((await value.packager.validate(value.generated, value.input)).valid, true);
   const manifest = JSON.parse(value.files.get(manifestPath));
   assert.equal(manifest.$schema, 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json');
-  assert.equal(value.files.size, 18);
+  assert.equal(value.files.size, 20);
+  const notice = value.files.get('plugin/DISTRIBUTION_NOTICE.md');
+  assert.deepEqual(value.files.get('project-skills/.agents/skills/DISTRIBUTION_NOTICE.md'), notice);
+  assert.deepEqual(value.files.get('global-skills/skills/DISTRIBUTION_NOTICE.md'), notice);
   const first = await value.packager.pack(value.generated, value.input);
   const firstBytes = await Promise.all(first.map((artifact) => readFile(join(value.root, 'dist', artifact.file))));
   assert.deepEqual(first.map((artifact) => artifact.variant), ['agent-plugin', 'project-skills', 'global-skills']);
@@ -95,4 +98,12 @@ test('Antigravity standalone Skills remain exact copies of the Plugin Skills', a
   await writeFile(join(value.root, value.generated.root, 'project-skills/.agents/skills/run/SKILL.md'), 'changed\n');
   const report = await value.packager.validate(value.generated, value.input);
   assert.ok(errors(report.checks).includes('ANTIGRAVITY_SKILL_MISMATCH'));
+});
+
+test('Antigravity standalone Skills reject a changed distribution notice', async (t) => {
+  const value = await fixture(t);
+  await writeFile(join(value.root, value.generated.root,
+    'project-skills/.agents/skills/DISTRIBUTION_NOTICE.md'), 'changed\n');
+  const report = await value.packager.validate(value.generated, value.input);
+  assert.ok(errors(report.checks).includes('ANTIGRAVITY_NOTICE_MISMATCH'));
 });

@@ -82,7 +82,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 ## 需人工确认
 
 - 通用独立 CLI 未预装宿主 Executor；Codex 插件已通过包内原始 Worker Skill 的自主合成 Task、逐任务提交、跨进程检查点恢复与会话内显式 Skill 调用。
-- 分发许可材料尚需落实，当前独立 CLI tarball 保持 private。
+- 项目采用 MIT 许可并附第三方声明；独立 CLI tarball 仍保持 private，本轮只将九个平台产物作为 GitHub Release 附件分发。
 - 原生 Windows 已有 Codex 插件安装和 `$dev-harness:status` 自检 Session，尚无 Runtime Task 执行证据；Ubuntu / Windows CI 已通过离线验证与九产物 dry-run，不能据此推断原生 Linux 宿主模型会话能力。WSL2 Codex / DSH 已通过完整任务链，其余平台按各自任务记录边界。
 
 ## K4-V 实际隔离专项

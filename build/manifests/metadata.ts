@@ -5,7 +5,8 @@ import { readPinnedFile, sha256 } from './input.js';
 
 interface MetadataSource {
   schemaVersion: 1; name: string; displayName: string; description: string;
-  author: string; repository: string; distribution: { external: false; reason: string };
+  author: string; repository: string;
+  distribution: { external: false; reason: string } | { external: true; license: 'MIT'; notice: string };
 }
 
 /** The one shared metadata source; callers must supply real license and notice files. */
@@ -17,8 +18,26 @@ export async function loadSharedMetadata(root: string, licensePaths: readonly st
     throw new Error('Shared metadata fields differ from the fixed contract');
   }
   const source = raw as MetadataSource;
-  if (source.distribution?.external !== false || typeof source.distribution.reason !== 'string' || !source.distribution.reason) {
-    throw new Error('External distribution gate must remain explicit until license review');
+  const distribution = source.distribution;
+  if (distribution?.external === true) {
+    if (Object.keys(distribution).sort().join(',') !== 'external,license,notice'
+      || distribution.license !== 'MIT'
+      || distribution.notice !== 'build/manifests/DISTRIBUTION_NOTICE.md'
+      || !licensePaths.includes(distribution.notice)) {
+      throw new Error('External distribution requires the reviewed MIT license and notice reference');
+    }
+    const [license, thirdParty, notice] = await Promise.all([
+      readPinnedFile(root, 'LICENSE'), readPinnedFile(root, 'THIRD_PARTY_NOTICES.md'),
+      readPinnedFile(root, distribution.notice),
+    ]);
+    if (!license.length || !thirdParty.length
+      || !Buffer.from(notice).includes(Buffer.from(license))
+      || !Buffer.from(notice).includes(Buffer.from(thirdParty))) {
+      throw new Error('External distribution notice omits the project license or third-party notices');
+    }
+  } else if (distribution?.external !== false || Object.keys(distribution).sort().join(',') !== 'external,reason'
+    || typeof distribution.reason !== 'string' || !distribution.reason) {
+    throw new Error('Invalid distribution declaration');
   }
   const licenseRefs: PluginMetadata['licenseRefs'] = [];
   for (const path of licensePaths) licenseRefs.push({ path, sha256: sha256(await readPinnedFile(root, path)) });

@@ -9,6 +9,7 @@
 - 从同一份 `run`、`status`、`worker` Skill 源码生成 Codex、DSH、Cursor、OpenCode、Antigravity 和 Portable 共九个本地产物；Portable 包只包含 Skill，没有独立 Executor。
 - `dhr` 提供只读状态和诊断、任务执行入口，以及生成、校验、打包和本地 release dry-run。
 - Ubuntu 与 Windows CI 分别运行完整离线验证和九产物 dry-run；产物 manifest 记录版本、来源和 SHA-256。
+- 采用 MIT 项目许可，九个产物附带项目许可与所打包第三方依赖的许可声明。
 
 ### 变更（Changed）
 

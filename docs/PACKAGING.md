@@ -25,7 +25,7 @@ pnpm build → 可信 BuildPipeline.generate → .generated/<platform>/plugin/
 
 `PluginBuildInput` 是唯一版本和来源输入：平台、release/Adapter/Core 版本、Skill 和 bundle 摘要、协议锁、元数据及明确 UTC 时间。来源 checkout 必须与声明的 Git HEAD 一致，上游协议 checkout 必须干净且每个锁定文件的 SHA-256 匹配；本仓 Skill、bundle 和分发声明也按实际字节校验。每阶段在 Packager 回调后重验来源与生成目录，漂移不能得到成功记录。共享元数据只从 [metadata.json](../build/manifests/metadata.json) 读取，平台只注入格式必需字段。有限 Skill 转换仅接受 `{{DHR_PATH}}`、`{{DHR_COMMAND}}`、`{{DHR_INVOKE}}` 三个明确 token，不重写流程。
 
-本项目尚未发布项目许可。[分发声明](../build/manifests/DISTRIBUTION_NOTICE.md) 仅记录本地构建门禁，不授予对外分发权。`metadata.licenseRefs` 必须指向真实文件且摘要匹配；缺失时不能伪造许可。未提交的本地输入可验证并在 `dist/build-evidence.json` 标记 `localUnversioned`；正式对外分发还需项目许可和第三方声明、已提交无漂移来源及后续发布门禁。
+本项目采用 [MIT 许可](../LICENSE)，随包的[分发声明](../build/manifests/DISTRIBUTION_NOTICE.md)包含完整项目许可和[第三方许可声明](../THIRD_PARTY_NOTICES.md)。`metadata.licenseRefs` 必须指向真实文件且摘要匹配；共享元数据在标记允许对外分发时还会核对许可和第三方文本确实进入随包声明。未提交的本地输入可验证并在 `dist/build-evidence.json` 标记 `localUnversioned`；GitHub Release 发布门禁还要求已提交无漂移来源、九个产物的实际大小与 SHA-256 匹配，并与版本和变更日志一致。
 
 ## 静态校验和归档
 
@@ -47,10 +47,10 @@ Cursor 对应入口为 `createCursorBuildPipeline(root, protocolCheckout)`，生
 
 OpenCode 对应入口为 `createOpenCodeBuildPipeline(root, protocolCheckout)`，从同一锁定输入生成 npm tgz 和项目本地 ZIP。tgz 含 `package.json`、JS 插件导出、已编译 bundle、固定的 `scripts/dhr.mjs` 与三个 Skill；ZIP 按 `.opencode/plugins/`、`.opencode/skills/` 放置，并含 `.opencode/scripts/dhr.mjs` 和版本 manifest。npm 包内 Skill、脚本、bundle 与 manifest 需另行复制到项目 `.opencode/` 对应目录，OpenCode 不保证从 npm 插件自动发现 Skill。两种插件变体不可同时安装。插件默认导出同时满足 OpenCode 1.18.31 的 `server()` 与 2.0.15 的 `setup()`；两个宿主已在隔离项目加载插件和发现三个 Skill。未发布的 tgz 经 localhost 临时 registry 按包名自动安装，两版宿主均已取到当前生成包，2.0.15 报告插件 active；模型会话通过宿主 `skill(status)` 加载共享 Skill。见 [K8 验证记录](verification/K8.md)。
 
-Antigravity 对应入口为 `createAntigravityBuildPipeline(root, protocolCheckout)`，从同一份 Skill 生成 Agent Plugin、项目 `.agents/skills/` 与独立 global Skills 三种 ZIP。Plugin 的 `plugin.json` 使用 Agent Plugins 1.0.0；本机 `agy plugin validate/install/list/uninstall` 已确认三个 Skills 被处理并可全局安装、发现、移除。项目范围可把 Plugin ZIP 解压至 `<project>/.agents/plugins/dev-harness/`；隔离项目的静态 validate 已过，会话激活未验。尚未调用模型会话内 Skill 或验证独立 Skill 安装，不能把安装链称为 Executor 能力。见 [K9 验证记录](verification/K9.md)。
+Antigravity 对应入口为 `createAntigravityBuildPipeline(root, protocolCheckout)`，从同一份 Skill 生成 Agent Plugin、项目 `.agents/skills/` 与独立 global Skills 三种 ZIP；每个变体随安装路径携带相同的许可与第三方声明。Plugin 的 `plugin.json` 使用 Agent Plugins 1.0.0；本机 `agy plugin validate/install/list/uninstall` 已确认三个 Skills 被处理并可全局安装、发现、移除。项目范围可把 Plugin ZIP 解压至 `<project>/.agents/plugins/dev-harness/`；隔离项目的静态 validate 已过，会话激活未验。模型会话内 Skill 调用经用户豁免，未实测；独立 Skill 安装也未验证，不能把安装链称为 Executor 能力。见 [K9 验证记录](verification/K9.md)。
 
 Portable 对应入口为 `createAgentPluginBuildPipeline(root, protocolCheckout)`，只生成根 `plugin.json`、三个共享 Skill、README 和分发声明，输出 `dist/agent-plugin/dev-harness-agent-plugin-v<version>.zip`。该产物无独立 Executor；`dhr run --adapter agent-plugin` 在无可信执行器时返回 `CAPABILITY_MISSING`。构建输入契约仍要求 `adapterBundle` 来源，故此打包专用目标把自身编译后的 Packager 文件绑定为来源摘要；它不作为运行能力使用。见 [K10-G 验证记录](verification/K10-G.md)。
 
 ## 验证入口
 
-项目构建和测试命令以 [HARNESS](../HARNESS.md) 为准。六平台可信入口为 `createRepositoryBuildPipeline(root, protocolCheckout)`；仓库脚本 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack` 与 `pnpm dhr release --dry-run` 都需显式 `--protocol-checkout`，详见 [本地产物说明](RELEASE.md)。`pnpm pack` 是 pnpm 自身命令，不能代替本项目 pack 脚本。K10-B 的可复现专项见 [验证记录](verification/K10-B.md)。只在剩余开发收口时运行全量 `pnpm verify`，除非后续变更扩大影响范围。
+项目构建和测试命令以 [HARNESS](../HARNESS.md) 为准。六平台可信入口为 `createRepositoryBuildPipeline(root, protocolCheckout)`；仓库脚本 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack` 与 `pnpm dhr release --dry-run` 都需显式 `--protocol-checkout`，详见 [发布说明](RELEASE.md)。`pnpm pack` 是 pnpm 自身命令，不能代替本项目 pack 脚本。K10-B 的可复现专项见 [验证记录](verification/K10-B.md)。发布工作流在 tag 上重新运行完整 `pnpm verify`。

@@ -18,7 +18,9 @@ const [pkg, metadata, license, thirdParty, notice, manifest, evidence, changelog
 ]);
 requireValue(tag === `v${pkg.version}`, 'Release tag does not match package version');
 requireValue(changelog.toString('utf8').includes(`## ${tag} — `), 'Release changelog section is missing');
-requireValue(metadata.distribution?.external === true, 'External distribution is not enabled');
+requireValue(metadata.distribution?.external === true && metadata.distribution.license === 'MIT'
+  && metadata.distribution.notice === 'build/manifests/DISTRIBUTION_NOTICE.md',
+'External MIT distribution declaration is missing');
 requireValue(license.length > 0 && thirdParty.length > 0, 'License or third-party notices are empty');
 requireValue(notice.includes(license) && notice.includes(thirdParty), 'Bundled distribution notice omits license or third-party text');
 requireValue(!notice.toString('utf8').includes('local development and validation only'), 'Local-only distribution notice remains');
@@ -59,5 +61,12 @@ for (const item of manifest.artifacts) {
   const info = await stat(path);
   requireValue(info.isFile() && info.size === item.size, `Artifact size mismatch: ${item.file}`);
   requireValue(sha256(await readFile(path)) === item.sha256, `Artifact hash mismatch: ${item.file}`);
+  const entries = execFileSync(item.file.endsWith('.zip') ? 'unzip' : 'tar',
+    item.file.endsWith('.zip') ? ['-Z1', path] : ['-tzf', path], { encoding: 'utf8' })
+    .trim().split('\n').filter((entry) => entry.endsWith('DISTRIBUTION_NOTICE.md'));
+  requireValue(entries.length === 1, `Artifact must contain one distribution notice: ${item.file}`);
+  const archivedNotice = execFileSync(item.file.endsWith('.zip') ? 'unzip' : 'tar',
+    item.file.endsWith('.zip') ? ['-p', path, entries[0]] : ['-xOzf', path, entries[0]]);
+  requireValue(sha256(archivedNotice) === sha256(notice), `Artifact notice mismatch: ${item.file}`);
 }
 process.stdout.write(`Release ${tag}: ${names.size} artifacts, source ${head}, license and notices verified\n`);

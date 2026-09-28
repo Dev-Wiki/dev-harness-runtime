@@ -86,6 +86,7 @@ Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runt
 - [资料完整性评估](docs/plan/Readiness.md)
 - [Git 提交与发布规范](docs/GIT_WORKFLOW.md)
 - [共享打包契约](docs/PACKAGING.md)
+- [MIT 许可](LICENSE)与[第三方许可声明](THIRD_PARTY_NOTICES.md)
 
 ## 本地开发
 
