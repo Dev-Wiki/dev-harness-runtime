@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile, symlink, link, rm, readFile, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, symlink, link, rm, readFile, realpath, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,9 +9,10 @@ import { CodexReadView, withCodexReadPolicy } from '../dist/executor/read-view.j
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const policy = (repoRoot, files) => ({ repoRoot, runId: 'run-a', requestId: 'request-a', snapshotHash: 'a'.repeat(64), files });
+const fixtureRoot = async (prefix) => realpath(await mkdtemp(join(tmpdir(), prefix)));
 
 test('Codex read view lists only frozen paths and returns verified UTF-8 bytes', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
+  const root = await fixtureRoot('dhr-codex-read-');
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'HELLO');
@@ -33,7 +34,7 @@ test('Codex read view lists only frozen paths and returns verified UTF-8 bytes',
 });
 
 test('Codex read view pages long text without splitting a Unicode pair', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
+  const root = await fixtureRoot('dhr-codex-read-');
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   const content = 'x'.repeat(16 * 1024 - 1) + '😀' + 'TAIL';
@@ -47,7 +48,7 @@ test('Codex read view pages long text without splitting a Unicode pair', async (
 });
 
 test('Codex read view refuses snapshot drift, symlinks and hardlink aliases', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
+  const root = await fixtureRoot('dhr-codex-read-');
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'BEFORE');
@@ -65,7 +66,7 @@ test('Codex read view refuses snapshot drift, symlinks and hardlink aliases', as
 });
 
 test('Codex read view paginates a frozen catalog without reading arbitrary directories', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
+  const root = await fixtureRoot('dhr-codex-read-');
   t.after(() => rm(root, { recursive: true, force: true }));
   const files = Array.from({ length: 101 }, (_, index) => ({ path: `src/${String(index).padStart(3, '0')}.ts`, sha256: digest('x') }));
   const view = await CodexReadView.create(policy(root, files));
@@ -76,7 +77,7 @@ test('Codex read view paginates a frozen catalog without reading arbitrary direc
 });
 
 test('Codex literal search is snapshot-bound, paginated and bounded per file', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-search-'));
+  const root = await fixtureRoot('dhr-codex-search-');
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   const files = [];
@@ -100,7 +101,7 @@ test('Codex literal search is snapshot-bound, paginated and bounded per file', a
 });
 
 test('Codex read policy file is private and removed after one invocation', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-read-'));
+  const root = await fixtureRoot('dhr-codex-read-');
   t.after(() => rm(root, { recursive: true, force: true }));
   let path;
   await withCodexReadPolicy(policy(root, [{ path: 'src/a.ts', sha256: digest('HELLO') }]), async (value) => {
