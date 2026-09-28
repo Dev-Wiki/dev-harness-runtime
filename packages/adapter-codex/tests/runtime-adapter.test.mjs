@@ -8,6 +8,7 @@ import { recordName } from '../../../packages/core/dist/result/frozen.js';
 import { runtimeAdapter } from '../../../packages/core/dist/orchestrator/runtime.js';
 import { setupRuntimeFixture } from '../../../tests/fixtures/fake-executor/fixture.mjs';
 
+const linuxTest = process.platform === 'linux' ? test : test.skip;
 const hash = 'a'.repeat(64);
 const options = { binary: '/usr/bin/codex', bubblewrap: '/usr/bin/bwrap', nodeBinary: process.execPath,
   authFile: '/tmp/nonexistent-auth', serverBundle: '/tmp/nonexistent-bundle',
@@ -43,7 +44,7 @@ test('Codex RuntimeAdapter binds the Core request and frozen catalog before star
     result: {} }), { code: 'AUTHORIZATION_VIOLATION' });
 });
 
-test('fresh process refuses unknown Codex host and checks durable PID 1 identity', async () => {
+linuxTest('fresh process refuses unknown Codex host and checks durable PID 1 identity', async () => {
   const adapter = createCodexRuntimeAdapter(options);
   const request = JSON.parse(await readFile(new URL('../../../packages/contracts/fixtures/execution/request.json', import.meta.url)));
   const state = { runId: request.runId, currentTaskId: request.taskId,
@@ -70,7 +71,7 @@ test('fresh process refuses unknown Codex host and checks durable PID 1 identity
     { code: 'QUIESCENCE_UNKNOWN' });
 });
 
-test('Codex persisted host verifier checks isolation, source identity and namespace liveness', async () => {
+linuxTest('Codex persisted host verifier checks isolation, source identity and namespace liveness', async () => {
   const adapter = createCodexRuntimeAdapter(options);
   const request = JSON.parse(await readFile(new URL('../../../packages/contracts/fixtures/execution/request.json', import.meta.url)));
   const applied = { schemaVersion: 1, kind: 'core-proposal-apply-receipt', runId: request.runId,
