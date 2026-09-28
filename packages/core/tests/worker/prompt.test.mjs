@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import test from 'node:test';
 import { prepareWorkerInvocation } from '../../dist/worker/prompt.js';
 
@@ -14,7 +15,7 @@ test('shared Worker source and exact request produce four explicit environment m
   const input = request(); const invocation = prepareWorkerInvocation(input, source);
   assert.ok(invocation.prompt.startsWith(bytes.toString().trimEnd())); assert.equal(invocation.skillSha256, source.sha256);
   const data = payload(invocation.prompt); const { readFirst, commitCandidate, ...bound } = data;
-  assert.deepEqual(bound, input); assert.deepEqual(readFirst, ['/workspace/project/AGENTS.md', '/workspace/project/HARNESS.md', input.dashboardPath, input.taskPath]);
+  assert.deepEqual(bound, input); assert.deepEqual(readFirst, [join(input.repoRoot, 'AGENTS.md'), join(input.repoRoot, 'HARNESS.md'), input.dashboardPath, input.taskPath]);
   assert.deepEqual(commitCandidate, { allowed: false });
   assert.deepEqual(invocation.env, input.env); assert.equal(Object.keys(invocation.env).length, 4);
   input.env.DEV_HARNESS_TASK_ID = 'other'; assert.equal(invocation.env.DEV_HARNESS_TASK_ID, 'K1');
@@ -26,7 +27,7 @@ test('Core commit authority provides only a frozen workflow candidate to the Wor
     { commit: 'task', gitWorkflowRef: workflow }).prompt);
   assert.deepEqual(candidate.commitCandidate, { allowed: true, workflow });
   assert.equal(candidate.authorization.commit, 'deny');
-  assert.equal(candidate.readFirst.at(-1), '/workspace/project/docs/GIT_WORKFLOW.md');
+  assert.equal(candidate.readFirst.at(-1), join(input.repoRoot, 'docs/GIT_WORKFLOW.md'));
   assert.throws(() => prepareWorkerInvocation(input, source,
     { commit: 'task', gitWorkflowRef: { ...workflow, path: '../outside' } }), { code: 'INVALID_CONTRACT' });
 });
