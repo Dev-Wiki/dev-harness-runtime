@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import test from 'node:test';
 import { resumeRun } from '../../dist/recovery/resume.js';
 import { captureSnapshot } from '../../dist/snapshot/capture.js';
@@ -145,7 +145,7 @@ test('published verification-plan evidence survives a pre-CAS fault and reuses e
 test('published accepted evidence survives a pre-CAS fault without duplicate task acceptance', async (t) => {
   const context = await setupRecovery(t); await installVerify(context);
   let faulted = false;
-  await withStateFaultForTest((point, path) => { if (!faulted && point === 'directory-synced' && path.includes('/accepted-')) { faulted = true; throw new Error('simulated acceptance exit'); } }, () => resume(context));
+  await withStateFaultForTest((point, path) => { if (!faulted && point === 'directory-synced' && basename(path).startsWith('accepted-')) { faulted = true; throw new Error('simulated acceptance exit'); } }, () => resume(context));
   assert.equal(faulted, true); assert.equal((await readCurrentRun(context.handle, 'run-a')).revision, context.run.revision);
   const retry = await resume(context); assert.equal(retry.decision.action, 'finalize-no-commit', retry.decision.message); assert.deepEqual(retry.state.completedTasks, ['K1']);
 });
@@ -173,7 +173,7 @@ test('actual exact commit is adopted once and pre-CAS snapshot evidence retains 
   const context = await setupRecovery(t, { commit: 'task' }); await installCommit(context);
   await git(context.root, 'commit', '--quiet', '--no-gpg-sign', '-m', 'accepted Task'); const commit = await git(context.root, 'rev-parse', 'HEAD');
   let faulted = false;
-  await withStateFaultForTest((point, path) => { if (!faulted && point === 'directory-synced' && path.includes('/committed-')) { faulted = true; throw new Error('simulated exit after snapshot'); } }, () => resume(context));
+  await withStateFaultForTest((point, path) => { if (!faulted && point === 'directory-synced' && basename(path).startsWith('committed-')) { faulted = true; throw new Error('simulated exit after snapshot'); } }, () => resume(context));
   assert.equal(faulted, true);
   const directory = join(context.project.stateRoot, 'run-a', 'results/run-evidence');
   const name = (await readdir(directory)).find((name) => name.startsWith('committed-')); const first = await readFile(join(directory, name));
