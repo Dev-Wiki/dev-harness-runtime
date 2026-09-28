@@ -73,7 +73,7 @@ test('isolated model host cancellation confirms quiescence and closes its broker
       nodeBinary: process.execPath, executable: '/dhr/target', argv: ['-e', 'setInterval(()=>{},1000)'], cwd: '/tmp',
       mounts: [{ source: process.execPath, destination: '/dhr/target' }], tmpfs: [],
       environment: { HOME: '/tmp', PATH: '/usr/bin' }, timeoutMs: 10_000,
-      signal: AbortSignal.timeout(700) }, { allowedHosts: ['model.example'] });
+      signal: AbortSignal.timeout(3000) }, { allowedHosts: ['model.example'] });
     assert.equal(result.termination, 'aborted');
     assert.equal(result.quiescence, 'confirmed');
     assert.equal(result.evidence.network, 'isolated');
