@@ -23,4 +23,4 @@ pnpm run pack --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
 
 `pnpm pack` 是 pnpm 自身的命令，因此本项目脚本须写成 `pnpm run pack`。仓库级单平台入口使用 `pnpm dhr build|validate|pack --platform <id> --protocol-checkout <path>`；已安装的独立 CLI 包没有注入仓库 Packager，保持 `CAPABILITY_MISSING` 门禁。源码提交或版本变更后，已有 manifest 可能不再属于当前输入。先显式执行 `pnpm artifacts:clean` 清除本地生成树，再编译和重跑；清理命令发现锁文件、符号链接或特殊文件时会拒绝。
 
-CI 的 `verify` 和 `package-dry-run` 在 Ubuntu 与 Windows runner 分别运行离线检查；宿主安装和模型会话 smoke 不在该工作流中。当前只在 WSL2 本地执行过本命令，原生 runner 的实际结果以 CI 运行记录为准。[能力矩阵](PLATFORM_MATRIX.md)逐平台列出已验证边界，不能把本地 dry-run 当作完整 MVP 验收。
+CI 的 `verify` 和 `package-dry-run` 已在 Ubuntu 与 Windows runner 分别通过离线检查，见 [run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252)；宿主安装和模型会话 smoke 不在该工作流中。[能力矩阵](PLATFORM_MATRIX.md)逐平台列出已验证边界。Antigravity 会话调用经用户明确豁免，仍未实测。

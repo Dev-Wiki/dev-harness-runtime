@@ -4,7 +4,7 @@
 
 ## 1. 进度快照
 
-- **核心阶段**：M0 / M1 / M2 已收口；M3 的共享 K10-B、Codex K5-P、DSH K6-P、Cursor K7、OpenCode K8、Antigravity K9 与 Portable K10-G 已验收。K9 的真实宿主会话调用经用户明确豁免，仍属未实测。
+- **核心阶段**：M0 / M1 / M2 / M3 已收口。K9 的真实宿主会话调用经用户明确豁免，仍属未实测；K10 的本地产物与验证验收已完成。
 - **当前瓶颈**：六平台九个本地产物及能力矩阵已生成，Ubuntu / Windows 原生 Runtime CI 与本地打包 dry-run 均通过；Codex 与 DSH 自动 Executor、包内 CLI、隔离 Worker、独立验收和逐任务提交已取得 WSL2 证据，Codex 在原生 Windows 完成安装与 Skill 自检。OpenCode 和 Cursor 的会话 Skill 调用已验；Antigravity 会话调用按用户决定豁免，对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
@@ -23,11 +23,11 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5、K6 已完成并归档；两个包内 Executor 的原始 Worker 与合成三任务链通过 |
-| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 六平台九产物、本地与原生 Ubuntu / Windows CI dry-run 和矩阵通过；K9 宿主会话调用已获用户豁免，K10 待收口 |
+| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 已收口；六平台九产物、本地与原生 Ubuntu / Windows CI dry-run 和矩阵通过；K9 宿主会话调用获用户豁免 |
 
 ## 3. 当前工作顺序
 
-用户已完成 Codex 插件安装体验；K6 DSH Executor、K7 Cursor CLI、K8 OpenCode 和 K9 Antigravity 已完成。K9 的会话调用按用户决定豁免，不能记为实测通过。下一步收口 K10，并处理对外分发许可与发布渠道。
+用户已完成 Codex 插件安装体验；M3 开发与本地验收已完成。K9 的会话调用按用户决定豁免，不能记为实测通过。下一步按用户选择准备 GitHub Release 九个产物，先落实对外分发许可与第三方声明。
 
 ## 4. 活跃任务
 
@@ -35,8 +35,7 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
-| **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 🚧 开发中 | [K5](archive/M2/K5.md)、[K6](archive/M2/K6.md)、[K7](archive/M3/K7.md)、[K8](archive/M3/K8.md)、[K9](archive/M3/K9.md)、[K10-G](archive/M3/K10-G.md) | 九包双构建、本机全量、Ubuntu / Windows 原生 CI 与两端打包 dry-run 通过；K9 宿主会话调用按用户决定豁免，详见[证据](../verification/K10.md) | [执行包](tasks/K10.md) |
-| **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](tasks/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
+| **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](archive/M3/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
 
 ## 5. 共享验证基线
 
@@ -69,11 +68,11 @@ pnpm matrix:check
 
 | 任务 | 完成日期 | 验收摘要 | 归档 |
 |---|---|---|---|
+| K10 — 统一验证、能力矩阵与本地产物收口 | 2026-09-28 | 九包双构建、矩阵、本机全量及 Ubuntu / Windows 原生 CI 通过；K9 会话调用依用户决定豁免 | [M3 / K10](archive/M3/K10.md) |
 | K9 — Antigravity Plugin 与 Skills 打包 | 2026-09-28 | 三包静态、golden 和原生安装链已验；模型会话调用由用户明确豁免，未实测 | [M3 / K9](archive/M3/K9.md) |
 | K7 — Cursor Native Plugin 打包 | 2026-09-28 | 12 文件 ZIP 与已认证 Cursor Agent CLI 的 `status` Skill 包内版本自检通过 | [M3 / K7](archive/M3/K7.md) |
 | K8 — OpenCode npm 与本地插件打包 | 2026-09-25 | 双版本插件加载、包名安装、包内 CLI 与真实会话 Skill 调用通过 | [M3 / K8](archive/M3/K8.md) |
 | K6 — DSH Executor 与行为等价迁移 | 2026-09-25 | 原始 Worker 三任务、独立 Session、取消恢复、Core 验收与三次逐任务提交通过 | [M2 / K6](archive/M2/K6.md) |
-| K5 — Codex fresh-session Executor | 2026-09-19 | 原始 Worker 自主 Task、独立验收、commit-each、跨进程恢复与插件会话显式 Skill 调用通过 | [M2 / K5](archive/M2/K5.md) |
 
 [M0 归档索引](archive/M0/README.md)、[M1 归档索引](archive/M1/README.md)、[M2 归档索引](archive/M2/README.md)、[M3 归档索引](archive/M3/README.md)；本节最多保留五项摘要。
 
@@ -92,7 +91,7 @@ pnpm matrix:check
 | §21–31、§39–40 统一 CLI、构建、版本、校验、CI、本地产物 | 纳入 | V0、K1、K4、K10-B、各 Packager、K10 |
 | §38 DSH 迁移 | 纳入公共行为与新 Adapter；弃用动作另议 | R0、K6 |
 | §42 统一安装器 | 远期候选 | F1 |
-| §46–47 MVP 验收与核心成功标准 | 纳入，必须有真实证据 | K10 |
+| §46–47 MVP 验收与核心成功标准 | 纳入；K9 宿主会话调用经用户明确豁免，仍不得称为实测通过 | K10 |
 | §48–50 产品说明、外部格式与架构约束 | 纳入资料与事实文档维护 | R0、R1、V0、K10 |
 | Cursor / OpenCode / Antigravity 自动 Executor | 仅能力评估，不承诺 MVP 实现 | R1、K7、K8、K9；启用前另建执行包 |
 
@@ -116,7 +115,7 @@ pnpm matrix:check
 - Core 的 Orchestrator / State / Authorization / Snapshot / Recovery 只有一套；新增平台不复制流程。
 - Codex 与 DSH 对同一三任务依赖链均使用新 Session；commit-each 与 no-commit 遵循统一授权；漂移、异常和中断均有负向测试。
 - 五平台与 Portable 产物由源码统一生成；本地 dry-run 和 hash manifest 可复现；平台能力矩阵来自证据。
-- 若仅离线验证通过，记录为对应任务的部分证据，不能宣称完整 MVP 完成。
+- 若仅离线验证通过，记录为对应任务的部分证据；K9 会话调用由用户明确豁免，仍不得称为实测通过。
 
 ## 9. 维护规则
 
@@ -129,4 +128,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-28（K9 以用户明确豁免模型会话调用的口径归档）*
+*最后更新：2026-09-28（K10 本地产物收口，M3 已完成；K9 模型会话调用经用户豁免）*
