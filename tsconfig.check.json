@@ -12,6 +12,9 @@
       "@dev-harness-runtime/cli": [
         "./packages/cli/src/index.ts"
       ],
+      "@dev-harness-runtime/build": [
+        "./build/targets/index.ts"
+      ],
       "@dev-harness-runtime/adapter-codex": [
         "./packages/adapter-codex/src/index.ts"
       ],
