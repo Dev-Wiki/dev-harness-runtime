@@ -83,7 +83,7 @@ test('broad documentation scope cannot authorize another Task or hide an out-of-
 });
 test('a newly owned symlink cannot point outside the repository', async (t) => {
   const f = await fixture(t); f.scope.files.push('src/link'); const before = await f.capture();
-  try { await symlink(tmpdir(), join(f.root, 'src/link'), 'junction'); }
+  try { await symlink(emptyGitConfig, join(f.root, 'src/link'), 'file'); }
   catch (error) { if (process.platform === 'win32' && error.code === 'EPERM') { t.skip('Symlink privilege unavailable'); return; } throw error; }
   const after = await f.capture();
   await assert.rejects(verifyOwnedTransition(before, after, verifiedPolicy(f, before, before, after)), { code: 'AUTHORIZATION_VIOLATION' });
