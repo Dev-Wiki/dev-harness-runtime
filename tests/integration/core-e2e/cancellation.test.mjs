@@ -12,6 +12,7 @@ import { installExecute, setupRecovery } from '../../../packages/core/tests/reco
 import { git, setupRuntimeFixture } from '../../fixtures/fake-executor/fixture.mjs';
 
 const runId = 'cancellation-regression';
+const retainedLockStatus = process.platform === 'linux' ? 'held' : 'unknown';
 const start = (f, patch = {}, services = f.services) => startRuntimeRun({ cwd: f.root, adapter: 'fixture-runtime',
   selection: { mode: 'explicit', taskId: 'A' }, runId, ...patch }, services);
 const runPath = f => join(f.project.stateRoot, runId, 'run.json');
@@ -67,7 +68,7 @@ for (const operation of ['resume', 'reconcile']) {
     await assert.rejects(work, error => error === failure);
     assert.equal(checks, 1); assert.equal(f.executions.length, 1);
     const lock = await inspectLock(f.project);
-    assert.equal(lock.status, 'held'); assert.equal(lock.owner.runId, runId);
+    assert.equal(lock.status, retainedLockStatus); assert.equal(lock.owner.runId, runId);
     await access(join(f.project.stateRoot, '.orchestrator.lock', 'owner.json'));
     assert.deepEqual(await readFile(runPath(f)), original);
     assert.equal(await git(f.root, 'rev-parse', 'HEAD'), head);
@@ -80,7 +81,7 @@ test('unknown verification lifetime persists interruption and evidence without c
   const original = await readCurrentRun(f.handle, f.run.runId);
   const checkpoint = await readEvidence(f.handle, original.runId, original.revision, original.pendingOperation.checkpointRef);
   const proof = await readEvidence(f.handle, original.runId, original.revision, f.checkpoint.proofRef);
-  const owner = await inspectLock(f.project); assert.equal(owner.status, 'held');
+  const owner = await inspectLock(f.project); assert.equal(owner.status, retainedLockStatus);
   let workerChecks = 0;
   const error = new SandboxError('QUIESCENCE_UNKNOWN', 'Fixture verifier monitor has no confirmed ending');
   await assert.rejects(handleRunFailure(f.handle, original.runId, error, { async verifyQuiescence() {
@@ -95,5 +96,5 @@ test('unknown verification lifetime persists interruption and evidence without c
   assert.deepEqual(await readEvidence(f.handle, stopped.runId, stopped.revision, stopped.pendingOperation.checkpointRef), checkpoint);
   assert.deepEqual(await readEvidence(f.handle, stopped.runId, stopped.revision, f.checkpoint.proofRef), proof);
   const retained = await inspectLock(f.project);
-  assert.equal(retained.status, 'held'); assert.equal(retained.owner.ownerToken, owner.owner.ownerToken);
+  assert.equal(retained.status, retainedLockStatus); assert.equal(retained.owner.ownerToken, owner.owner.ownerToken);
 });
