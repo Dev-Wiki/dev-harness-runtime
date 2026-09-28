@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { access, chmod, copyFile, link, mkdir, open, readFile, readdir, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { assertSupportedCommitProject, commitAcceptedTask, resumeAcceptedTaskCommit } from '../../dist/authorization/git.js';
 import { git, setupRecovery } from '../recovery/helpers.mjs';
 import { setupAcceptance } from '../result/helpers-acceptance.mjs';
@@ -13,6 +15,16 @@ import { createAcceptanceRecoveryVerifier } from '../../dist/result/recovery.js'
 import { resumeRun } from '../../dist/recovery/resume.js';
 
 const gitBinary = '/usr/bin/git';
+// Git bridge tests must not inherit a runner's user-level filters or hooks.
+// Individual fixtures still configure and verify their own repository policy.
+const originalHome = process.env.HOME;
+const isolatedHome = mkdtempSync(join(tmpdir(), 'dhr-git-test-home-'));
+process.env.HOME = isolatedHome;
+after(() => {
+  if (originalHome === undefined) delete process.env.HOME;
+  else process.env.HOME = originalHome;
+  rmSync(isolatedHome, { recursive: true, force: true });
+});
 const linuxTest = process.platform === 'linux' ? test : test.skip;
 const fails = (promise, code) => assert.rejects(promise, (error) => error.code === code);
 
