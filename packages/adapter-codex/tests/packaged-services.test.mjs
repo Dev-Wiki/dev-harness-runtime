@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -9,7 +9,7 @@ import { createPackagedCodexServices, loadCodexPackageSource } from '../dist/ind
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 async function packageFixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-services-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-codex-services-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const path of ['runtime', 'skills/worker']) await mkdir(join(root, path), { recursive: true });
   const bundled = new URL('../dist/adapter.bundle.js', import.meta.url);

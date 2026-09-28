@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -16,7 +16,7 @@ const manifestPath = `${plugin}/.codex-plugin/plugin.json`;
 const catalogPath = '.agents/plugins/marketplace.json';
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-codex-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const source = { schemaVersion: 1, repository: 'https://github.com/Dev-Wiki/dev-harness-runtime',
     version: '0.1.0', commit: 'a'.repeat(40), path: 'package.json' };

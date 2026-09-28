@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -17,7 +17,7 @@ const execute = promisify(execFile);
 const errors = (checks) => checks.filter((entry) => entry.severity === 'error').map((entry) => entry.code);
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-dsh-packaging-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-dsh-packaging-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const source = { schemaVersion: 1, repository: 'https://github.com/Dev-Wiki/dev-harness-runtime',
     version: '0.1.0', commit: 'a'.repeat(40), path: 'package.json' };
