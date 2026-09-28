@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, realpath, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -47,7 +47,7 @@ test('proposal MCP rejects path traversal, unknown tools and oversized content',
 });
 
 test('snapshot-bound MCP lists and reads only frozen files with bounded pages', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-mcp-read-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-codex-mcp-read-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'HELLO');
@@ -77,7 +77,7 @@ test('snapshot-bound MCP lists and reads only frozen files with bounded pages', 
 });
 
 test('stdio MCP process loads one private bridge policy and gates proposal calls', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-codex-mcp-read-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-codex-mcp-read-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'src'));
   await writeFile(join(root, 'src/a.ts'), 'HELLO');
