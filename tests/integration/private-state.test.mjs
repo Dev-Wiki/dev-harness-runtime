@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, mkdir, writeFile, readFile, rm, realpath } from 'node:fs/promises';
-import { tmpdir, devNull } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { discoverProject, captureSnapshot } from '../../packages/core/dist/index.js';
 import { acquireLock, releaseLock } from '../../packages/core/dist/lock/index.js';
 import { createRun, readRunAtRevision, compareAndSwapRun } from '../../packages/core/dist/state/index.js';
 const template = JSON.parse(await readFile(new URL('../../packages/contracts/fixtures/state/run-created.json', import.meta.url), 'utf8'));
-const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: devNull };
+const gitConfigRoot = mkdtempSync(join(tmpdir(), 'dhr-git-empty-config-'));
+const emptyGitConfig = join(gitConfigRoot, 'empty');
+writeFileSync(emptyGitConfig, '');
+after(() => rmSync(gitConfigRoot, { recursive: true, force: true }));
+const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: emptyGitConfig };
 function git(root, ...args) { return execFileSync('git', ['-C', root, ...args], { env, encoding: 'utf8' }).trim(); }
 function initial(project) {
   return { ...structuredClone(template), repoIdentity: { repoRoot: project.repoRoot, privateGitDir: project.privateGitDir, head: project.head, branch: 'main' } };

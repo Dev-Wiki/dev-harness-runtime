@@ -1,13 +1,18 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, mkdir, writeFile, rm, symlink, rename } from 'node:fs/promises';
-import { tmpdir, devNull } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { captureSnapshot } from '../../dist/snapshot/capture.js';
 import { assertUnchanged, assertTaskStart, verifyOwnedTransition, compareSnapshots } from '../../dist/snapshot/guard.js';
-const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: devNull };
+const gitConfigRoot = mkdtempSync(join(tmpdir(), 'dhr-git-empty-config-'));
+const emptyGitConfig = join(gitConfigRoot, 'empty');
+writeFileSync(emptyGitConfig, '');
+after(() => rmSync(gitConfigRoot, { recursive: true, force: true }));
+const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: emptyGitConfig };
 function git(root, ...args) { return execFileSync('git', ['-C', root, ...args], { env, encoding: 'utf8' }).trim(); }
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'dhr-snapshot-guard-'));
