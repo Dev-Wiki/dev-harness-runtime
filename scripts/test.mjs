@@ -15,7 +15,18 @@ for (const root of ['packages', 'build', 'tests/integration', 'tests/contract', 
 if (files.length === 0) throw new Error('No tests discovered');
 const sorted = files.sort();
 const windows = process.platform === 'win32';
-const args = windows ? ['--test', '--test-force-exit', '--test-timeout=120000', ...sorted] : ['--test', ...sorted];
-const result = spawnSync(process.execPath, args, { stdio: 'inherit', timeout: windows ? 900_000 : undefined });
-if (result.error) throw result.error;
-process.exitCode = result.status ?? 1;
+function run(args, timeout) {
+  const result = spawnSync(process.execPath, args, { stdio: 'inherit', timeout });
+  if (result.error) throw result.error;
+  return result.status ?? 1;
+}
+if (windows) {
+  const guard = resolve('packages/core/tests/snapshot/guard.test.mjs');
+  if (!sorted.includes(guard)) throw new Error('Snapshot guard tests not discovered');
+  const options = ['--test', '--test-force-exit', '--test-timeout=120000'];
+  const guardStatus = run([...options, guard], 300_000);
+  if (guardStatus !== 0) process.exitCode = guardStatus;
+  else process.exitCode = run([...options, '--test-concurrency=8', ...sorted.filter((file) => file !== guard)], 1_800_000);
+} else {
+  process.exitCode = run(['--test', ...sorted]);
+}
