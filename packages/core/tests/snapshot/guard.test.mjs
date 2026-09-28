@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { mkdtemp, mkdir, writeFile, rm, symlink, rename } from 'node:fs/promises';
+import { mkdtemp, mkdir, realpath, writeFile, rm, symlink, rename } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test, { after } from 'node:test';
@@ -15,7 +15,7 @@ after(() => rmSync(gitConfigRoot, { recursive: true, force: true }));
 const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: emptyGitConfig };
 function git(root, ...args) { return execFileSync('git', ['-C', root, ...args], { env, encoding: 'utf8' }).trim(); }
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dhr-snapshot-guard-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-snapshot-guard-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const dir of ['src', 'notes', 'docs/plan/tasks', 'docs/plan/archive/M1']) await mkdir(join(root, dir), { recursive: true });
   for (const [path, text] of Object.entries({ 'AGENTS.md': '# Agents\n', 'HARNESS.md': '# Harness\n', 'docs/GIT_WORKFLOW.md': '# Workflow\n', 'docs/plan/Dashboard.md': '# Dashboard\n', 'docs/plan/tasks/A.md': '# Task A\n', 'src/a.txt': 'initial\n', 'notes/user.txt': 'original\n' })) await writeFile(join(root, path), text);
