@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { canonicalJson } from './input.js';
 
 /** Golden snapshots change only when the caller explicitly opts into an update. */
-export async function compareGolden(path: string, snapshot: unknown, options: { update?: boolean } = {}): Promise<void> {
+export async function compareGolden(path: string | URL, snapshot: unknown, options: { update?: boolean } = {}): Promise<void> {
   const expected = `${canonicalJson(snapshot)}\n`;
   if (options.update === true) {
     await writeFile(path, expected, { encoding: 'utf8' });

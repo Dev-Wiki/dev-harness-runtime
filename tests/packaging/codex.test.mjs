@@ -68,7 +68,7 @@ test('Codex package has one native plugin, one marketplace source, three Skills 
   const second = (await value.packager.pack(value.generated, value.input))[0];
   assert.deepEqual(second, first);
   assert.deepEqual(await readFile(join(value.root, 'dist', first.file)), firstBytes);
-  await compareGolden(new URL('golden/codex.json', import.meta.url).pathname, {
+  await compareGolden(new URL('golden/codex.json', import.meta.url), {
     paths: value.generated.files.map((file) => file.path), artifact: { file: first.file, sha256: first.sha256 },
   }, { update: process.env.DHR_UPDATE_GOLDEN === '1' });
   const manifest = JSON.parse(value.files.get(manifestPath));

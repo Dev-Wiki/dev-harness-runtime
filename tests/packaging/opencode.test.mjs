@@ -73,7 +73,7 @@ test('OpenCode npm and local variants have distinct native layouts and determini
   for (const [index, artifact] of first.entries()) {
     assert.deepEqual(await readFile(join(value.root, 'dist', artifact.file)), firstBytes[index]);
   }
-  await compareGolden(new URL('golden/opencode.json', import.meta.url).pathname, {
+  await compareGolden(new URL('golden/opencode.json', import.meta.url), {
     paths: value.generated.files.map((file) => file.path),
     artifacts: first.map((artifact) => ({ file: artifact.file, sha256: artifact.sha256 })),
   }, { update: process.env.DHR_UPDATE_GOLDEN === '1' });

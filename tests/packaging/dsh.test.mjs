@@ -69,7 +69,7 @@ test('DSH rc.1 bundle is locked to actual rc.2 components and packs a stable tgz
   const bytes = await readFile(join(value.root, 'dist', first.file));
   assert.deepEqual((await value.packager.pack(value.generated, value.input))[0], first);
   assert.deepEqual(await readFile(join(value.root, 'dist', first.file)), bytes);
-  await compareGolden(new URL('golden/dsh.json', import.meta.url).pathname, {
+  await compareGolden(new URL('golden/dsh.json', import.meta.url), {
     paths: value.generated.files.map((file) => file.path), artifact: { file: first.file, sha256: first.sha256 },
   }, { update: process.env.DHR_UPDATE_GOLDEN === '1' });
 });
