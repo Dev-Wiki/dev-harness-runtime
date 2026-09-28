@@ -106,7 +106,7 @@ test('Codex read policy file is private and removed after one invocation', async
   let path;
   await withCodexReadPolicy(policy(root, [{ path: 'src/a.ts', sha256: digest('HELLO') }]), async (value) => {
     path = value;
-    assert.equal((await stat(value)).mode & 0o077, 0);
+    if (process.platform !== 'win32') assert.equal((await stat(value)).mode & 0o077, 0);
     assert.equal(JSON.parse(await readFile(value, 'utf8')).files[0].path, 'src/a.ts');
   });
   assert.equal(existsSync(path), false);
