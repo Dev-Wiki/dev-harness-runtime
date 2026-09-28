@@ -5,7 +5,7 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 / M2 已收口，Codex K5 与 DSH K6 均已验收；M3 的共享 K10-B、Codex K5-P、DSH K6-P、Cursor K7、OpenCode K8 与 Portable K10-G 已验收；Antigravity K9 已完成离线实现，真实宿主会话调用仍缺。
-- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成；Codex 与 DSH 自动 Executor、包内 CLI、隔离 Worker、独立验收和逐任务提交已取得 WSL2 证据，Codex 在原生 Windows 完成安装与 Skill 自检。OpenCode 和 Cursor 的会话 Skill 调用已验；Antigravity 会话调用、原生 OS Runtime CI 和对外分发许可仍待落实。
+- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成，Ubuntu / Windows 原生 Runtime CI 与本地打包 dry-run 均通过；Codex 与 DSH 自动 Executor、包内 CLI、隔离 Worker、独立验收和逐任务提交已取得 WSL2 证据，Codex 在原生 Windows 完成安装与 Skill 自检。OpenCode 和 Cursor 的会话 Skill 调用已验；Antigravity 会话调用依用户要求暂停，对外分发许可仍待落实。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
@@ -23,11 +23,11 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5、K6 已完成并归档；两个包内 Executor 的原始 Worker 与合成三任务链通过 |
-| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 六平台九产物、本地 dry-run 和矩阵通过；K7 / K8 已完成，K9 宿主调用与 K10 完整验收未完成 |
+| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 六平台九产物、本地与原生 Ubuntu / Windows CI dry-run 和矩阵通过；K7 / K8 已完成，K9 宿主调用与 K10 完整验收未完成 |
 
 ## 3. 当前工作顺序
 
-用户已完成 Codex 插件安装体验；K6 DSH Executor、K7 Cursor CLI 和 K8 OpenCode 已完成，K9 按用户要求暂停。K10 已完成本地九产物 dry-run 与矩阵，完整 MVP 验收仍依赖 K9 宿主证据及原生 CI。
+用户已完成 Codex 插件安装体验；K6 DSH Executor、K7 Cursor CLI 和 K8 OpenCode 已完成，K9 按用户要求暂停。K10 已完成本地九产物 dry-run、矩阵与 Ubuntu / Windows 原生 CI，完整 MVP 验收仍依赖 K9 宿主证据。
 
 ## 4. 活跃任务
 
@@ -36,14 +36,14 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | 任务 | 优先级 | 状态 | 依赖 | 下一步 / 阻塞 | 详情 |
 |---|---|---|---|---|---|
 | **K9 — Antigravity Plugin 与 Skills 打包** | 🟡 P1 | ⏸️ 用户暂停 | [R1](archive/M0/R1.md)、[K10-B](archive/M3/K10-B.md) | 三包离线与全局原生安装链通过；项目插件静态校验通过，`agy` 会话在加载前要求登录；依用户要求暂停，详见[证据](../verification/K9.md) | [执行包](tasks/K9.md) |
-| **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 🚧 开发中 | [K5](archive/M2/K5.md)、[K6](archive/M2/K6.md)、[K7](archive/M3/K7.md)、[K8](archive/M3/K8.md)、[K9](tasks/K9.md)、[K10-G](archive/M3/K10-G.md) | 九包双构建摘要一致、本机全量与可选 DSH 测试通过；K9 宿主链按用户要求暂停，原生 CI 未验，详见[证据](../verification/K10.md) | [执行包](tasks/K10.md) |
+| **K10 — 统一验证、能力矩阵与本地产物收口** | 🟡 P1 | 🚧 开发中 | [K5](archive/M2/K5.md)、[K6](archive/M2/K6.md)、[K7](archive/M3/K7.md)、[K8](archive/M3/K8.md)、[K9](tasks/K9.md)、[K10-G](archive/M3/K10-G.md) | 九包双构建、本机全量、Ubuntu / Windows 原生 CI 与两端打包 dry-run 通过；K9 宿主链按用户要求暂停，详见[证据](../verification/K10.md) | [执行包](tasks/K10.md) |
 | **F1 — 原生安装机制的统一入口** | 🟢 P2 | 📋 远期 | [K10](tasks/K10.md) | 远期候选；未进入当前里程碑 | [执行包](tasks/F1.md) |
 
 ## 5. 共享验证基线
 
 执行节奏：每个任务先运行类型检查、lint 与本次影响范围的测试，通过后提交并继续；里程碑收口时运行 `pnpm verify` 全量回归。公共接口、依赖或跨模块行为变更按影响范围扩大测试；不要求每个任务无条件重复全量。命令定义仍以 HARNESS 为准。
 
-K4 / M1 全量 `pnpm verify` 已通过：496 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 空 store 离线安装；详见 [K4 记录](../verification/K4.md)。当前 K10 本机全量再次通过：660 项 Node 测试中 654 通过、0 失败、6 项按默认配置跳过；六项 DSH 宿主测试单独启用后 6/6 通过，另有 22 份 Schema、10 项 fixture 和 CLI 包检查通过。详见 [K10 记录](../verification/K10.md) 和 [HARNESS](../../HARNESS.md)。共享流水线与 `dhr build|validate|pack` 的可信接口已由 K10-B 验证；六平台九包的两次本地 dry-run 摘要一致。当前已确认的本地命令为：
+K4 / M1 全量 `pnpm verify` 已通过：496 项 Node 测试、21 份 Schema、10 项平台 fixture 与 CLI 空 store 离线安装；详见 [K4 记录](../verification/K4.md)。当前 K10 本机全量再次通过：661 项 Node 测试中 655 通过、0 失败、6 项按默认配置跳过；六项 DSH 宿主测试单独启用后 6/6 通过，另有 22 份 Schema、10 项 fixture 和 CLI 包检查通过。详见 [K10 记录](../verification/K10.md) 和 [HARNESS](../../HARNESS.md)。共享流水线与 `dhr build|validate|pack` 的可信接口已由 K10-B 验证；六平台九包的两次本地 dry-run 摘要一致。当前已确认的本地命令为：
 
 ```bash
 # 工作目录：dev-harness-runtime；先将 DHR_PROTOCOL_CHECKOUT 设为匹配 protocol-lock.json 的独立 checkout
@@ -55,7 +55,7 @@ pnpm dhr release --dry-run --protocol-checkout "$DHR_PROTOCOL_CHECKOUT"
 pnpm matrix:check
 ```
 
-- V0 已建立固定工具链、workspace、CLI 骨架和 HARNESS；Windows / 原生 Linux CI 已配置但未实跑。build 编译并生成独立 CLI bundle；K10 已接通六平台九产物本地 dry-run 与矩阵，见 [验证记录](../verification/K10.md)。
+- V0 已建立固定工具链、workspace、CLI 骨架和 HARNESS；Ubuntu / Windows 原生 CI 已实跑通过。build 编译并生成独立 CLI bundle；K10 已接通六平台九产物本地与原生 CI dry-run 和矩阵，见 [验证记录](../verification/K10.md)。
 - K5-P 的兼容 Codex 包通过本机原生 Marketplace 安装、发现、包内 CLI 调用和卸载；K5 另以 Codex 0.155.1 新会话显式调用 `$dev-harness:status`。见 [验证记录](../verification/K5-P.md)。
 - K6-P 阶段的 DSH 包通过本机 rc.1 启动器隔离 profile 安装 / 卸载和 rc.2 CommandRuntime；K6 后续完成自动 Executor，见 [验证记录](../verification/K6-P.md)、[K6](../verification/K6.md)。
 - 公共验证覆盖 task selector、完整内容快照、CAS / 锁、crash / resume、授权与结果独立校验；Windows / Linux / WSL 分别报告。
@@ -109,8 +109,8 @@ pnpm matrix:check
 | G4 持久性与恢复 | R0、K1、K3-L、K3-R | 设计已解决 | 实现锁 / CAS / pending intent / reconcile 与进程崩溃测试；不泛化断电保证 |
 | G5 DSH 等价范围 | R0、K6 | 用户已确认；映射清单与原始 Worker 三任务迁移验收已完成 | 旧流程与旧 Run 留在旧实现，版本升级后重新探测 |
 | G6 平台格式与能力 | R1、各平台任务 | 六类 fixture、六平台九包静态与 golden 已验证；Codex / DSH Executor 已通过，Cursor / OpenCode 会话 Skill 调用与 Antigravity 原生安装链已有证据 | 待用户恢复 K9 后完成 Antigravity 模型会话调用及独立能力证据 |
-| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享来源锁、六平台本地 dry-run、九包摘要与矩阵已验证；分发许可材料仍缺 | 对外分发前取得项目许可与随包声明，重验已提交无漂移来源 |
-| G8 实测环境与证据 | R1、K3-L、K5、K6、K7、K10 | WSL2 Codex / DSH Executor、Cursor CLI Skill 调用通过；Antigravity 有部分原生安装链；原生 OS CI 与 Antigravity 会话未验证 | OS / 宿主实际可运行且对应验收有可追溯证据 |
+| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享来源锁、六平台本地与 Ubuntu / Windows 原生 CI dry-run、九包摘要与矩阵已验证；分发许可材料仍缺 | 对外分发前取得项目许可与随包声明，重验已提交无漂移来源 |
+| G8 实测环境与证据 | R1、K3-L、K5、K6、K7、K10 | WSL2 Codex / DSH Executor、Cursor CLI Skill 调用和 Ubuntu / Windows 原生 CI 通过；Antigravity 有部分原生安装链，模型会话按用户要求暂停 | 用户恢复 K9 后完成宿主会话验收与证据 |
 
 ## 8. 验收口径
 
@@ -130,4 +130,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-28（K7 Cursor Agent CLI Skill 调用完成；K9 依用户要求暂停）*
+*最后更新：2026-09-28（Ubuntu / Windows 原生 CI 与九包 dry-run 通过；K9 依用户要求暂停）*
