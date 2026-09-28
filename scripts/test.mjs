@@ -14,24 +14,8 @@ function collect(path) {
 for (const root of ['packages', 'build', 'tests/integration', 'tests/contract', 'tests/packaging']) collect(root);
 if (files.length === 0) throw new Error('No tests discovered');
 const sorted = files.sort();
-if (process.platform === 'win32') {
-  // A single Windows test process can otherwise hold the entire suite open
-  // indefinitely. Run each file separately so the failing file is visible.
-  const failures = [];
-  for (const file of sorted) {
-    console.log(`Testing ${file}`);
-    const result = spawnSync(process.execPath, ['--test', '--test-force-exit', file], { stdio: 'inherit', timeout: 120_000 });
-    if (result.error || result.status !== 0) {
-      failures.push(file);
-      console.error(`Test file failed: ${file}${result.error ? ` (${result.error.message})` : ''}`);
-    }
-  }
-  if (failures.length) {
-    console.error(`Failed test files (${failures.length}):\n${failures.join('\n')}`);
-    process.exitCode = 1;
-  }
-} else {
-  const result = spawnSync(process.execPath, ['--test', ...sorted], { stdio: 'inherit' });
-  if (result.error) throw result.error;
-  process.exitCode = result.status ?? 1;
-}
+const windows = process.platform === 'win32';
+const args = windows ? ['--test', '--test-force-exit', '--test-timeout=120000', ...sorted] : ['--test', ...sorted];
+const result = spawnSync(process.execPath, args, { stdio: 'inherit', timeout: windows ? 900_000 : undefined });
+if (result.error) throw result.error;
+process.exitCode = result.status ?? 1;
