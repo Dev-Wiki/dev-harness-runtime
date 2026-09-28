@@ -17,11 +17,18 @@ const sorted = files.sort();
 if (process.platform === 'win32') {
   // A single Windows test process can otherwise hold the entire suite open
   // indefinitely. Run each file separately so the failing file is visible.
+  const failures = [];
   for (const file of sorted) {
     console.log(`Testing ${file}`);
     const result = spawnSync(process.execPath, ['--test', file], { stdio: 'inherit', timeout: 300_000 });
-    if (result.error) throw new Error(`Test file did not finish: ${file}`, { cause: result.error });
-    if (result.status !== 0) { process.exitCode = result.status ?? 1; break; }
+    if (result.error || result.status !== 0) {
+      failures.push(file);
+      console.error(`Test file failed: ${file}${result.error ? ` (${result.error.message})` : ''}`);
+    }
+  }
+  if (failures.length) {
+    console.error(`Failed test files (${failures.length}):\n${failures.join('\n')}`);
+    process.exitCode = 1;
   }
 } else {
   const result = spawnSync(process.execPath, ['--test', ...sorted], { stdio: 'inherit' });
