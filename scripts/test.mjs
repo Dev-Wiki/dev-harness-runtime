@@ -20,7 +20,7 @@ if (process.platform === 'win32') {
   const failures = [];
   for (const file of sorted) {
     console.log(`Testing ${file}`);
-    const result = spawnSync(process.execPath, ['--test', file], { stdio: 'inherit', timeout: 300_000 });
+    const result = spawnSync(process.execPath, ['--test', file], { stdio: 'inherit', timeout: 120_000 });
     if (result.error || result.status !== 0) {
       failures.push(file);
       console.error(`Test file failed: ${file}${result.error ? ` (${result.error.message})` : ''}`);
