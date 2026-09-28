@@ -61,6 +61,14 @@ linuxTest('external Git helper configurations and required signing fail before s
   assert.equal(await git(context.root, 'status', '--porcelain'), '');
 });
 
+linuxTest('user-level Git helpers remain rejected with system configuration disabled', async (t) => {
+  const context = await setupRecovery(t, { commit: 'task' });
+  await git(context.root, 'config', '--global', 'filter.global.clean', 'touch MUST-NOT-EXECUTE');
+  try { await fails(assertSupportedCommitProject(context.root, gitBinary), 'UNSUPPORTED_GIT_HELPER'); }
+  finally { await git(context.root, 'config', '--global', '--unset', 'filter.global.clean'); }
+  await assertSupportedCommitProject(context.root, gitBinary);
+});
+
 linuxTest('post-index-change and reference-transaction hooks are refused without running or disabling them', async (t) => {
   const context = await setupRecovery(t, { commit: 'task' });
   const hooks = join(context.project.privateGitDir, 'hooks');

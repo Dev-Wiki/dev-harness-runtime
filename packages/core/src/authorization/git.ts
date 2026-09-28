@@ -60,7 +60,7 @@ interface GitResult { stdout: Buffer; code: number }
 /** Only trusted Git is executed; no inherited environment, shell, executable search or interactive input. */
 async function git(binary: string, root: string, args: string[], options: { env?: NodeJS.ProcessEnv; allowedExit?: number[] } = {}): Promise<GitResult> {
   await checkedBinary(binary);
-  const env: NodeJS.ProcessEnv = { PATH: `${dirname(binary)}:/usr/bin:/bin`, HOME: homedir(), LANG: 'C', LC_ALL: 'C',
+  const env: NodeJS.ProcessEnv = { PATH: `${dirname(binary)}:/usr/bin:/bin`, HOME: homedir(), LANG: 'C', LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1',
     GIT_TERMINAL_PROMPT: '0', GIT_NO_REPLACE_OBJECTS: '1', GIT_NO_LAZY_FETCH: '1', GIT_OPTIONAL_LOCKS: '0', ...options.env };
   try {
     return await new Promise<GitResult>((resolveResult, reject) => {
