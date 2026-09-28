@@ -5,7 +5,7 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 / M2 / M3 已收口。K9 的真实宿主会话调用经用户明确豁免，仍属未实测；K10 的本地产物与验证验收已完成。
-- **当前瓶颈**：六平台九个本地产物及能力矩阵已生成，Ubuntu / Windows 原生 Runtime CI 与本地打包 dry-run 均通过；Codex 与 DSH 自动 Executor、包内 CLI、隔离 Worker、独立验收和逐任务提交已取得 WSL2 证据，Codex 在原生 Windows 完成安装与 Skill 自检。OpenCode 和 Cursor 的会话 Skill 调用已验；Antigravity 会话调用按用户决定豁免。MIT 许可和第三方声明已备齐，GitHub Release 尚待最终提交来源、CI 与九包门禁。
+- **发布状态**：六平台九个产物已随 [v0.1.0 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.0) 发布；MIT 许可和第三方声明随包，远端九个附件的大小与 SHA-256 均匹配最终 manifest。最终源码的 Ubuntu / Windows 原生 CI 四项 job 和发布工作流通过，见[发布验证记录](../verification/RELEASE-v0.1.0.md)。Codex / DSH 自动 Executor、Cursor / OpenCode 会话 Skill 调用已有各自证据；Antigravity 会话调用按用户决定豁免，仍未实测。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
@@ -23,11 +23,11 @@ MVP 包含 Codex / DSH Executor 与五平台打包，不包含默认并行、跳
 | M0 资料与工程基线 | 公共决策、平台资料基线、可运行 workspace | R0 / R1 / V0 已归档；工程门槛已完成 |
 | M1 公共 Runtime | Fake Executor 下三任务、漂移、授权、中断恢复闭环 | 已收口；见 [M1 归档](archive/M1/README.md)，496 项 Node 回归零跳过 |
 | M2 Codex / DSH | 同一 Core 上的独立 Session、共享契约与迁移等价证据 | K5、K6 已完成并归档；两个包内 Executor 的原始 Worker 与合成三任务链通过 |
-| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 已收口；六平台九产物、本地与原生 Ubuntu / Windows CI dry-run 和矩阵通过；K9 宿主会话调用获用户豁免 |
+| M3 多平台分发 | 五平台与 Portable 静态验证、golden、能力矩阵和本地 dry-run | 已收口并发布 v0.1.0；六平台九产物、Ubuntu / Windows CI 和矩阵通过；K9 宿主会话调用获用户豁免 |
 
 ## 3. 当前工作顺序
 
-用户已完成 Codex 插件安装体验；M3 开发与本地验收已完成。K9 的会话调用按用户决定豁免，不能记为实测通过。用户已选择 MIT 许可和 GitHub Release 九个产物；下一步验证最终提交、原生 CI 和发布门禁，再推送 annotated tag。
+用户已完成 Codex 插件安装体验；M3 开发、本地验收和 GitHub Release v0.1.0 均已完成。K9 的会话调用按用户决定豁免，不能记为实测通过。当前没有 M3 活跃任务；F1 是远期候选，不属于本轮发布范围。
 
 ## 4. 活跃任务
 
@@ -107,7 +107,7 @@ pnpm matrix:check
 | G4 持久性与恢复 | R0、K1、K3-L、K3-R | 设计已解决 | 实现锁 / CAS / pending intent / reconcile 与进程崩溃测试；不泛化断电保证 |
 | G5 DSH 等价范围 | R0、K6 | 用户已确认；映射清单与原始 Worker 三任务迁移验收已完成 | 旧流程与旧 Run 留在旧实现，版本升级后重新探测 |
 | G6 平台格式与能力 | R1、各平台任务 | 六类 fixture、六平台九包静态与 golden 已验证；Codex / DSH Executor 已通过，Cursor / OpenCode 会话 Skill 调用与 Antigravity 原生安装链已有证据 | Antigravity 模型会话调用经用户豁免，能力仍记为未实测；若将来宣称会话能力须补独立证据 |
-| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享来源锁、六平台本地与 Ubuntu / Windows 原生 CI dry-run、九包摘要与矩阵已验证；MIT 项目许可和第三方声明已备齐并纳入九包 | 对外发布前重验已提交无漂移来源、版本、许可文本与九包摘要 |
+| G7 构建与分发规则 | R0、K1、K10-B、K10 | 共享来源锁、Ubuntu / Windows 原生 CI dry-run、MIT 许可和第三方声明、已提交来源及九包摘要门禁全部通过；v0.1.0 已发布 | 后续版本仍须重新运行来源、许可、版本与九包摘要门禁 |
 | G8 实测环境与证据 | R1、K3-L、K5、K6、K7、K10 | WSL2 Codex / DSH Executor、Cursor CLI Skill 调用和 Ubuntu / Windows 原生 CI 通过；Antigravity 有原生安装链，模型会话按用户决定豁免 | 后续如需宣称 Antigravity 会话调用已验，须补真实会话证据 |
 
 ## 8. 验收口径
@@ -128,4 +128,4 @@ pnpm matrix:check
 
 ---
 
-*最后更新：2026-09-28（M3 已完成；MIT 许可与九包分发声明已备齐，待 GitHub Release 门禁）*
+*最后更新：2026-09-28（M3 已完成并发布 v0.1.0；Antigravity 会话调用经用户豁免）*
