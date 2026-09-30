@@ -23,7 +23,7 @@ test('CLI help/version succeed while unavailable commands fail', () => {
     assert.ifError(result.error);
     const success = args.length < 2 && args[0] !== 'run';
     assert.equal(result.status, success ? 0 : 2, result.stderr);
-    if (args[0] === '--version') assert.equal(result.stdout, '0.1.0\n');
+    if (args[0] === '--version') assert.equal(result.stdout, '0.1.1\n');
     if (args[0] === '--help') assert.match(success ? result.stdout : result.stderr, /dhr/);
   }
 });

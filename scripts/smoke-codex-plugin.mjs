@@ -80,7 +80,7 @@ try {
   assert.equal(commands.some((event) => /\bdhr\s+(?:run|resume|reconcile)\b/u.test(JSON.stringify(event))), false);
   const checked = JSON.parse(await readFile(finalPath, 'utf8'));
   assert.equal(checked.skill, 'dev-harness:run');
-  assert.equal(checked.cliVersion, '0.1.0');
+  assert.equal(checked.cliVersion, '0.1.1');
   assert.equal(checked.bundledLauncher, true);
   process.stdout.write(`${JSON.stringify({ status: 'passed', pluginId: installed.pluginId, version: installed.version,
     explicitSkill: answer.skill, authoritativeState: true, forbiddenCommands: true,

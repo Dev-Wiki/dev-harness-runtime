@@ -32,7 +32,7 @@ try {
     const result = spawnSync(process.execPath, [entry, flag], { cwd: dirname(scratch), encoding: 'utf8' });
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, flag === '--help' ? /用法: dhr/ : /^0\.1\.0\n$/);
+    assert.match(result.stdout, flag === '--help' ? /用法: dhr/ : /^0\.1\.1\n$/);
   }
   assert.ok(readdirSync(join(scratch, 'node_modules/.bin')).some((name) => name === 'dhr' || name === 'dhr.cmd'));
   const fixtureRoot = join(scratch, 'project'); mkdirSync(fixtureRoot);

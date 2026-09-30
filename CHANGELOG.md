@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.1.1 — 2026-09-30
+
+### 修复（Fixed）
+
+- 修复 DSH 0.2.0-rc.2 上的插件安装不兼容：`@deepseek-ai/dsh-commands` 与 `@deepseek-ai/dsh-tools` 的 peer 声明由精确 `0.1.5-rc.2` 改为 `^0.2.0-rc.2`，Cordis 按实际解析记为 `~4.0.4`。DSH 只把 `@deepseek-ai/dsh` 与 `@deepseek-ai/dsh-*` 的 peer 范围与运行时版本比较，原精确声明在 0.2.0-rc.2 上被判定为不兼容并拒绝安装。
+- 适配 DSH 0.2.0-rc.2 的 Session v4 格式：Session reader 接受 `version: 4`，事件解码器按 v4 表示解析 `tool/result`（`role: "tool"` 直连消息与 `message.toolCallId`），不再依赖已退役的 `tool-result` 包装块。
+
+### 变更（Changed）
+
+- DSH 适配目标基线由 `0.1.5-rc.1` 迁移为 `0.2.0-rc.2`；构建目标、运行时门禁、宿主测试、fixture 与平台基线文档同步更新，并在真实 0.2.0-rc.2 上重新取得验证证据。
+
 ## v0.1.0 — 2026-09-28
 
 ### 新增（Added）

@@ -27,7 +27,7 @@ CI 的 `verify` 和 `package-dry-run` 已在 Ubuntu 与 Windows runner 分别通
 
 ## GitHub Release 发布门禁
 
-项目采用 [MIT 许可](../LICENSE)。[第三方声明](../THIRD_PARTY_NOTICES.md)逐项保留进入 JavaScript bundle 的依赖许可文本；九个产物均内嵌两类文本合成的 `DISTRIBUTION_NOTICE.md`。源码、上游协议、版本与变更日志须已提交并无漂移。本地 dry-run 后运行 `node scripts/check-release.mjs v0.1.0`，它检查九个实际产物、许可文本和 manifest；`node scripts/release-notes.mjs v0.1.0` 从 [CHANGELOG](../CHANGELOG.md) 对应版本生成 tag 注释与发布说明。
+项目采用 [MIT 许可](../LICENSE)。[第三方声明](../THIRD_PARTY_NOTICES.md)逐项保留进入 JavaScript bundle 的依赖许可文本；九个产物均内嵌两类文本合成的 `DISTRIBUTION_NOTICE.md`。源码、上游协议、版本与变更日志须已提交并无漂移。本地 dry-run 后运行 `node scripts/check-release.mjs v0.1.1`，它检查九个实际产物、许可文本和 manifest；`node scripts/release-notes.mjs v0.1.1` 从 [CHANGELOG](../CHANGELOG.md) 对应版本生成 tag 注释与发布说明。
 
 [发布工作流](../.github/workflows/release.yml)在 tag 推送后于 Ubuntu runner 重新安装锁定依赖，运行协议校验、完整验证、六平台九产物 dry-run、矩阵检查及发布门禁，再用 GitHub CLI 创建 Release 并上传 manifest 中的九个文件。工作流不发布 npm 包或平台 Marketplace，也不把 Antigravity 未实测的会话调用写成通过。失败时不应把本地历史摘要当作已发布产物；以最终 Release 附件和工作流结果为准。
 

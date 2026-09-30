@@ -76,7 +76,7 @@ test('Worker help, version, status and other nonmutating input retain existing b
     assert.equal(result.status, supported ? 0 : 2, result.stderr);
     assert.doesNotMatch(result.stderr, /AUTHORIZATION_VIOLATION/u);
     if (supported) assert.equal(result.stderr, '');
-    if (['--version', '-v'].includes(args[0])) assert.equal(result.stdout, '0.1.0\n');
+    if (['--version', '-v'].includes(args[0])) assert.equal(result.stdout, '0.1.1\n');
   }
 });
 
