@@ -120,7 +120,7 @@ export async function createPackagedDshServices(options: PackagedDshOptions): Pr
       execute(dshEntry, ['--version'], { encoding: 'utf8', timeout: 10_000 }),
       execute(gitBinary, ['--version'], { encoding: 'utf8', timeout: 10_000 }),
     ]);
-    if (version.trim() !== '0.1.5-rc.1') missing('DSH launcher version differs from the verified rc.1 target');
+    if (version.trim() !== '0.2.0-rc.2') missing('DSH launcher version differs from the verified 0.2.0-rc.2 target');
     const hostHashes = await Promise.all([dshEntry, bubblewrap, nodeBinary, gitBinary]
       .map(async (path) => digest(await readFile(path))));
     const configHash = digest(JSON.stringify({ source: source.sourceHash, dshEntry, bubblewrap, nodeBinary,

@@ -79,7 +79,7 @@ async function hostInputs(input: DshConfinedSessionInput): Promise<{ packageRoot
   let host: unknown; let installed: unknown;
   try { host = JSON.parse(pkg); installed = JSON.parse(profile); }
   catch { return fail('PROVIDER_UNAVAILABLE', 'DSH package or profile metadata is malformed'); }
-  if (!host || typeof host !== 'object' || !('version' in host) || host.version !== '0.1.5-rc.1'
+  if (!host || typeof host !== 'object' || !('version' in host) || host.version !== '0.2.0-rc.2'
     || !installed || typeof installed !== 'object' || !('dependencies' in installed)
     || !installed.dependencies || typeof installed.dependencies !== 'object'
     || Object.keys(installed.dependencies).join(',') !== 'dev-harness-runtime'

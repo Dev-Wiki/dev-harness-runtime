@@ -10,7 +10,7 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 
 - 项目与仓库名：`dev-harness-runtime`
 - CLI：`dhr`
-- DSH 适配目标：`0.1.5-rc.1`
+- DSH 适配目标：`0.2.0-rc.2`
 - Run 状态根：`$(git rev-parse --git-path dev-harness-runtime)/runs/`
 - 每个 Run 的唯一权威状态文件：`<run-id>/run.json`
 

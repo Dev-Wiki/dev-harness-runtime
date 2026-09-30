@@ -8,7 +8,7 @@ Runtime 使用 Planning Task 模型执行任务，公共 Core 承担通用运行
 
 Runtime 不读取或自动转换历史 Run。旧 Run schema v5 不作为新协议 v1 的早期版本，不提供原地覆盖、复制目录后续跑或自动导入。
 
-新 DSH Adapter 的目标宿主为 `0.1.5-rc.1`，依据用户提供的本机版本输出。旧 `0.1.0-rc.8` 只用于历史行为对照；所有公开 API、组件依赖、安装和运行能力必须在新目标版本重新取得证据。
+新 DSH Adapter 的目标宿主为 `0.2.0-rc.2`，依据本机桌面端运行时自报的 bundle 版本与官方 registry 中 `@deepseek-ai/dsh@0.2.0-rc.2` 的依赖声明。旧 `0.1.5-rc.1` 与 `0.1.0-rc.8` 只用于历史行为对照；所有公开 API、组件依赖、安装和运行能力必须在新目标版本重新取得证据。
 
 历史对照采用的源码提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`。以下旧入口与测试名仅为该基线的历史记录，不要求保留外部源码 checkout；当前实现与测试均以本仓库为准。选定旧测试 36/36、新 Core 对应专项在真实 bubblewrap 下 216/216 已分别执行，均无跳过。它们仍不能代替 DSH rc.1 Executor 等价证明。详见 [K6 当前验证](verification/K6.md)。
 
@@ -52,7 +52,7 @@ Runtime 不读取或自动转换历史 Run。旧 Run schema v5 不作为新协�
 - Cordis plugin 注入、注册和 lifecycle / disposer。
 - DSH Human Command、Agent / Session 创建、取消、等待静止、事件转换。
 - Workflow API 的宿主差异由 Adapter 评估；当前 Worker 作用域不暴露原生 Workflow 工具，Task 顺序和恢复由 Core 实现，不另建产品状态机。
-- DSH host detection、`0.1.5-rc.1` 能力探测、结构化结果翻译和 Session 身份证据。
+- DSH host detection、`0.2.0-rc.2` 能力探测、结构化结果翻译和 Session 身份证据。
 - Bundle / manifest、实际组件依赖和安装卸载机制。
 
 Adapter 不拥有自己的 Task 选择、Planning 状态、Snapshot 算法、Run Authorization、Recovery 或完整 Orchestrator。探测不能强制执行 Core 的权限边界时，不启用自动 Executor；不能用 prompt 约束代替宿主证明。
@@ -80,7 +80,7 @@ Adapter 不拥有自己的 Task 选择、Planning 状态、Snapshot 算法、Run
 
 ## 7. 适配验收与维护边界
 
-1. 公共 Fake Executor 契约先通过，再验证 DSH `0.1.5-rc.1` 的宿主集成。
+1. 公共 Fake Executor 契约先通过，再验证 DSH `0.2.0-rc.2` 的宿主集成。
 2. 同一三任务项目分别由 Codex / DSH 执行，Core 状态、授权、快照、恢复和收口门禁一致；每个 Task 的宿主 Session 身份不同。
 3. 覆盖 completed / blocked / failed / partial、取消、非法结果、越界变化、授权违规及恢复后 fresh session。
 4. 对照清单中的保持性质由本仓库 Core 与 Adapter 测试证明；不要求 Runtime 复现完整 Audit / QA 产品路径。

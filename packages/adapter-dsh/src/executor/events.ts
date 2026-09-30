@@ -13,7 +13,7 @@ type PendingCall = ({ kind: 'proposal' } & Proposal) | { kind: 'read'; name: str
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const receipt = (content: string): string => `PROPOSED ${createHash('sha256').update(content, 'utf8').digest('hex')}`;
 
-/** Decode one fresh DSH v3 Session. The trusted controller must retain the raw log separately. */
+/** Decode one fresh DSH v4 Session. The trusted controller must retain the raw log separately. */
 export class DshSessionEventDecoder {
   private nextSeq = 0;
   private turn: number | undefined;
@@ -56,7 +56,10 @@ export class DshSessionEventDecoder {
         const proposalCall = data.name === 'dhr_propose_text' || data.name === 'dhr_propose_delete';
         const readCall = ['dhr_identity', 'dhr_list_paths', 'dhr_read_text', 'dhr_search_text'].includes(String(data.name));
         const submitCall = data.name === 'dhr_submit_result';
-        if (this.submitted !== undefined) throw new DshEventError('INVALID_RESULT', 'DSH called a tool after submitting its result');
+        // A repeated submit is a side-effect-free retry; every other tool stays forbidden after an accepted result.
+        if (this.submitted !== undefined && !submitCall) {
+          throw new DshEventError('INVALID_RESULT', 'DSH called a tool after submitting its result');
+        }
         if (!proposalCall && !readCall && !submitCall) {
           throw new DshEventError('AUTHORIZATION_VIOLATION', 'DSH called an unbridged tool');
         }
@@ -73,6 +76,10 @@ export class DshSessionEventDecoder {
           let raw: unknown;
           try { raw = JSON.parse(args.result); }
           catch { raw = undefined; }
+          if (this.submitted !== undefined
+            && (raw === undefined || JSON.stringify(raw) !== JSON.stringify(this.submitted))) {
+            throw new DshEventError('INVALID_RESULT', 'DSH resubmitted a result that differs from the accepted one');
+          }
           this.pending.set(data.callId, { kind: 'submit', raw,
             digest: raw === undefined ? '' : createHash('sha256').update(JSON.stringify(raw)).digest('hex'),
             seq: value.seq as number, turn: this.turn, step: data.step as number });
@@ -98,33 +105,33 @@ export class DshSessionEventDecoder {
           content: data.name === 'dhr_propose_text' ? args.content as string : null,
           seq: value.seq as number, turn: this.turn, step: data.step as number });
       } else if (value.type === 'tool/result') {
-        if (this.turn === undefined || this.ended || data.turn !== this.turn || !record(data.message)
-          || !Array.isArray(data.message.content) || data.message.content.length !== 1) {
+        // V4 lifts a tool result into a tool-role message; the retired `tool-result` wrapper is refused.
+        const message: unknown = data.message;
+        if (this.turn === undefined || this.ended || data.turn !== this.turn || !record(message)
+          || message.role !== 'tool' || typeof message.toolCallId !== 'string'
+          || !Array.isArray(message.content) || message.content.length !== 1) {
           throw new DshEventError('INVALID_RESULT', 'DSH tool result is outside the fresh turn');
         }
-        const block: unknown = data.message.content[0];
-        if (!record(block) || block.type !== 'tool-result' || typeof block.toolCallId !== 'string') {
-          throw new DshEventError('INVALID_RESULT', 'DSH tool result block is malformed');
-        }
-        const call = this.pending.get(block.toolCallId);
+        const toolCallId = message.toolCallId;
+        const block: unknown = message.content[0];
+        const call = this.pending.get(toolCallId);
         if (call === undefined || call.turn !== data.turn || call.step !== data.step
           || !Array.isArray(value.sourceEventSeqs) || value.sourceEventSeqs.length !== 1
           || value.sourceEventSeqs[0] !== call.seq
-          || !Array.isArray(block.content) || block.content.length !== 1 || !record(block.content[0])
-          || block.content[0].type !== 'text' || typeof block.content[0].text !== 'string') {
+          || !record(block) || block.type !== 'text' || typeof block.text !== 'string') {
           throw new DshEventError('INVALID_RESULT', 'DSH proposal receipt does not match its call');
         }
-        const response = block.content[0].text;
-        if (block.isError === true) {
+        const response = block.text;
+        if (message.isError === true) {
           if (!response.startsWith('Error: ') || Buffer.byteLength(response, 'utf8') > 4096) {
             throw new DshEventError('INVALID_RESULT', 'DSH failed tool receipt is malformed');
           }
-          this.pending.delete(block.toolCallId);
+          this.pending.delete(toolCallId);
           return;
         }
         if (call.kind === 'submit') {
           if (response.startsWith('INVALID_RESULT: ')) {
-            this.pending.delete(block.toolCallId);
+            this.pending.delete(toolCallId);
             return;
           }
           if (call.raw === undefined || response !== `SUBMITTED ${call.digest}`) {
@@ -148,7 +155,7 @@ export class DshSessionEventDecoder {
           if (!record(parsed)) throw new DshEventError('INVALID_RESULT', 'DSH read receipt is malformed');
           if (call.name === 'dhr_identity') this.identityReceipt = parsed;
         }
-        this.pending.delete(block.toolCallId);
+        this.pending.delete(toolCallId);
       } else if (value.type === 'assistant/message') {
         if (this.turn === undefined || this.ended || data.turn !== this.turn || !record(data.message)
           || data.message.role !== 'assistant' || !Array.isArray(data.message.content) || data.interrupted === true) {
@@ -166,10 +173,10 @@ export class DshSessionEventDecoder {
   }
 
   finish(request: TaskExecutionRequest, header: unknown): { sessionId: string; result: TaskExecutionResult } {
-    if (this.failed || !this.ended || this.finalText === undefined || !record(header) || header.version !== 3
+    if (this.failed || !this.ended || this.finalText === undefined || !record(header) || header.version !== 4
       || typeof header.id !== 'string' || !/^session-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(header.id)
       || header.cwd !== request.repoRoot || header.isSeeded !== false || header.parentSession !== undefined) {
-      throw new DshEventError('INVALID_RESULT', 'DSH did not provide one fresh, complete Session');
+      throw new DshEventError('INVALID_RESULT', 'DSH did not provide one fresh, complete v4 Session');
     }
     if (this.identityReceipt && (this.identityReceipt.runId !== request.runId
       || this.identityReceipt.taskId !== request.taskId || this.identityReceipt.attempt !== request.attempt

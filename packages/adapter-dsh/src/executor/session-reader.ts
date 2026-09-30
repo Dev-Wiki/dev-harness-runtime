@@ -27,8 +27,8 @@ export async function readFreshDshSession(input: { dshEntry: string; sessionsRoo
   try {
     const launcher: unknown = requireFromDsh('@deepseek-ai/dsh/package.json');
     const storage: unknown = requireFromDsh('@deepseek-ai/dsh-session-persistence-jsonl/package.json');
-    if (!launcher || typeof launcher !== 'object' || !('version' in launcher) || launcher.version !== '0.1.5-rc.1'
-      || !storage || typeof storage !== 'object' || !('version' in storage) || storage.version !== '0.1.5-rc.2') {
+    if (!launcher || typeof launcher !== 'object' || !('version' in launcher) || launcher.version !== '0.2.0-rc.2'
+      || !storage || typeof storage !== 'object' || !('version' in storage) || storage.version !== '0.2.0-rc.2') {
       throw new DshSessionReadError('CAPABILITY_MISSING', 'DSH Session package versions differ from the verified target');
     }
     cordisPath = requireFromDsh.resolve('@deepseek-ai/cordis');
@@ -49,18 +49,18 @@ export async function readFreshDshSession(input: { dshEntry: string; sessionsRoo
   const sessions = await backend.list();
   if (sessions.length !== 1 || !sessions[0] || sessions[0].header.cwd !== input.repoRoot
     || !/^session-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u.test(sessions[0].header.id)
-    || sessions[0].header.version !== 3 || sessions[0].header.isSeeded !== false
+    || sessions[0].header.version !== 4 || sessions[0].header.isSeeded !== false
     || sessions[0].header.parentSession !== undefined || !Number.isSafeInteger(sessions[0].sizeBytes)
     || (sessions[0].sizeBytes as number) > 32 * 1024 * 1024) {
-    throw new DshSessionReadError('INVALID_RESULT', 'DSH store does not contain exactly one fresh bounded Session');
+    throw new DshSessionReadError('INVALID_RESULT', 'DSH store does not contain exactly one fresh bounded v4 Session');
   }
   const handle = await backend.open(sessions[0].header.id, 'read');
   try {
     const content = await handle.read();
     if (handle.header.id !== sessions[0].header.id || handle.header.cwd !== input.repoRoot
-      || handle.header.version !== 3 || handle.header.isSeeded !== false || handle.header.parentSession !== undefined
+      || handle.header.version !== 4 || handle.header.isSeeded !== false || handle.header.parentSession !== undefined
       || !Array.isArray(content.events) || content.events.length > 100_000) {
-      throw new DshSessionReadError('INVALID_RESULT', 'DSH Session changed or has unsupported content');
+      throw new DshSessionReadError('INVALID_RESULT', 'DSH Session changed or has unsupported v4 content');
     }
     return { header: structuredClone(handle.header), events: structuredClone(content.events) };
   } finally { await handle.close(); }

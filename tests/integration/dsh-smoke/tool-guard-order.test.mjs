@@ -7,9 +7,9 @@ import { apply, createDshWorkerPrecheck } from '../../../packages/adapter-dsh/di
 const dshEntry = process.env.DHR_TEST_DSH_ENTRY;
 
 test('DSH rc.2 runs pre-execute listeners before a denying tool guard',
-  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH rc.1 launcher' }, async () => {
+  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH 0.2.0-rc.2 launcher' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
-    assert.equal(requireFromDsh('@deepseek-ai/dsh-tools/package.json').version, '0.1.5-rc.2');
+    assert.equal(requireFromDsh('@deepseek-ai/dsh-tools/package.json').version, '0.2.0-rc.2');
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
     const { SystemPrompt } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-system-prompt')).href);
     const { ToolRuntime } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-tools')).href);
@@ -30,7 +30,7 @@ test('DSH rc.2 runs pre-execute listeners before a denying tool guard',
   });
 
 test('DSH rc.2 keeps DHR tools out of global scope and denies unbridged Worker calls',
-  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH rc.1 launcher' }, async () => {
+  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH 0.2.0-rc.2 launcher' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
     const { SystemPrompt } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-system-prompt')).href);
@@ -61,7 +61,7 @@ test('DSH rc.2 keeps DHR tools out of global scope and denies unbridged Worker c
   });
 
 test('DHR precheck short-circuits later rc.2 listeners for Worker tools',
-  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH rc.1 launcher' }, async () => {
+  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH 0.2.0-rc.2 launcher' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
     const { SystemPrompt } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-system-prompt')).href);
@@ -90,7 +90,7 @@ test('DHR precheck short-circuits later rc.2 listeners for Worker tools',
   });
 
 test('a later prepend listener still runs before the DHR precheck',
-  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH rc.1 launcher' }, async () => {
+  { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to the installed DSH 0.2.0-rc.2 launcher' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
     const { SystemPrompt } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-system-prompt')).href);

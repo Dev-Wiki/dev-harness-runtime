@@ -29,11 +29,14 @@ const sourceManifest = (input: PluginBuildInput) => {
     pluginBundle: { path: 'lib/index.js', sha256: input.adapterBundle.sha256 } };
 };
 
-/** The target host is rc.1, but these are its actually resolved public components. */
+/** The target host is 0.2.0-rc.2; these are its actually resolved public components.
+ *  DSH compares only `@deepseek-ai/dsh` and `@deepseek-ai/dsh-*` peers against its single
+ *  runtime version, so those two declare a caret range that admits the whole 0.2.0 rc line;
+ *  `@deepseek-ai/cordis` stays outside that check and tracks the resolved 4.0.4. */
 export const dshHostDependencies = Object.freeze({
-  '@deepseek-ai/cordis': '4.0.2',
-  '@deepseek-ai/dsh-commands': '0.1.5-rc.2',
-  '@deepseek-ai/dsh-tools': '0.1.5-rc.2',
+  '@deepseek-ai/cordis': '~4.0.4',
+  '@deepseek-ai/dsh-commands': '^0.2.0-rc.2',
+  '@deepseek-ai/dsh-tools': '^0.2.0-rc.2',
 });
 
 export const dshStaticSpec: StaticSpec = {
@@ -69,9 +72,9 @@ export const dshStaticSpec: StaticSpec = {
       } },
       peerDependencies: { type: 'object', additionalProperties: false,
         required: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-commands', '@deepseek-ai/dsh-tools'], properties: {
-          '@deepseek-ai/cordis': { type: 'string', const: '4.0.2' },
-          '@deepseek-ai/dsh-commands': { type: 'string', const: '0.1.5-rc.2' },
-          '@deepseek-ai/dsh-tools': { type: 'string', const: '0.1.5-rc.2' },
+          '@deepseek-ai/cordis': { type: 'string', const: '~4.0.4' },
+          '@deepseek-ai/dsh-commands': { type: 'string', const: '^0.2.0-rc.2' },
+          '@deepseek-ai/dsh-tools': { type: 'string', const: '^0.2.0-rc.2' },
         } },
     } }, versionFields: { version: 'releaseVersion' }, referenceFields: ['main'] }],
 };
@@ -124,7 +127,7 @@ export class DshPackager implements PluginPackager {
     files.set('lib/dhr.js', await readPinnedFile(this.#root, input.runtimeBundle.path));
     files.set(sourcePath, json(sourceManifest(input)));
     files.set('scripts/dhr.mjs', Buffer.from(launcher));
-    files.set('README.md', Buffer.from('# dev-harness-runtime DSH bundle\n\nInstall the local tgz into an isolated headless profile with `dsh plugin --profile headless add <absolute-tgz-path> --offline --ignore-scripts`. Use `dsh --profile headless --dump-config` to inspect the Cordis row and `dsh plugin --profile headless remove dev-harness-runtime` to uninstall. The bundled `node scripts/dhr.mjs` exposes the shared CLI; task execution requires DSH 0.1.5-rc.1, `DEEPSEEK_API_KEY`, a trusted bubblewrap provider and a real isolated-host capability probe. Each ready Task also needs a bounded `dhr-runtime` declaration in its Planning packet.\n\nThis is a local build; see DISTRIBUTION_NOTICE.md before any external distribution.\n'));
+    files.set('README.md', Buffer.from('# dev-harness-runtime DSH bundle\n\nInstall the local tgz into an isolated headless profile with `dsh plugin --profile headless add <absolute-tgz-path> --offline --ignore-scripts`. Use `dsh --profile headless --dump-config` to inspect the Cordis row and `dsh plugin --profile headless remove dev-harness-runtime` to uninstall. The bundled `node scripts/dhr.mjs` exposes the shared CLI; task execution requires DSH 0.2.0-rc.2, `DEEPSEEK_API_KEY`, a trusted bubblewrap provider and a real isolated-host capability probe. Each ready Task also needs a bounded `dhr-runtime` declaration in its Planning packet.\n\nThis is a local build; see DISTRIBUTION_NOTICE.md before any external distribution.\n'));
     files.set('DISTRIBUTION_NOTICE.md', await readPinnedFile(this.#root, input.metadata.licenseRefs[0]!.path));
     for (const skill of input.skills) files.set(skill.path, await readPinnedFile(this.#root, skill.path));
     return files;
@@ -189,5 +192,5 @@ export async function createDshBuildPipeline(root: string, protocolCheckout: str
   for (const entry of descriptors.list()) platforms.register(entry.id === id
     ? { ...entry, packager: new DshPackager(root) } : entry);
   return new BuildPipeline({ root, platforms, inputs: [input], specifications: { [id]: dshStaticSpec },
-    sourceRoots: { [input.protocolSource.repository]: protocolCheckout }, targetVersions: { [id]: 'dsh-0.1.5-rc.1' } });
+    sourceRoots: { [input.protocolSource.repository]: protocolCheckout }, targetVersions: { [id]: 'dsh-0.2.0-rc.2' } });
 }

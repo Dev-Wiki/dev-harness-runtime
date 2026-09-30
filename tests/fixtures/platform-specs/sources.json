@@ -33,7 +33,7 @@
     "codex-portable": "Agent Plugins 1.0.0 without OpenAI extensions",
     "codex-compat": "bundled plugin-creator validator snapshot",
     "cursor": "native reference, numeric format version not declared",
-    "dsh": "launcher 0.1.5-rc.1 / resolved components 0.1.5-rc.2",
+    "dsh": "launcher 0.2.0-rc.2 / resolved components 0.2.0-rc.2; cordis 4.0.4",
     "opencode-local": "documented export-function shape, API version not declared",
     "opencode-npm": "documented module + config shape, package not published",
     "antigravity": "Google tutorial / Agent Plugins 1.0.0"

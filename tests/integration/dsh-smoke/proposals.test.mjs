@@ -20,14 +20,14 @@ test('a DSH Session proposal receipt crosses into Core staging and matches decla
     entry(0, 'turn/start', { turn: 1 }),
     entry(1, 'tool/call', { turn: 1, step: 1, callId: 'call_1', name: 'dhr_propose_text',
       arguments: JSON.stringify({ path: 'src/a.ts', content: 'HELLO' }) }),
-    entry(2, 'tool/result', { turn: 1, step: 1, message: { content: [{ type: 'tool-result', toolCallId: 'call_1',
-      content: [{ type: 'text', text: `PROPOSED ${createHash('sha256').update('HELLO').digest('hex')}` }] }] } },
-    { sourceEventSeqs: [1] }),
+    entry(2, 'tool/result', { turn: 1, step: 1, message: { role: 'tool', toolCallId: 'call_1',
+      content: [{ type: 'text', text: `PROPOSED ${createHash('sha256').update('HELLO').digest('hex')}` }] } },
+    { sourceEventSeqs: [1], surfaceOp: 'append' }),
     entry(3, 'assistant/message', { turn: 1, step: 2, message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(result) }] } }),
     entry(4, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
   ];
   for (const event of events) decoder.consume(event);
-  const bound = decoder.finish(request, { version: 3, id: 'session-5a7765c8-28e3-4a74-8867-194ac73a6cf3',
+  const bound = decoder.finish(request, { version: 4, id: 'session-5a7765c8-28e3-4a74-8867-194ac73a6cf3',
     cwd: request.repoRoot, isSeeded: false });
   assert.equal(bound.result.outcome, 'blocked');
   const collector = new WorkerProposalCollector(request, before);
@@ -46,14 +46,14 @@ test('a DSH deletion receipt crosses into Core staging without deleting the proj
     entry(0, 'turn/start', { turn: 1 }),
     entry(1, 'tool/call', { turn: 1, step: 1, callId: 'delete_1', name: 'dhr_propose_delete',
       arguments: JSON.stringify({ path }) }),
-    entry(2, 'tool/result', { turn: 1, step: 1, message: { content: [{ type: 'tool-result', toolCallId: 'delete_1',
-      content: [{ type: 'text', text: `PROPOSED_DELETE ${createHash('sha256').update(path).digest('hex')}` }] }] } },
-    { sourceEventSeqs: [1] }),
+    entry(2, 'tool/result', { turn: 1, step: 1, message: { role: 'tool', toolCallId: 'delete_1',
+      content: [{ type: 'text', text: `PROPOSED_DELETE ${createHash('sha256').update(path).digest('hex')}` }] } },
+    { sourceEventSeqs: [1], surfaceOp: 'append' }),
     entry(3, 'assistant/message', { turn: 1, step: 2, message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(result) }] } }),
     entry(4, 'turn/end', { turn: 1, reason: { kind: 'completed' } }),
   ];
   for (const event of events) decoder.consume(event);
-  const bound = decoder.finish(request, { version: 3, id: 'session-5a7765c8-28e3-4a74-8867-194ac73a6cf3',
+  const bound = decoder.finish(request, { version: 4, id: 'session-5a7765c8-28e3-4a74-8867-194ac73a6cf3',
     cwd: request.repoRoot, isSeeded: false });
   const collector = new WorkerProposalCollector(request, before);
   for (const proposal of decoder.proposals()) {

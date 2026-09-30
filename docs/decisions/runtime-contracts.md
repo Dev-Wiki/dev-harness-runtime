@@ -10,7 +10,7 @@
 - 上游协议基线为本地 `dev-harness` 提交 `1ed830aa0d696b52dbd666118ced475f4d6e8f79`，`VERSION` 为 `1.11.8`。引用 [Planning](../../../dev-harness/planning/SKILL.md)、[Commands](../../../dev-harness/commands/SKILL.md)、[Git Workflow](../../../dev-harness/git-workflow/SKILL.md)；不能用本机已安装 Skill 的版本替代项目锁定来源。
 - 旧 DSH 参考提交为 `cb53f228246a39ef8fd2ebcf372b60e0f1cffbf6`，仅作为迁移证据，不作为新公共协议。
 - 用户已确认项目名 `dev-harness-runtime`、CLI `dhr`、唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`，以及 `<run-id>/run.json` 的唯一状态权威。
-- 用户已确认 DSH 目标为 `0.1.5-rc.1`；首版只迁移通用机制，Audit / 修复 / QA 全流程不纳入 Runtime 内建编排；历史 Run 不自动转换。
+- 用户已确认 DSH 目标为 `0.1.5-rc.1`，后因 DSH 0.2.0-rc.2 的 peer 兼容门禁迁移为 `0.2.0-rc.2`；首版只迁移通用机制，Audit / 修复 / QA 全流程不纳入 Runtime 内建编排；历史 Run 不自动转换。
 - 本仓库采用 `main` 上的 `single-branch`；身份和提交发布规则见 [Git 工作流](../GIT_WORKFLOW.md)。执行 R0 不包含提交或发布授权。
 
 ## 2. 决策清单

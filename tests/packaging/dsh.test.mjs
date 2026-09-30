@@ -57,7 +57,7 @@ async function fixture(t) {
   return { root, input, packager, generated, files };
 }
 
-test('DSH rc.1 bundle is locked to actual rc.2 components and packs a stable tgz', async (t) => {
+test('DSH 0.2.0-rc.2 bundle is locked to the host components and packs a stable tgz', async (t) => {
   const value = await fixture(t);
   assert.deepEqual(errors(await validateStatic(value.files, value.input, dshStaticSpec)), []);
   assert.equal((await value.packager.validate(value.generated, value.input)).valid, true);

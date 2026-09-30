@@ -12,7 +12,7 @@ import { decodeFreshDshExecution } from '../../../packages/adapter-dsh/dist/exec
 const dshEntry = process.env.DHR_TEST_DSH_ENTRY;
 const fixture = (name) => JSON.parse(readFileSync(new URL(`../../../packages/contracts/fixtures/execution/${name}.json`, import.meta.url), 'utf8'));
 
-test('DSH rc.1 persistence reader accepts only one fresh Session in its isolated store',
+test('DSH 0.2.0-rc.2 persistence reader accepts only one fresh v4 Session in its isolated store',
   { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to an installed DSH launcher for host validation' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
@@ -22,8 +22,8 @@ test('DSH rc.1 persistence reader accepts only one fresh Session in its isolated
     await mkdir(cwd);
     try {
       const backend = new Backend(new Context(), { root: sessionsRoot });
-      const first = { version: 3, id: 'session-902adca5-4476-4b2b-b8f8-abc1f321bccf',
-        createdAt: Date.now(), cwd, isSeeded: false };
+      const first = { version: 4, id: 'session-902adca5-4476-4b2b-b8f8-abc1f321bccf',
+        createdAt: Date.now(), cwd, isSeeded: false, delegationDepth: 0 };
       const handle = await backend.create(first);
       await handle.append([{ seq: 0, time: Date.now(), type: 'turn/start', data: { turn: 1 } },
         { seq: 1, time: Date.now(), type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } }]);
@@ -38,7 +38,7 @@ test('DSH rc.1 persistence reader accepts only one fresh Session in its isolated
     } finally { await rm(stage, { recursive: true, force: true }); }
   });
 
-test('DSH v3 persistence events decode into one Core-bound result and private log stream',
+test('DSH v4 persistence events decode into one Core-bound result and private log stream',
   { skip: !dshEntry && 'Set DHR_TEST_DSH_ENTRY to an installed DSH launcher for host validation' }, async () => {
     const requireFromDsh = createRequire(pathToFileURL(dshEntry));
     const { Context } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href);
@@ -51,8 +51,8 @@ test('DSH v3 persistence events decode into one Core-bound result and private lo
       const request = { ...fixture('request'), repoRoot: cwd, docsRoot: join(cwd, 'docs'),
         dashboardPath: join(cwd, 'docs/plan/Dashboard.md'), taskPath: join(cwd, 'docs/plan/tasks/K1.md') };
       const result = fixture('result-blocked');
-      const header = { version: 3, id: 'session-902adca5-4476-4b2b-b8f8-abc1f321bccf',
-        createdAt: Date.now(), cwd, isSeeded: false };
+      const header = { version: 4, id: 'session-902adca5-4476-4b2b-b8f8-abc1f321bccf',
+        createdAt: Date.now(), cwd, isSeeded: false, delegationDepth: 0 };
       const session = Session.create(SessionId(header.id), [], header);
       session.append('turn/start', { turn: 1 });
       session.append('step/start', { turn: 1, step: 1 });

@@ -10,7 +10,7 @@
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。
 - **Run 布局**：`<run-id>/run.json` 是每个 Run 唯一权威状态文件；同级 `attempts/`、`results/`、`summary.json` 分别保存日志、结果与派生摘要。
-- **DSH 目标**：`0.1.5-rc.1`（本轮复跑；实际为 rc.1 启动器 + rc.2 组件）；旧 rc.8 仅作历史迁移参考，适配与验证以设计 §19.2 为准。
+- **DSH 目标**：`0.2.0-rc.2`（2026-09-30 兼容修复基线；peer 声明 `^0.2.0-rc.2`，Cordis `~4.0.4`）；旧 0.1.5-rc.1 与 rc.8 仅作历史迁移参考，适配与验证以设计 §19.2 为准。DSH Executor 在 0.2.0-rc.2 上的重新验收尚未执行。
 
 ## 2. 当前产品目标
 

@@ -52,7 +52,7 @@ try {
   assert.equal(packaged.adapters.get('dsh').id, 'dsh');
   const { stdout: cliVersion } = await execute(nodeBinary, [join(installedRoot, 'scripts/dhr.mjs'), '--version'],
     { cwd: stage, encoding: 'utf8', maxBuffer: 1024 * 1024 });
-  assert.match(cliVersion, /0\.1\.0/u);
+  assert.match(cliVersion, /0\.1\.1/u);
   await mkdir(join(stage, 'repo'), { mode: 0o700 });
   const repoRoot = await realpath(join(stage, 'repo'));
   await mkdir(join(repoRoot, 'src'), { mode: 0o700 });
@@ -99,7 +99,7 @@ try {
   let probe;
   if (process.env.DHR_TEST_DSH_PROBE === '1') {
     probe = await probeDshRuntime({ dshEntry, profileDirectory: join(stage, 'profiles/headless'),
-      bubblewrap, nodeBinary, apiKey, pluginSha256, targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 });
+      bubblewrap, nodeBinary, apiKey, pluginSha256, targetVersion: 'dsh-0.2.0-rc.2', timeoutMs: 120000 });
     assert.equal(probe.authorizationEnforced, true, probe.reasons.join('; '));
     assert.equal(probe.freshSession, true);
     assert.equal(probe.cancellation, true);
@@ -112,7 +112,7 @@ try {
         { adapter: 'dsh', initialFiles: { 'src/a.ts': 'HELLO' }, scopeFiles: ['src/a.ts'] });
       const adapterOptions = { dshEntry, profileDirectory: join(stage, 'profiles/headless'),
         bubblewrap, nodeBinary, apiKey, pluginSha256, configHash: f.run.adapterConfigHash,
-        gitVersion: 'synthetic-fixture', targetVersion: 'dsh-0.1.5-rc.1', timeoutMs: 120000 };
+        gitVersion: 'synthetic-fixture', targetVersion: 'dsh-0.2.0-rc.2', timeoutMs: 120000 };
       const adapter = createDshRuntimeAdapter(adapterOptions);
       const cancelResume = process.env.DHR_TEST_DSH_CANCEL_RESUME === '1';
       const expected = { schemaVersion: 1, runId: f.request.runId, taskId: f.request.taskId,

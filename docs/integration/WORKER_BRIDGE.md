@@ -20,7 +20,7 @@ DSH rc.2 的 `tools.guard` 在 `tools/pre-execute` waterfall **之后**运行；
 ## 最小验收顺序
 
 - 先完成纯本地桥接的路径与生命周期对抗测试：允许路径、新建/删除/重命名、目录边界、symlink/hardlink、Git 私有目录、初始用户修改、并发替换、取消与后代进程。
-- 然后分别在 Codex 0.154.0 与 DSH 0.1.5-rc.1 的隔离空工作区验证工具目录、正向编辑和每项禁止副作用。对 DSH，loopback 请求必须由工具门禁拒绝；对 Codex，原生工具与非白名单 MCP 必须拒绝。
+- 然后分别在 Codex 0.154.0 与 DSH 0.2.0-rc.2 的隔离空工作区验证工具目录、正向编辑和每项禁止副作用。对 DSH，loopback 请求必须由工具门禁拒绝；对 Codex，原生工具与非白名单 MCP 必须拒绝。
 - 最后连接 Core 的证据与结果协议，跑同一三 Task 序列、fresh Session、取消与恢复；通过后才注册生产 Executor 并进行最终全量回归。
 
 以上为最初的实施顺序；K5 / K6 后续宿主验收已完成，现行能力状态见 [Dashboard](../plan/Dashboard.md)。

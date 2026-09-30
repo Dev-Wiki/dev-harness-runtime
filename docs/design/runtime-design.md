@@ -1107,9 +1107,9 @@ TaskExecutionResult
 
 ## 19.2 DSH
 
-本次迁移与适配的目标宿主固定为 **DSH `0.1.5-rc.1`**。依据是用户于 2026-09-17 提供的本机 `dsh --version` 输出；该信息确认目标版本，不代表新 Adapter 已通过兼容性验收。
+本次迁移与适配的目标宿主固定为 **DSH `0.2.0-rc.2`**（2026-09-30 由 `0.1.5-rc.1` 迁移）。依据是本机桌面端运行时自报的 bundle 版本与官方 registry 中 `@deepseek-ai/dsh@0.2.0-rc.2` 的依赖声明；该信息确认目标版本，不代表新 Adapter 已通过兼容性验收。
 
-历史 DSH `0.1.0-rc.8` 集成基线仅作历史行为参考。需要针对 `0.1.5-rc.1` 重新核对公开 API、Bundle 格式与实际解析的组件依赖，并重跑契约、安装和 Session 测试；不得直接沿用旧版本的兼容结论，也不得假定所有 `@deepseek-ai/*` 包与宿主版本相同。
+历史 DSH `0.1.0-rc.8` 与 `0.1.5-rc.1` 集成基线仅作历史行为参考。需要针对 `0.2.0-rc.2` 重新核对公开 API、Bundle 格式与实际解析的组件依赖，并重跑契约、安装和 Session 测试；不得直接沿用旧版本的兼容结论，也不得假定所有 `@deepseek-ai/*` 包与宿主版本相同。
 
 公共 Core 承担以下通用机制：
 
@@ -2443,7 +2443,7 @@ Core Orchestrator
   - https://codelabs.developers.google.com/cloud-dev-plugin-agy
   - https://codelabs.developers.google.com/getting-started-with-antigravity-skills
 - DSH：
-  - 目标版本为第 19.2 节固定的 `0.1.5-rc.1`，以该版本的公开 API 和重新取得的运行证据为准；历史 rc.8 行为记录见 [DSH 适配边界](../DSH_MIGRATION.md)，不作为当前宿主能力证明。
+  - 目标版本为第 19.2 节固定的 `0.2.0-rc.2`，以该版本的公开 API 和重新取得的运行证据为准；历史 rc.8 / 0.1.5-rc.1 行为记录见 [DSH 适配边界](../DSH_MIGRATION.md)，不作为当前宿主能力证明。
 
 任何平台打包器在构建前都应通过：
 

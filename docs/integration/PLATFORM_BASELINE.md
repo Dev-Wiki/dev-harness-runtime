@@ -33,7 +33,7 @@ K5-P 已在 Codex 0.154.0 的隔离配置中测试兼容包和根 Portable fixtu
 
 ### DSH
 
-唯一适配目标仍为用户指定的 `dsh --version = 0.1.5-rc.1`。本机 launcher 为 `@deepseek-ai/dsh@0.1.5-rc.1`，依赖范围包含 `^0.1.5-rc.1`。实际读取的 base、agent、session、commands、workflow、workflow-worker-thread、user-approval、sandbox、sandbox-policy、sandbox-local、permission-presets、app-boot、package-manifest、sdk-minimal、sdk-app、atomic-write、skill、session-persistence-jsonl 均为 `0.1.5-rc.2`；Cordis 4.0.2、Schemastery 3.18.2、cordis-plugin-loader 1.0.3。
+唯一适配目标为 **DSH `0.2.0-rc.2`**，于 2026-09-30 由 `0.1.5-rc.1` 迁移，依据见下方“0.2.0-rc.2 兼容证据”。迁移前的本机记录为 launcher `@deepseek-ai/dsh@0.1.5-rc.1`，其 base、agent、session、commands、workflow、workflow-worker-thread、user-approval、sandbox、sandbox-policy、sandbox-local、permission-presets、app-boot、package-manifest、sdk-minimal、sdk-app、atomic-write、skill、session-persistence-jsonl 均为 `0.1.5-rc.2`；Cordis 4.0.2、Schemastery 3.18.2、cordis-plugin-loader 1.0.3。当前目标下 `@deepseek-ai/dsh` 与全部 `dsh-*` 组件统一为 `0.2.0-rc.2`，Cordis 为 `~4.0.4`。
 
 公开安装包来源根为当前 Node 全局目录下 `@deepseek-ai/dsh`；子包在其 `node_modules/@deepseek-ai/`。入口实际为 `lib/bin.js`。摘要固定关键声明文件，不声称完整依赖图已锁定；K6-P 必须建立可复现依赖锁。
 
@@ -50,6 +50,15 @@ K5-P 已在 Codex 0.154.0 的隔离配置中测试兼容包和根 Portable fixtu
 | `dsh-sandbox`、policy、local | 文件效果策略；full/partial 只涉及该策略承诺 | 未表达逐 Task 文件白名单、禁止 Git 提交或外部动作；不能据此启用 authorizationEnforced |
 
 本机 SDK minimal patch 显式使用 `danger-full-access`，不得复用为安全默认。Windows ACL / 老 Landlock 可能只有 partial 是随包文档声明；本机随后已实测 `workspace-write` 可写工作区外的 `/tmp` 路径，`read-only` 工具仍可访问本机 HTTP 服务，见 [K6](../verification/K6.md)，不能视为逐 Task 文件和外部动作隔离。K6 的新 Session 必须 create 新身份且不继承 seed，不能用 resume 旧历史替代。旧 Audit / 修复 / QA 与旧 Run 仍由旧实现处理，见 [迁移边界](../DSH_MIGRATION.md)。
+
+#### 0.2.0-rc.2 兼容证据（2026-09-30）
+
+- **宿主版本来源**：本机桌面端运行时的 profile 清单自报 `@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`、`@deepseek-ai/dsh-headless` 等组合包均为 `0.2.0-rc.2`；官方 registry 中 `@deepseek-ai/dsh@0.2.0-rc.2` 依赖 `@deepseek-ai/dsh-base@0.2.0-rc.2`、`@deepseek-ai/dsh-headless@0.2.0-rc.2` 与 `@deepseek-ai/cordis@~4.0.4`。
+- **安装门禁规则**：宿主文档明确，profile 导入插件前只把 `peerDependencies` 中 `@deepseek-ai/dsh` 与 `@deepseek-ai/dsh-*` 的声明范围，与 `getDshRuntimeVersion()` 返回的单一运行时版本比较：每个范围都必须匹配、预发布参与匹配、未声明 DSH peer 不施加约束、无效范围视为不兼容；`@deepseek-ai/cordis` 不在该检查内。发布版本 `0.1.0` 把 `dsh-commands` / `dsh-tools` 精确声明为 `0.1.5-rc.2`，因此在 0.2.0-rc.2 上被判定不兼容；现改为 `^0.2.0-rc.2`，Cordis 按实际解析记为 `~4.0.4`。
+- **API 存在性**：通过 0.2.0-rc.2 运行时的 Inspect provider 只读核对，插件使用的 `tools.register / restrict / guard / get(name, scope?)`、`tools/pre-execute` waterfall、`agent/created`、`commands.register` 均存在，签名与 0.1.5-rc.2 记录一致；`guard` 仍明确定位在 `tools/pre-execute` waterfall 之后。
+- **会话格式 v4**：0.2.0-rc.2 把 Session 格式从 v3 提升为 v4（`encodeCurrent requires Session format v4`；`session header version must be 4`）。v4 头部新增必需 `createdAt` / `delegationDepth`，并把 `tool/result` 从 `user` 角色的 `tool-result` 包装块改为 `role: 'tool'` 的直连消息（`message.toolCallId`、`message.content[]`、可选 `message.isError`），信封保留 `sourceEventSeqs`。Decoder 与 Session reader 已按 v4 改写。
+- **本轮实测证据**：在真实 `@deepseek-ai/dsh@0.2.0-rc.2`（cordis 4.0.4、dsh-tools/dsh-commands 0.2.0-rc.2）上，本地 tgz 经 `dsh plugin --profile headless add` 安装成功并出现在 `--dump-config` 的插件行中，未被判为不兼容；`tests/integration/dsh-smoke/` 四个文件 10 项与 `packages/adapter-dsh/tests/events.test.mjs` 5 项全部通过，覆盖 v4 会话读取、v4 事件解码、提议/删除收据绑定 Core 暂存、Worker 工具门禁顺序与 `/dhr-status` 命令注册。
+- **尚未取得**：Linux bubblewrap 隔离 headless Session 的 Executor probe、真实 Agent 会话中的 `/dhr-status` 调用、取消恢复与三任务链（需要 `DEEPSEEK_API_KEY` 与可信 bubblewrap）。在这些证据取得前，DSH Executor 能力不得记为已验证；fixture `localPublicSources` 的公开声明摘要也仍停留在 0.1.5-rc.1。
 
 K6-P 已从统一源码生成十文件 tgz，并在隔离 DSH `0.1.5-rc.1` headless profile 中安装、组合和卸载；从实际安装包调用启动器所解析 rc.2 的 `CommandRuntime.execute`，只读 `/dhr-status` 返回 success，dispose 后命令消失。profile pnpm 报 peer warning，已记录。K6 随后在同版本启动器上完成两次无工具合成 headless Agent 调用，观察到不同真实 Session；这仍不等于逐 Task 授权或 Executor 通过。证据见 [K6-P](../verification/K6-P.md) 与 [K6](../verification/K6.md)。
 
