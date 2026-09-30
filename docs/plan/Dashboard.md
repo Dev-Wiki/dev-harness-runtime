@@ -5,7 +5,7 @@
 ## 1. 进度快照
 
 - **核心阶段**：M0 / M1 / M2 / M3 已收口。K9 的真实宿主会话调用经用户明确豁免，仍属未实测；K10 的本地产物与验证验收已完成。
-- **发布状态**：六平台九个产物已随 [v0.1.0 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.0) 发布；MIT 许可和第三方声明随包，远端九个附件的大小与 SHA-256 均匹配最终 manifest。最终源码的 Ubuntu / Windows 原生 CI 四项 job 和发布工作流通过，见[发布验证记录](../verification/RELEASE-v0.1.0.md)。Codex / DSH 自动 Executor、Cursor / OpenCode 会话 Skill 调用已有各自证据；Antigravity 会话调用按用户决定豁免，仍未实测。
+- **发布状态**：当前版本为 [v0.1.1 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.1)（2026-09-30，修复 DSH 0.2.0-rc.2 的 peer 门禁与 Session v4 格式）；六平台九个产物、MIT 许可和第三方声明随包，远端九个附件的名称、大小与 SHA-256 均与本地 manifest 逐项一致，见[发布验证记录](../verification/RELEASE-v0.1.1.md)。上一版本 [v0.1.0](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.0) 记录见[其验证记录](../verification/RELEASE-v0.1.0.md)。Codex / DSH 自动 Executor、Cursor / OpenCode 会话 Skill 调用已有各自证据；Antigravity 会话调用按用户决定豁免，仍未实测。
 - **本轮目标**：完成设计 §45–47 的 MVP，先建公共 Core，再接 Codex / DSH，最后交付五平台和 Portable 产物。
 - **需求状态**：R0 / R1 / V0、M1、Codex K5 与 DSH K6 已验收；公共 Contracts、项目发现、Planning 读取、快照 / 漂移门禁、私有状态 / 锁、恢复 / 显式对齐、Registry、独立验收、受控提交、共享 Worker、串行编排与共享打包基础已验证。两个自动 Executor 均通过本机授权门禁、原始 Worker 与完整三任务链。
 - **命名与路径**：项目 `dev-harness-runtime`；CLI `dhr`；唯一状态根 `$(git rev-parse --git-path dev-harness-runtime)/runs/`。

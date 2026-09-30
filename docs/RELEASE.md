@@ -33,4 +33,5 @@ CI 的 `verify` 和 `package-dry-run` 已在 Ubuntu 与 Windows runner 分别通
 
 ## 已发布版本
 
+- [v0.1.1 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.1)：2026-09-30 发布，九个附件；修复 DSH 0.2.0-rc.2 的 peer 兼容门禁与 Session v4 格式。完整取证见[发布验证记录](verification/RELEASE-v0.1.1.md)。
 - [v0.1.0 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.0)：2026-09-28 发布，九个附件；大小和 SHA-256 与最终构建 manifest 逐项一致。完整取证见[发布验证记录](verification/RELEASE-v0.1.0.md)。
