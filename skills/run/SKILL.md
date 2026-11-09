@@ -16,10 +16,13 @@ description: 通过 dev-harness-runtime 的 dhr 入口启动或恢复用户指�
 - resume 只交给 Core 重验持久边界并按需启动新 Session。不要恢复旧 Conversation、按日志时间猜测结果、手改状态或自动进行 reconcile。显式 reconcile 请求只交给已实现的 CLI，由 Core 校验用户提供的对齐记录。
 - Worker 始终没有提交权限。即使 Run 获准提交，也只由 Core 验收后处理 commitIntent。push、PR、tag、release、deploy 均不在此流程授权内。
 - `run` / `resume` / `reconcile` 会在自身内部创建更窄的进程与文件隔离。若父 Codex 的命令沙箱阻止启动这个嵌套 provider，只为已经核对过的包内 `dhr` 精确命令请求宿主的沙箱升级，并保持入口、参数、项目路径和授权不变；不要借此运行 shell 组合、项目脚本或其他命令。宿主不允许时报告能力缺失并停止。
+- provider 报错中的 `path`、`owner UID`、`current UID` 和 `mode` 指向实际失败文件；不要把它统一解释为 Codex 程序损坏。系统文件在父 user namespace 内可能显示为 UID 65534，须与宿主只读检查区分；不要改属主、扩大文件权限或放宽 provider 检查。
 
 ## 执行与停止
 
 只调用已实现且受控的 `dhr` 入口。K4 已接通统一编排入口；若入口、执行器、fresh Session、结构化结果或权限隔离能力缺失，报告不可执行并停止。不能从 Skill、构建产物或 fixture 推定宿主能力，也不能改用当前父对话手工模拟 Runtime。
+
+工程契约缺失与宿主能力缺失分开报告。`PROJECT_CONTRACT_MISSING` 中的旧列表命令应交给 `dev-harness-commands` 核对并迁移为 confirmed 表格；缺少 `Runtime 配置` / `dhr-runtime` 应交给 `dev-harness-planning` 补齐当前任务的自动执行声明。Context 刷新保留人工命令区，不能替代这两项准备；不要暗中把候选命令确认、猜测 scope / 验收映射，或手工绕过 Core 执行任务。
 
 用户明确请求插件安装自检时，只运行上述包内入口的 `--version` 与必要的 `--help`，报告实际版本和入口类型后停止；自检不启动 run、resume 或 reconcile，也不读取项目计划。
 

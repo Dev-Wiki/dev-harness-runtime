@@ -104,7 +104,11 @@ async function fingerprint(path: string): Promise<Fingerprint> {
     const before = await file.stat({ bigint: true });
     if (!before.isFile() || (before.mode & 0o111n) === 0n || (before.mode & 0o6000n) !== 0n
       || (before.mode & 0o022n) !== 0n || ![0n, BigInt(process.getuid?.() ?? -1)].includes(before.uid)) {
-      fail('PROVIDER_UNAVAILABLE', 'Provider executable must be a trusted regular executable without set-id or group/world write');
+      const ownerMismatch = ![0n, BigInt(process.getuid?.() ?? -1)].includes(before.uid);
+      const facts = `path=${path}; owner UID=${before.uid}; current UID=${process.getuid?.() ?? 'unavailable'}; mode=${(before.mode & 0o7777n).toString(8).padStart(4, '0')}`;
+      const hint = ownerMismatch
+        ? ' A parent user namespace can remap system-file owners (including unmapped UID 65534); compare with a host-approved read-only stat before changing permissions. If the parent sandbox is the cause, use host approval for the same trusted Runtime command; do not trust UID 65534 or disable provider checks.' : '';
+      fail('PROVIDER_UNAVAILABLE', `Provider executable must be a trusted regular executable without set-id or group/world write (${facts}).${hint}`);
     }
     const bytes = await file.readFile();
     const after = await file.stat({ bigint: true });

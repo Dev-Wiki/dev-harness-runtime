@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { link, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { copyFile, link, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { createConfinedCodexBridge } from '../dist/executor/confined-bridge.js';
+import { runConfinedCodexProcess } from '../dist/executor/confined-process.js';
 import { runCodexHostNamespace } from '../dist/executor/host-namespace.js';
 import { createCodexBridgePolicy, withCodexBridgePolicy } from '../dist/executor/bridge-policy.js';
 
@@ -26,6 +27,46 @@ function run(command, args, input = '') {
     child.stdin.end(input);
   });
 }
+
+test('confined process supports a system bridge provider without remounting the fixed readonly system tree',
+  { skip: !process.env.DHR_TEST_BWRAP }, async (t) => {
+    const bubblewrap = await realpath(process.env.DHR_TEST_BWRAP);
+    if (!bubblewrap.startsWith('/usr/')) { t.skip('Requires a provider installed in the fixed /usr tree'); return; }
+    const root = await realpath(await mkdtemp(join(tmpdir(), 'dhr-system-bridge-test-')));
+    try {
+      const cwd = join(root, 'project'); const privateRoot = join(root, 'private');
+      const repoMirror = join(privateRoot, 'repo');
+      await mkdir(cwd); await mkdir(privateRoot); await mkdir(repoMirror);
+      const binary = join(privateRoot, 'codex'); const authFile = join(privateRoot, 'auth.json');
+      const outputSchema = join(privateRoot, 'schema.json');
+      // A native failing target exercises the whole host launch without a Codex or model session.
+      await copyFile('/usr/bin/false', binary);
+      await copyFile('/usr/bin/true', join(privateRoot, 'codex-code-mode-host'));
+      await writeFile(authFile, '{}', { mode: 0o600 }); await writeFile(outputSchema, '{}');
+      const request = JSON.parse(await readFile(fixture, 'utf8'));
+      let quiescent;
+      const input = { binary, argv: [], cwd, env: {}, request, signal: new AbortController().signal,
+        log: async () => {}, bubblewrap, nodeBinary: process.execPath, authFile, outputSchema, timeoutMs: 10_000,
+        bridge: { command: bubblewrap, args: [], hostSources: [bubblewrap, repoMirror], repoMirror },
+        onHostQuiescent(evidence, audit) { quiescent = { evidence, audit }; } };
+      await assert.rejects(runConfinedCodexProcess(input), (error) => {
+        assert.equal(error.code, 'EXECUTION_FAILED');
+        assert.match(error.message, /Confined Codex exited 1 .*after confirmed host quiescence/u);
+        return true;
+      });
+      assert.equal(quiescent.evidence.asPid1, true);
+      assert.equal(quiescent.evidence.monitorWaited, true);
+      assert.deepEqual(quiescent.audit.connected, {});
+      assert.equal(quiescent.audit.denied, 0);
+      const invalidSources = ['/usr/bin/../bin/bwrap'];
+      if (await realpath('/usr/bin/python3') !== '/usr/bin/python3') invalidSources.push('/usr/bin/python3');
+      for (const source of invalidSources) {
+        await assert.rejects(runConfinedCodexProcess({ ...input,
+          bridge: { ...input.bridge, hostSources: [...input.bridge.hostSources, source] } }),
+        { code: 'INVALID_ARGUMENT' });
+      }
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
 
 test('confined MCP reads only the frozen catalog and cannot see sibling files',
   { skip: !process.env.DHR_TEST_BWRAP }, async () => {
@@ -65,9 +106,11 @@ test('confined MCP reads only the frozen catalog and cannot see sibling files',
           try {
             assert.ok(!nestedLaunch.args.includes('--die-with-parent'));
             const nested = await runCodexHostNamespace({ bubblewrap: process.env.DHR_TEST_BWRAP,
-              nodeBinary: process.execPath, executable: nestedLaunch.command, argv: nestedLaunch.args,
+              nodeBinary: process.execPath, executable: '/dhr/bwrap', argv: nestedLaunch.args,
               cwd: root, timeoutMs: 10_000, tmpfs: [], environment: { HOME: '/tmp', PATH: '/usr/bin' },
-              mounts: [...nestedLaunch.hostSources.map((source) => ({ source, destination: source })),
+              mounts: [...nestedLaunch.hostSources.filter((source) => !source.startsWith('/usr/'))
+                .map((source) => ({ source, destination: source })),
+                { source: nestedLaunch.command, destination: '/dhr/bwrap' },
                 { source: nestedLaunch.repoMirror, destination: root }],
               stdin: Buffer.from(`${JSON.stringify(message)}\n`) });
             assert.equal(nested.exitCode, 0, nested.stderr.toString('utf8'));

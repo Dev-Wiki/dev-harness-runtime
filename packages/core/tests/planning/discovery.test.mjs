@@ -6,8 +6,19 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { discoverProject, readProjectText, resolveProjectPath } from '../../dist/discovery/index.js';
+import { readConfirmedVerificationCommands } from '../../dist/discovery/project.js';
 
 const execute = promisify(execFile);
+
+test('legacy confirmed lists report the table contract and owning migration skill', () => {
+  assert.throws(() => readConfirmedVerificationCommands('## 已确认命令（人工维护）\n\n- **test**: `node --test`\n', 'HARNESS.md'), error => {
+    assert.equal(error.code, 'PROJECT_CONTRACT_MISSING');
+    assert.match(error.message, /用途.*命令.*状态/u);
+    assert.match(error.message, /confirmed/u);
+    assert.match(error.message, /dev-harness-commands/u);
+    return true;
+  });
+});
 const harness = `# HARNESS
 ## 自动识别构建命令候选
 | 用途 | 命令 | 状态 |

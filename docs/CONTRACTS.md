@@ -302,7 +302,7 @@ CLI 退出码：0 表示请求模式正常结束；2 表示参数或不支持的
 
 [Core](../packages/core/src/index.ts) 提供 `discoverProject(cwd, options)`、`readPlan(project)`、`selectTask(plan, selection)`。Discovery 使用真实 Git 解析主仓 / linked worktree 的 repoRoot、privateGitDir、HEAD 和 `--git-path dev-harness-runtime`，只读取、不创建状态目录。显式 docsRoot 优先；双根先按治理链接判定归属，再以唯一 Dashboard 归属判定，不能证明时拒绝。doctor 模式可返回缺少 HEAD / 项目契约的 issues，不将该项目升级为可执行状态。
 
-HARNESS 读取“已确认命令（人工维护）”内按列名识别的表格，收集 confirmed 命令，至少包含 test / quick / bugfix / full 之一。重复列、重复用途、嵌套表格和隐藏 HTML 拒绝；候选命令不获得执行资格。读取层只返回命令文本；K4-V 复用该解析器冻结来源、核对 literal argv 并在受控进程中独立验证。
+HARNESS 读取“已确认命令（人工维护）”内按列名识别的表格，收集 confirmed 命令，至少包含 test / quick / bugfix / full 之一。重复列、重复用途、嵌套表格和隐藏 HTML 拒绝；候选命令不获得执行资格。旧单值列表不自动取得执行资格；错误说明用途、命令、状态三列及 `dev-harness-commands` 迁移入口。Context 刷新保留人工确认区，不能代替命令确认。读取层只返回命令文本；K4-V 复用该解析器冻结来源、核对 literal argv 并在受控进程中独立验证。
 
 Planning 使用 [markdown-it 的结构 token](https://markdown-it.github.io/markdown-it/documents/Architecture.html)，固定依赖 15.0.2。仅在目标段落中读取表格与顶层有序列表，按表头映射字段；转义管道保留为单元格内容，代码块和普通段落中的任务示例不形成工作顺序。原始表格行另校验列数，避免解析器自动补齐 / 截断掩盖坏输入。单份 Planning Markdown 限 2 MB，超限明确拒绝，不截断后继续选择。
 
@@ -363,6 +363,8 @@ K4 已将这些接口接入 CLI 的可信服务入口；生产 Adapter 尚未实
 验证命令通过 Linux provider 在独立 user / PID / mount / network / IPC / UTS / cgroup namespace 内执行。项目复制为只读镜像，完整内容与快照匹配后覆盖冻结验证源；不暴露宿主 HOME、Git 私有目录、凭据环境或 WSL 入口。仅显式声明的既有产物目录可写，初始用户修改、源码、Planning、验证源和已跟踪文件不能作为产物。产物纳入后续接受快照，但不计入本次 Task 提交集合。此能力目前只在 WSL2 实测；子模块、外链或特殊文件等不支持输入明确拒绝。
 
 provider 使用固定原生 bubblewrap 和 Python 可执行文件摘要、绑定 namespace init 的 pidfd、两道执行门禁和 monitor 等待来确认结束。取消、超时及后代进程无法证明静止时拒绝成功；控制进程退出或管道 EOF 不释放项目命令。挂载使用固定目录描述符，执行命令前关闭这些描述符。实现依据 [Bubblewrap](https://github.com/containers/bubblewrap) 与固定 [v0.9.0 源码](https://github.com/containers/bubblewrap/blob/v0.9.0/bubblewrap.c)，不是对任意参数或其他宿主的隔离承诺。
+
+provider 信任检查失败时报告实际路径、属主 UID、当前 UID 与权限；父 user namespace 可能把 root 属主映射为未映射 UID 65534，不能直接据此修改宿主权限或放宽检查。Codex 外层 namespace 已固定只读挂载 `/usr`，桥接来源在核对 canonical 路径、文件类型与权限后复用该挂载，不再重复挂载 `/usr` 内的系统工具；独立执行入口仍使用明确的私有目标挂载。
 
 Core 记录实际命令的 stdout / stderr、退出码、身份、时间、前后快照和隔离证据。必需人工验收只能来自外部用户确认服务，Worker 的确认文本无效。全部通过后签发与当前 lock handle / revision 绑定、仅可消费一次的进程内 capability；序列化对象不能获得提交权限。`finalizeWithoutCommit` 再次校验边界后推进 Run；授权为 task 时必须使用提交桥接。
 

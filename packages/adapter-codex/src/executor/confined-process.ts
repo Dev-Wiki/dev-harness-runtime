@@ -1,5 +1,5 @@
 import { lstat, realpath } from 'node:fs/promises';
-import { dirname, isAbsolute, join, sep } from 'node:path';
+import { dirname, isAbsolute, join, normalize, sep } from 'node:path';
 import { decodeCodexExecution } from './decode.js';
 import type { CodexHostNamespaceResult, CodexHostStartEvidence } from './host-namespace.js';
 import { runIsolatedModelHost, type IsolatedModelHostResult } from './isolated-model-host.js';
@@ -56,6 +56,19 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
   const env: Record<string, string> = { HOME: '/dhr/home', CODEX_HOME: '/dhr/home', PATH: '/usr/bin', LANG: 'C.UTF-8',
     ...input.request.env };
   const sources = [...new Set([...bridge.hostSources, schema])];
+  const bridgeMounts: { source: string; destination: string }[] = [];
+  for (const source of sources) {
+    if (!source.startsWith('/usr/')) { bridgeMounts.push({ source, destination: source }); continue; }
+    // The host already exposes /usr read-only. Preserve source checks before
+    // omitting identity mounts that would overlap that fixed boundary.
+    if (normalize(source) !== source || source.includes('\0') || await realpath(source) !== source) {
+      throw new CodexProcessError('INVALID_ARGUMENT', 'System bridge source must be canonical');
+    }
+    const info = await lstat(source);
+    if ((!info.isFile() && !info.isDirectory()) || info.isSymbolicLink() || (info.mode & 0o022) !== 0) {
+      throw new CodexProcessError('INVALID_ARGUMENT', 'System bridge source must be a trusted file or directory');
+    }
+  }
   const raw = await runIsolatedModelHost({ bubblewrap: input.bubblewrap, nodeBinary: input.nodeBinary,
     executable: '/dhr/codex', argv: input.argv, cwd: input.cwd, timeoutMs: input.timeoutMs,
     signal: input.signal, ...(input.onHostStarted ? { onStarted: input.onHostStarted } : {}),
@@ -64,7 +77,7 @@ export async function runConfinedCodexProcess(input: ConfinedCodexProcessInput):
       { source: input.binary, destination: '/dhr/codex' },
       { source: codeModeHost, destination: '/dhr/codex-code-mode-host' },
       { source: auth, destination: '/dhr/home/auth.json' },
-      ...sources.map((source) => ({ source, destination: source })),
+      ...bridgeMounts,
       { source: bridge.repoMirror, destination: input.cwd },
       { source: await realpath('/etc/ssl/certs'), destination: '/etc/ssl/certs' },
       { source: await realpath('/etc/resolv.conf'), destination: '/etc/resolv.conf' },

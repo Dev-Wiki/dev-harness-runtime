@@ -78,10 +78,10 @@ export async function prepareDeclaredPlanningTask(input: PrepareInput): Promise<
     catch { return error(path, 'Runtime input is not UTF-8'); }
   };
   const packet = parseMarkdown(utf8(taskBytes, taskPath), taskPath);
-  const runtime = section(packet, 'Runtime 配置');
+  const runtime = section(packet, 'Runtime 配置', false);
   const fences = runtime.filter((token) => token.type === 'fence');
   if (fences.length !== 1 || fences[0]!.info.trim() !== 'dhr-runtime' || Buffer.byteLength(fences[0]!.content) > 65_536) {
-    error(taskPath, 'Runtime 配置 requires one bounded dhr-runtime JSON fence');
+    error(taskPath, 'Automatic execution requires ## Runtime 配置 with one bounded dhr-runtime JSON fence. Use dev-harness-planning to prepare the explicit Runtime handoff (scope, archive path and verification); a manual Planning packet does not authorize implicit configuration');
   }
   let parsed: unknown;
   try { parsed = JSON.parse(fences[0]!.content); }

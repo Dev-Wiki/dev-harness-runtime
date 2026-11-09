@@ -126,8 +126,11 @@ export function readConfirmedVerificationCommands(text: string, path: string): {
     }
     commands.push({ purpose, command });
   }
-  if (sectionCount !== 1 || !commands.some((entry) => ['test', 'quick', 'bugfix', 'full'].includes(entry.purpose))) {
-    throw new PlanningError('PROJECT_CONTRACT_MISSING', 'HARNESS requires one confirmed command section with executable entries', path);
+  if (sectionCount !== 1) {
+    throw new PlanningError('PROJECT_CONTRACT_MISSING', `HARNESS requires exactly one 已确认命令 / Confirmed commands section; found ${sectionCount}`, path);
+  }
+  if (!commands.some((entry) => ['test', 'quick', 'bugfix', 'full'].includes(entry.purpose))) {
+    throw new PlanningError('PROJECT_CONTRACT_MISSING', 'HARNESS 已确认命令 requires a table with 用途 / 命令 / 状态 (purpose / command / status) columns and at least one test, quick, bugfix or full command marked confirmed. Use dev-harness-commands to review and migrate legacy lists; Context refresh preserves the manual section and cannot confirm commands', path);
   }
   return commands;
 }

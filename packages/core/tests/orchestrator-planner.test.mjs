@@ -56,3 +56,21 @@ test('Task byte drift after snapshot blocks runtime preparation', async (t) => {
   await writeFile(path, `${await readFile(path, 'utf8')}\nchanged after snapshot\n`);
   await assert.rejects(() => prepareDeclaredPlanningTask(input), { code: 'DRIFT_DETECTED' });
 });
+
+test('manual Planning packets require an explicit runtime handoff before automatic dispatch', async t => {
+  const fixture = await setupRuntimeFixture(t);
+  const { path, input } = await prepare(fixture, configuration());
+  const original = (await readFile(path, 'utf8')).split('\n## Runtime 配置')[0];
+  await writeFile(path, original);
+  const plan = await readPlan(fixture.project);
+  const before = await captureSnapshot({ project: fixture.project, runId: 'planner-missing-declaration',
+    protocolSource: fixture.services.protocolSource, adapterConfigHash: fixture.services.adapterConfigHash,
+    currentTaskPath: path, planningReferences: plan.references });
+  await assert.rejects(prepareDeclaredPlanningTask({ ...input, plan, before }), error => {
+    assert.equal(error.code, 'UNSUPPORTED_PLAN_FORMAT');
+    assert.match(error.message, /Runtime 配置/u);
+    assert.match(error.message, /dhr-runtime/u);
+    assert.match(error.message, /dev-harness-planning/u);
+    return true;
+  });
+});

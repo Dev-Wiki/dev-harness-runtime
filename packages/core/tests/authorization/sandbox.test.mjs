@@ -39,6 +39,42 @@ test('sandbox capability rejects forged and serialized handles before execution'
   await assert.rejects(runSandbox(JSON.parse('{}'), {}), isCode('INVALID_SANDBOX'));
 });
 
+test('unsafe provider diagnostics identify the executable and rejected permission facts', { skip: process.platform !== 'linux' }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr-provider-diagnostic-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const binary = join(root, 'provider');
+  await writeFile(binary, 'must never execute\n');
+  for (const mode of [0o644, 0o775, 0o757, 0o4755, 0o2755]) {
+    await chmod(binary, mode);
+    const info = await lstat(binary);
+    await assert.rejects(createLinuxSandbox(config(binary)), error => {
+      assert.equal(error.code, 'PROVIDER_UNAVAILABLE');
+      assert.ok(error.message.includes(binary), error.message);
+      assert.ok(error.message.includes(`mode=${(info.mode & 0o7777).toString(8).padStart(4, '0')}`), error.message);
+      assert.ok(error.message.includes(`owner UID=${info.uid}`), error.message);
+      return true;
+    });
+  }
+});
+
+test('untrusted provider ownership stays rejected with a namespace diagnostic', { skip: process.platform !== 'linux' }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dhr-provider-owner-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const binary = join(root, 'provider');
+  await writeFile(binary, 'must never execute\n', { mode: 0o755 });
+  const info = await lstat(binary);
+  // Root ownership is always trusted; simulate a different caller for a user-owned fixture.
+  if (info.uid === 0) { t.skip('Owner mismatch requires a non-root fixture owner'); return; }
+  t.mock.method(process, 'getuid', () => info.uid + 1);
+  await assert.rejects(createLinuxSandbox(config(binary)), error => {
+    assert.equal(error.code, 'PROVIDER_UNAVAILABLE');
+    assert.ok(error.message.includes(binary), error.message);
+    assert.match(error.message, /owner UID=.*current UID=/u);
+    assert.match(error.message, /user.namespace.*host|host.*user.namespace/iu);
+    return true;
+  });
+});
+
 test('real Linux provider returns actual namespace and process lifetime evidence', actualProvider, async t => {
   const f = await fixture(t);
   const result = await f.run('process.stdout.write("ok");process.stderr.write("diagnostic")');
