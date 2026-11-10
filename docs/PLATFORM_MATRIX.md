@@ -1,5 +1,7 @@
 # 平台能力证据矩阵
 
+[简体中文](PLATFORM_MATRIX.md) | [English](PLATFORM_MATRIX.en.md)
+
 本表由本地 release manifest 的九个实际产物摘要与可信 PlatformRegistry 生成；只表示打包产物和默认 Registry，不代替宿主能力探测。宿主安装、会话内 Skill 调用及授权隔离见逐任务验证记录。
 
 | 目标 | 产物数 | 静态产物 | RuntimeAdapter | 自动编排 | 证据 |

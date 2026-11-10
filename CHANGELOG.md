@@ -1,5 +1,17 @@
 # 变更日志
 
+[简体中文](CHANGELOG.md) | [English](CHANGELOG.en.md)
+
+## Unreleased
+
+### Added
+
+- 增加平台支持、公共契约、恢复迁移、构建发布及贡献者文档的完整英文对照；英文导航优先链接对应英文正文。
+
+### Changed
+
+- 平台矩阵从同一份已核验 manifest 与 Registry 生成并检查中英文版本；发布说明工具支持选择英文变更日志。
+
 ## v0.1.1 — 2026-09-30
 
 ### 修复（Fixed）

@@ -1,5 +1,7 @@
 # Runtime 公共契约
 
+[简体中文](CONTRACTS.md) | [English](CONTRACTS.en.md)
+
 本文是 Core、Worker、Executor 和 Packager 的接口与行为语义权威。协议初始版本为 `1`，K1 已落地类型、JSON Schema 与 fixtures，K2 已实现项目与 Planning 读取；其余目标语义的完成状态见看板。选择理由与来源见 [公共契约决策](decisions/runtime-contracts.md)，跨任务状态见 [Dashboard](plan/Dashboard.md)。
 
 ## 1. 通用数据规则

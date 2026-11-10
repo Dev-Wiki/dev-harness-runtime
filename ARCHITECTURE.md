@@ -1,5 +1,7 @@
 # 项目架构分析
 
+[简体中文](ARCHITECTURE.md) | [English](ARCHITECTURE.en.md)
+
 ## 模块依赖关系图
 
 CLI 开发依赖 Core / contracts / build，esbuild 将运行依赖合入独立 bundle；Core 与五个 Adapter 引用 contracts；build 通过 workspace 包引用 Core / Adapter。统一 PlatformRegistry 为 Core RuntimeAdapter 与平台 PluginPackager 提供显式注册；Core 未导入宿主 SDK。

@@ -1,5 +1,7 @@
 # 共享打包流水线
 
+[简体中文](PACKAGING.md) | [English](PACKAGING.en.md)
+
 K10-B 提供平台 Packager 共用的输入、阶段门禁和静态验证，已用显式注册的 Fake Packager 验证。K5-P / K6-P / K7 / K8 / K9 / K10-G 已接入 Codex、DSH、Cursor、OpenCode、Antigravity 和 Portable 真实 Packager。默认 `dhr` 列出六个平台 ID，但没有把描述符当作可执行能力；未显式注入可信 BuildPipeline 的命令仍返回 `CAPABILITY_MISSING`，不会加载项目中的可执行配置。
 
 ## 来源与依赖图

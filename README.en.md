@@ -12,7 +12,7 @@ The shared Core supports serial task orchestration, independent acceptance, stat
 
 Codex and DSH have verified packaged Task Executors, including task chains, independent acceptance, per-task commits, and recovery in the recorded WSL2 environment. Execution requires a successful capability probe on the actual host.
 
-Nine local artifacts for Codex, DSH, Cursor, OpenCode, Antigravity, and Portable have passed the shared packaging checks. Antigravity model-session Skill invocation was explicitly waived by the user and remains untested. See the [platform matrix](docs/PLATFORM_MATRIX.md) (Chinese) and the per-platform verification records for capability boundaries.
+Nine local artifacts for Codex, DSH, Cursor, OpenCode, Antigravity, and Portable have passed the shared packaging checks. Antigravity model-session Skill invocation was explicitly waived by the user and remains untested. See the [platform matrix](docs/PLATFORM_MATRIX.en.md) and the per-platform verification records for capability boundaries.
 
 - Project and repository name: `dev-harness-runtime`
 - CLI: `dhr`
@@ -82,7 +82,7 @@ $dev-harness:run Run the plugin installation self-check.
 
 It runs the bundled launcher for version and, if needed, help output.
 
-Open the target project in Codex. Before running a task, prepare its project contracts and a ready Planning packet with bounded write scope, archive targets, confirmed verification commands, and a `dhr-runtime` declaration. The exact requirements are in the [execution contract](docs/CONTRACTS.md#自动执行-task-的冻结声明) (Chinese).
+Open the target project in Codex. Before running a task, prepare its project contracts and a ready Planning packet with bounded write scope, archive targets, confirmed verification commands, and a `dhr-runtime` declaration. The exact requirements are in the [execution contract](docs/CONTRACTS.en.md#frozen-declaration-for-automatically-executed-tasks).
 
 Choose the intended scope and commit policy explicitly:
 
@@ -113,15 +113,15 @@ Install the [dev-harness Skills Bundle](https://github.com/Dev-Wiki/dev-harness/
 
 Builds consume the upstream source pinned by [protocol-lock.json](protocol-lock.json). Task execution reads the target project's own Context, Planning, HARNESS, and Git policy. The complete Audit / Finding / Auto Fix / QA workflow is not a built-in automatic pipeline.
 
-See the [platform capability matrix](docs/PLATFORM_MATRIX.md) (Chinese) for packaging, installation, and automatic execution support. DSH is an Adapter / Packager target in this repository; its host capabilities are maintained through this repository's implementation and verification records.
+See the [platform capability matrix](docs/PLATFORM_MATRIX.en.md) for packaging, installation, and automatic execution support. DSH is an Adapter / Packager target in this repository; its host capabilities are maintained through this repository's implementation and verification records.
 
 ## Project entry points
 
 - [Documentation index](docs/README.en.md)
 - [Development Dashboard](docs/plan/Dashboard.md) (Chinese)
 - [Readiness assessment](docs/plan/Readiness.md) (Chinese)
-- [Git commit and release policy](docs/GIT_WORKFLOW.md) (Chinese)
-- [Shared packaging contract](docs/PACKAGING.md) (Chinese)
+- [Git commit and release policy](docs/GIT_WORKFLOW.en.md)
+- [Shared packaging contract](docs/PACKAGING.en.md)
 - [v0.1.1 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.1)
 - [v0.1.0 GitHub Release](https://github.com/Dev-Wiki/dev-harness-runtime/releases/tag/v0.1.0)
 - [MIT license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md)
@@ -136,7 +136,7 @@ pnpm verify
 pnpm dhr --help
 ```
 
-Local verification has been completed in WSL2. Offline verification and the nine-artifact dry-run have passed on native Ubuntu / Windows CI; see [CI run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252). The [HARNESS](HARNESS.md) (Chinese) owns build, test, and command semantics; [ARCHITECTURE](ARCHITECTURE.md) (Chinese) describes module boundaries.
+Local verification has been completed in WSL2. Offline verification and the nine-artifact dry-run have passed on native Ubuntu / Windows CI; see [CI run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252). The [HARNESS](HARNESS.en.md) owns build, test, and command semantics; [ARCHITECTURE](ARCHITECTURE.en.md) describes module boundaries.
 
 `protocol-lock.json` pins the upstream commit and file digests. Build and offline checks do not run host model-session smoke tests. To validate an existing upstream checkout without downloading or updating the protocol:
 
@@ -146,6 +146,6 @@ pnpm verify:protocol --source /path/to/dev-harness-checkout
 
 ## Language coverage
 
-The Chinese and English READMEs cover the same project overview, current stage, modules, installation, task usage, integration boundaries, and development entry points. Specialist contracts, platform evidence, and recovery guides are currently Chinese and are marked as such in the [documentation index](docs/README.en.md). Platform package installation READMEs are in English; Skill descriptions and CLI messages may still be Chinese.
+The READMEs, platform support, public contracts, recovery and migration guides, build / release instructions, and contributor documents have corresponding Chinese and English bodies; start from the [English documentation index](docs/README.en.md). Historical design, original verification, and task records retain their original language and are identified explicitly. Platform package installation READMEs are in English; Skill descriptions and CLI messages may still be Chinese.
 
 English invocation examples do not enable English Planning documents. The current Runtime reads fixed Chinese section headings, table labels, and status values, and uses them during acceptance and archiving. Keep those structural labels and preserve the original task requirements. Full English contract generation and execution are separate work from these documentation entry points.

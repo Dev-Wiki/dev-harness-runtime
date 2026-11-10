@@ -1,5 +1,7 @@
 # Git 工作流契约
 
+[简体中文](GIT_WORKFLOW.md) | [English](GIT_WORKFLOW.en.md)
+
 本文件是仓库关于分支、提交、tag、变更日志和发布文案的权威规范。
 
 ## 规范来源与提交身份

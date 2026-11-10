@@ -124,12 +124,16 @@ pnpm dhr --help
 
 WSL2 已完成本机验证；Ubuntu / Windows 原生 CI 的离线验证与九产物 dry-run 已通过，见 [CI run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252)。构建、测试及命令语义以 [HARNESS](HARNESS.md) 为准；模块边界见 [ARCHITECTURE](ARCHITECTURE.md)。
 
-`protocol-lock.json` 固定上游提交和文件摘要。需要验证上游 checkout 时运行 `pnpm verify:protocol --source <checkout>`，不会自动下载或更新协议。
+`protocol-lock.json` 固定上游提交和文件摘要。需要验证已有的上游 checkout 时，使用实际路径运行下列命令；不会自动下载或更新协议：
+
+```bash
+pnpm verify:protocol --source /path/to/dev-harness-checkout
+```
 
 构建与离线检查不运行宿主模型会话 smoke 测试。
 
 ## 语言支持范围
 
-中英文 README 提供对应的项目概览、当前阶段、模块、安装、任务使用、协作边界与开发入口。专题契约、平台证据和恢复指南目前为中文，在[英文文档索引](docs/README.en.md)中标注语言。平台发布包的安装 README 使用英文；Skill 描述与 CLI 消息可能仍为中文。
+中英文 README、平台支持、公共契约、恢复迁移、构建发布与贡献者文档均提供对应正文，入口见[英文文档索引](docs/README.en.md)。历史设计、原始验证与任务记录保留原文并标注语言。平台发布包的安装 README 使用英文；Skill 描述与 CLI 消息可能仍为中文。
 
 英文调用示例不会启用英文 Planning 文档。当前 Runtime 的读取、验收和归档依赖固定中文章节标题、表头和状态值；须保留这些结构标签与原始任务要求。完整英文契约生成与执行属于后续能力建设。

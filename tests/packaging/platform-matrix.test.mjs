@@ -41,6 +41,13 @@ test('platform matrix rejects an artifact manifest from a previous source commit
     await run(process.execPath, [script, root]);
     await run(process.execPath, [script, '--check', root]);
     assert.match(await readFile(join(root, 'docs', 'PLATFORM_MATRIX.md'), 'utf8'), /SHA-256 已核对/u);
+    const english = join(root, 'docs', 'PLATFORM_MATRIX.en.md');
+    assert.match(await readFile(english, 'utf8'), /SHA-256 verified/u);
+    await writeFile(english, 'Stale English matrix\n');
+    await assert.rejects(run(process.execPath, [script, '--check', root]),
+      /PLATFORM_MATRIX\.en\.md differs from verified manifest and Registry/u);
+    await run(process.execPath, [script, root]);
+    await run(process.execPath, [script, '--check', root]);
 
     await commit();
     await assert.rejects(run(process.execPath, [script, '--check', root]),

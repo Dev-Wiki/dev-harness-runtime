@@ -1,5 +1,7 @@
 # HARNESS — 项目构建与验证契约
 
+[简体中文](HARNESS.md) | [English](HARNESS.en.md)
+
 本文件是项目构建、验证和执行环境的唯一事实源。
 它定义可执行命令、运行条件和验证边界，不替代 `AGENTS.md` 中的行为、安全与修改约束。
 
@@ -37,7 +39,7 @@ TypeScript / Node.js ESM workspace；统一 Runtime 已接通 Core 编排与 CLI
 
 `harness:build/test/full` 分别映射对应入口。`pnpm dhr --help` / `--version`、`doctor` 与 `status --run <run-id>` 可运行；run / resume / reconcile 已接入可信服务接口，build / validate / pack 已接入可信 BuildPipeline 接口。六平台 Packager 可由仓库可信工厂注入；默认独立 CLI 尚未装配平台 Packager 或宿主 Executor。Codex 插件的独立 launcher 会校验包内锁定来源并装配服务；临时 Git 项目中的自主合成 Task 已通过包内 CLI 派发、受控应用、Planning 收口和 Core 独立验证。
 
-仓库级 `pnpm dhr` 使用固定源码中的可信 Packager；`pnpm dhr release --dry-run --protocol-checkout <path>` 已在 WSL2 为六平台生成九个本地产物并重复验证摘要一致。逐阶段入口为 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack`，均需 `--protocol-checkout <path>`；`pnpm pack` 属于 pnpm 内建命令。`pnpm matrix:check` 核对实际摘要与 [能力矩阵](docs/PLATFORM_MATRIX.md)。这些命令不安装模型宿主，也不发布，详见 [RELEASE](docs/RELEASE.md)。独立 CLI tarball 仍无默认 Packager 和 Executor。
+仓库级 `pnpm dhr` 使用固定源码中的可信 Packager；`pnpm dhr release --dry-run --protocol-checkout <path>` 已在 WSL2 为六平台生成九个本地产物并重复验证摘要一致。逐阶段入口为 `pnpm generate`、`pnpm validate:plugins`、`pnpm run pack`，均需 `--protocol-checkout <path>`；`pnpm pack` 属于 pnpm 内建命令。`pnpm matrix:check` 核对实际摘要与中英文能力矩阵（[中文](docs/PLATFORM_MATRIX.md)、[English](docs/PLATFORM_MATRIX.en.md)）。这些命令不安装模型宿主，也不发布，详见 [RELEASE](docs/RELEASE.md)。独立 CLI tarball 仍无默认 Packager 和 Executor。
 
 - Node `24.15.0`，包 engines 为 `>=24.15.0 <25`；pnpm `11.1.0`。
 - TypeScript `6.0.3`、Oxlint `1.76.0`、esbuild `0.28.0`、`@types/node 24.12.2`，精确依赖见锁文件。

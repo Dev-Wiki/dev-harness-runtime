@@ -1,6 +1,26 @@
 # Run 恢复与人工对齐
 
+[简体中文](RECOVERY.md) | [English](RECOVERY.en.md)
+
 权威恢复语义见 [CONTRACTS §6](CONTRACTS.md#6-崩溃恢复协议)。本页说明 Core 接口及证据边界。K4 已接通 `dhr resume` / `dhr reconcile` 的可信服务入口；当前分发包缺少宿主 Executor 时明确拒绝执行。
+
+## 用户操作顺序
+
+1. 在原目标项目的新宿主线程中，先用原 `runId` 查询状态，读取实际状态、revision、验证摘要与日志引用。状态查询不启动执行。
+2. 原运行可恢复且依赖、授权与实际工作区仍匹配时，明确恢复同一 Run。使用已安装插件包内的可信入口；普通独立 CLI 没有 Executor 时返回 `CAPABILITY_MISSING`，不能据此换一个入口绕过探测。
+
+```text
+$dev-harness:status 查询 Run <run-id>
+$dev-harness:run 恢复 Run <run-id>
+```
+
+3. 若诊断要求人工对齐，先按下文检查真实边界与受控操作证据。`reconcile` 必须提供当前预期 revision，以及引用 Core 已持久化对齐记录的 EvidenceRef JSON 文件；文字确认或手写一份声称获准的 JSON 不能替代该证据。以下命令中的路径、Run ID 与 revision 均须替换为实际值：
+
+```bash
+node /absolute/path/to/plugin/scripts/dhr.mjs reconcile --run <run-id> --expected-revision <N> --resolution /absolute/path/to/ref.json --project /absolute/path/to/project
+```
+
+4. 保留无法证明宿主静止的锁与停止状态；不要手改 `run.json`、删除锁或复制旧结果来制造可恢复状态。成功对齐后的后续 Run 仍须通过下文的 successor 门禁，不能假定普通新 Run 自动继承新基线。
 
 ## 读取与初始化
 

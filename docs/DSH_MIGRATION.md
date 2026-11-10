@@ -1,5 +1,7 @@
 # DSH 通用行为迁移边界
 
+[简体中文](DSH_MIGRATION.md) | [English](DSH_MIGRATION.en.md)
+
 本文定义 `dev-harness-runtime` 的 DSH 适配范围、公共 Core 行为与兼容性边界，不维护开发进度。公共协议见 [CONTRACTS](CONTRACTS.md)，原因见 [公共契约决策](decisions/runtime-contracts.md)，任务入口见 [Dashboard](plan/Dashboard.md)。
 
 ## 1. 已确认范围
