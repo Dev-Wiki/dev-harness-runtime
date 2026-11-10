@@ -1,5 +1,7 @@
 # dev-harness-runtime
 
+[简体中文](README.md) | [English](README.en.md)
+
 ## 项目简介
 
 dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择、状态、授权、恢复和编排由公共 Core 承担，宿主接入由 Adapter 负责，安装产物由 Packager 生成。

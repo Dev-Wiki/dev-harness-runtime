@@ -1,5 +1,8 @@
 # dev-harness-runtime 文档入口
 
+[简体中文](README.md) | [English](README.en.md)
+
+- [英文项目概览](../README.en.md)与[英文文档导航](README.en.md)：插件安装、快速开始及标注翻译状态的专题入口。
 - [项目协作与使用](../README.md#与-dev-harness-协作)：上游 Skills Bundle、协议来源与 Runtime 执行入口。
 - [平台能力矩阵](PLATFORM_MATRIX.md)：各平台的打包、安装和自动执行证据边界。
 - [实现架构](../ARCHITECTURE.md)：当前 workspace、Registry 与 CLI 边界。
@@ -28,3 +31,5 @@
 - [设计文档](design/runtime-design.md)：仓库内唯一设计正文。
 
 任务正文按需从看板进入；已完成任务在生命周期收口时进入里程碑归档。原工作区设计路径仅保留短导航。
+
+安装、执行入口或平台能力边界变化时，同步更新受影响的英文概览与导航；专题事实与验证记录仍在各自权威文档维护，尚未翻译的文档明确标注语言。
