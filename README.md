@@ -16,6 +16,8 @@ dev-harness 的统一执行 Runtime 与多平台插件分发层。任务选择�
 - Run 状态根：`$(git rev-parse --git-path dev-harness-runtime)/runs/`
 - 每个 Run 的唯一权威状态文件：`<run-id>/run.json`
 
+Cursor、OpenCode、Antigravity 和 Portable Agent Plugin 的打包与宿主验证边界分别记录。产物或安装检查本身不证明自动执行能力；实际支持范围以能力矩阵及其验证记录为准。独立 CLI 不预装宿主 Executor，平台包可由可信 launcher 注入服务；缺少能力时返回 `CAPABILITY_MISSING`。
+
 ## 编程语言
 
 TypeScript、JavaScript（ESM）与 Python fixture 校验。
@@ -41,6 +43,20 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 - build/manifests、build/validators、build/transforms：来源与共享元数据校验、静态包检查、受限 Skill 转换和确定性归档。
 - skills/run、skills/status、skills/worker：唯一共享 Skill 业务源码，平台差异留给后续转换。
 
+## 安装 Codex 插件
+
+从 [GitHub Releases](https://github.com/Dev-Wiki/dev-harness-runtime/releases) 下载 Codex ZIP，解压到本地 Marketplace 目录，保留完整归档结构，包括 `.agents/plugins/marketplace.json` 与 `plugins/dev-harness/`。
+
+使用该包支持的 Codex CLI 添加解压后的 Marketplace 并安装插件：
+
+```bash
+codex plugin marketplace add /absolute/path/to/extracted-marketplace
+codex plugin add dev-harness@dev-harness-local
+codex plugin list
+```
+
+安装后在新的 Codex 线程中执行下文的插件自检。其他平台产物各自附带英文安装 README，平台证据与打包说明见[文档导航](docs/README.md)。
+
 ## 使用说明
 
 - 安装：pnpm install --frozen-lockfile --ignore-scripts
@@ -56,7 +72,9 @@ pnpm workspace、TypeScript 编译和 esbuild CLI bundle。
 $dev-harness:run 插件安装自检
 ```
 
-实际执行前，项目需要有可领取的 Planning Task，并按[执行契约](docs/CONTRACTS.md#自动执行-task-的冻结声明)声明有界写入范围、归档目标和已确认的验证命令。可按需选择一种模式：
+自检只运行包内启动器的版本命令，必要时读取帮助。
+
+实际执行前，项目需要有可领取的 Planning Task，并按[执行契约](docs/CONTRACTS.md#自动执行-task-的冻结声明)补齐 `dhr-runtime` 声明，包括有界写入范围、归档目标和已确认的验证命令。可按需选择一种模式：
 
 ```text
 $dev-harness:run 执行任务 ID K5，不提交
@@ -72,6 +90,8 @@ $dev-harness:run 恢复 Run <run-id>
 ```
 
 Linux 上执行 Task 还需要已登录的 Codex CLI 和可信 bubblewrap；Runtime 会在创建 Run 前探测实际能力，缺失时返回诊断并停止。父 Codex 的命令沙箱无法启动嵌套隔离时，会只为已校验的包内 `dhr` 精确命令请求升级；批准前应核对插件缓存路径、任务 ID、项目路径和提交模式。
+
+原生 Windows 的安装和只读自检记录不证明 Windows Task 执行能力。状态查询返回经核验的紧凑摘要与日志引用；恢复沿用持久证据和原始授权。
 
 ## 与 dev-harness 协作
 
@@ -105,3 +125,11 @@ pnpm dhr --help
 WSL2 已完成本机验证；Ubuntu / Windows 原生 CI 的离线验证与九产物 dry-run 已通过，见 [CI run 36394754252](https://github.com/Dev-Wiki/dev-harness-runtime/actions/runs/36394754252)。构建、测试及命令语义以 [HARNESS](HARNESS.md) 为准；模块边界见 [ARCHITECTURE](ARCHITECTURE.md)。
 
 `protocol-lock.json` 固定上游提交和文件摘要。需要验证上游 checkout 时运行 `pnpm verify:protocol --source <checkout>`，不会自动下载或更新协议。
+
+构建与离线检查不运行宿主模型会话 smoke 测试。
+
+## 语言支持范围
+
+中英文 README 提供对应的项目概览、当前阶段、模块、安装、任务使用、协作边界与开发入口。专题契约、平台证据和恢复指南目前为中文，在[英文文档索引](docs/README.en.md)中标注语言。平台发布包的安装 README 使用英文；Skill 描述与 CLI 消息可能仍为中文。
+
+英文调用示例不会启用英文 Planning 文档。当前 Runtime 的读取、验收和归档依赖固定中文章节标题、表头和状态值；须保留这些结构标签与原始任务要求。完整英文契约生成与执行属于后续能力建设。

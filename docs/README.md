@@ -2,15 +2,20 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
+中英文 README 按章节保持信息对应，不因语言版本省略工作流、模块说明、命令、能力边界或文档入口；修改任一版本时同步核对另一版本。下列专题文档目前为中文，英文概览与导航已标注。
+
 - [英文项目概览](../README.en.md)与[英文文档导航](README.en.md)：插件安装、快速开始及标注翻译状态的专题入口。
 - [项目协作与使用](../README.md#与-dev-harness-协作)：上游 Skills Bundle、协议来源与 Runtime 执行入口。
+- [上游 Skills Bundle](https://github.com/Dev-Wiki/dev-harness/blob/main/README.md)：准备 Context、Planning、文档、验证命令与 Git 契约。
 - [平台能力矩阵](PLATFORM_MATRIX.md)：各平台的打包、安装和自动执行证据边界。
 - [实现架构](../ARCHITECTURE.md)：当前 workspace、Registry 与 CLI 边界。
 - [构建验证契约](../HARNESS.md)：工具链、已确认命令与验证范围。
 - [公共契约](CONTRACTS.md)：Planning 读取、执行结果、授权、状态恢复与打包接口。
 - [共享打包流水线](PACKAGING.md)：锁定输入、阶段门禁、静态校验和确定性归档。
+- [构建与 GitHub Release](RELEASE.md)：本地构建、发布产物与发布门禁。
 - [契约决策](decisions/runtime-contracts.md)：设计选择、来源锁定与工程基线。
 - [DSH 迁移边界](DSH_MIGRATION.md)：Core / Adapter 职责、通用行为与历史状态的兼容性边界。
+- [Worker 受控桥接](integration/WORKER_BRIDGE.md)：Codex / DSH 的受控 Worker 集成记录。
 - [R0 验证记录](verification/R0.md)：契约走查、源码映射与文档验证。
 - [平台基线](integration/PLATFORM_BASELINE.md)：六类格式、DSH 实际组件、离线样例与宿主门禁。
 - [R1 验证记录](verification/R1.md)：格式校验、版本盘点与归档检查。
@@ -28,6 +33,7 @@
 - [开发看板](plan/Dashboard.md)：唯一活跃计划、任务顺序与跨任务状态。
 - [资料完整性评估](plan/Readiness.md)：设计输入、缺项与官网初查证据。
 - [Git 工作流](GIT_WORKFLOW.md)：分支、提交身份、Conventional Commits、tag 与发布说明规范。
+- [变更日志](../CHANGELOG.md)：已发布版本的变化。
 - [设计文档](design/runtime-design.md)：仓库内唯一设计正文。
 
 任务正文按需从看板进入；已完成任务在生命周期收口时进入里程碑归档。原工作区设计路径仅保留短导航。
